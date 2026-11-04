@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `MoreFeature` 的單元測試，以 TestStore 驗證更多頁如何把子頁面的要求與結果轉給 Root
+/// `MoreFeature` 的單元測試，以 `TestStore` 驗證更多頁如何把子頁面的要求與結果轉給 Root
 @MainActor
 struct MoreFeatureRelaysTests {
 
@@ -40,15 +40,34 @@ struct MoreFeatureRelaysTests {
         #expect(store.state.path.count == 1)
     }
 
-    /// 驗證客戶頁選取客戶時，先清空整個更多頁堆疊，再把選取的客戶送給 Root
+    /// 驗證客戶頁選取客戶時，保留來源路徑與子頁狀態，再把選取的客戶送給 Root
+    ///
+    /// - Throws: 找不到來源路徑識別碼時由 `#require` 丟出
     @Test
-    func path_客戶頁選取客戶_清空堆疊並轉送委派() async {
+    func path_客戶頁選取客戶_保留來源路徑並轉送委派() async throws {
         // Given
         var initial = MoreFeature.State(appVersion: "1.7.0")
-        initial.path.append(.fx(FxFeature.State()))
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-3",
+                categories: [],
+                customerName: "Alice"
+            ),
+        ]
+        initial.$orders.withLock {
+            $0 = sourceOrders
+        }
+        var fx = FxFeature.State()
+        fx.fromCurrency = .krw
+        fx.amount = 150_000
+        initial.path.append(.fx(fx))
         initial.path.append(
             .customers(CustomersFeature.State(orders: SharedReader(initial.$orders)))
         )
+        let sourcePathIDs = initial.path.ids
+        let customerPathID = try #require(sourcePathIDs.last)
+        let fxPathID = try #require(sourcePathIDs.first)
+
         let store = TestStore(initialState: initial) {
             MoreFeature()
         } withDependencies: {
@@ -58,16 +77,17 @@ struct MoreFeatureRelaysTests {
 
         // When
         await store.send(
-            .path(.element(id: 1, action: .customers(.view(.customerTapped("Alice")))))
+            .path(.element(id: customerPathID, action: .customers(.view(.customerTapped("Alice")))))
         )
 
         // Then
-        await store.receive(\.path[id: 1].customers.delegate.customerSelected, "Alice") {
-            $0.path.removeAll()
-        }
+        await store.receive(\.path[id: customerPathID].customers.delegate.customerSelected, "Alice")
         await store.receive(\.delegate.customerSelected, "Alice")
         await store.finish()
-        #expect(store.state.path.isEmpty)
+        #expect(store.state.path.ids == sourcePathIDs)
+        #expect(store.state.path[id: fxPathID, case: \.fx]?.fromCurrency == .krw)
+        #expect(store.state.path[id: fxPathID, case: \.fx]?.amount == 150_000)
+        #expect(store.state.path[id: customerPathID, case: \.customers]?.orders == sourceOrders)
     }
 
     /// 驗證主檔改名時，送給 Root 的事件附上來源頁的主檔種類，讓 Root 只改對應的訂單欄位
@@ -272,7 +292,7 @@ struct MoreFeatureRelaysTests {
             }
         }
         await store.receive(\.catalog.delegate, .additionCompleted(request, isStored: true))
-        await store.receive(\.delegate, .optionAdditionCompleted(request, isStored: true))
+        await store.receive(\.delegate, .optionAdditionCompleted(request: request, isStored: true))
         await store.finish()
     }
 
@@ -304,7 +324,10 @@ struct MoreFeatureRelaysTests {
         await store.send(.catalog(.delegate(.additionCompleted(request, isStored: isStored))))
 
         // Then
-        await store.receive(\.delegate, .optionAdditionCompleted(request, isStored: isStored))
+        await store.receive(
+            \.delegate,
+            .optionAdditionCompleted(request: request, isStored: isStored)
+        )
         await store.finish()
     }
 }

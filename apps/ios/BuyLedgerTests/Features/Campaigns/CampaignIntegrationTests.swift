@@ -193,11 +193,6 @@ struct CampaignIntegrationTests {
             $0.orders.load.$hasLoaded.withLock {
                 $0 = true
             }
-            $0.orders.list.selectedOrderID = "O1"
-            $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "O1",
-                orders: SharedReader(initial.orders.$orders)
-            )
             $0.campaigns.$orders.withLock {
                 $0 = updatedOrders
             }
@@ -218,5 +213,165 @@ struct CampaignIntegrationTests {
         )
         #expect(summaryAfterSync.orderCount == 2)
         #expect(summaryAfterSync.receivables == 800)
+    }
+
+    /// 驗證由訂單分頁切回開團分頁時，目前開團詳情與未收款篩選維持原樣
+    @Test
+    func tabSelected_由訂單切回開團_詳情與未收款篩選維持原樣() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "四月團")
+        var initial = RootFeature.State()
+        initial.selectedTab = .orders
+        initial.campaigns.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        initial.campaigns.showDetail(campaignID: "C1")
+        initial.campaigns.$isShowingUnpaidOnly.withLock {
+            $0 = true
+        }
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        }
+
+        // When
+        await store.send(.view(.tabSelected(.campaigns))) {
+            $0.selectedTab = .campaigns
+        }
+
+        // Then
+        #expect(store.state.campaigns.path.count == 1)
+        #expect(store.state.campaigns.path.first?.detail?.campaignID == "C1")
+        #expect(store.state.campaigns.isShowingUnpaidOnly == true)
+    }
+
+    /// 驗證列表載入完成時，已選取的開團不在載入結果中，該開團的詳情隨載入完成被清除
+    @Test
+    func campaigns_已選取開團不在載入結果_載入完成後清除詳情() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "四月團")
+        let loaded = [Campaign.fixture(id: "C2", name: "五月團")]
+        let fetches = LockIsolated(0)
+        var initial = RootFeature.State()
+        initial.campaigns.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        initial.campaigns.showDetail(campaignID: "C1")
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.campaignService.fetchCampaigns = {
+                fetches.withValue {
+                    $0 += 1
+                }
+                return loaded
+            }
+        }
+
+        // When
+        let loading = await store.send(.campaigns(.list(.view(.task)))) {
+            $0.campaigns.list.dateContext = CampaignDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = true
+            }
+        }
+
+        // Then
+        await loading.finish()
+        await store.receive(\.campaigns.list.delegate.loadRequested) {
+            $0.campaigns.$campaigns.withLock {
+                $0 = loaded
+            }
+            $0.orders.$campaigns.withLock {
+                $0 = loaded
+            }
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = false
+            }
+            $0.campaigns.load.$hasLoaded.withLock {
+                $0 = true
+            }
+        }
+        await store.receive(\.campaigns.load.loadRequested)
+        await store.receive(\.campaigns.load.campaignsResponse.success) {
+            $0.campaigns.path.removeAll()
+            $0.dashboard.campaigns = loaded
+            $0.insights.campaigns = loaded
+        }
+        await store.finish()
+        #expect(fetches.value == 1)
+        #expect(store.state.campaigns.path.isEmpty)
+    }
+
+    /// 驗證列表載入完成時，已選取的開團仍在載入結果中 (清單同時新增其他開團)，該開團的詳情於載入完成後保留
+    @Test
+    func campaigns_已選取開團仍在載入結果_載入完成後保留詳情() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "四月團")
+        let loaded = [campaign, Campaign.fixture(id: "C2", name: "五月團")]
+        let fetches = LockIsolated(0)
+        let initial = RootFeature.State()
+        initial.campaigns.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.campaignService.fetchCampaigns = {
+                fetches.withValue {
+                    $0 += 1
+                }
+                return loaded
+            }
+        }
+        // 以 action 建立詳情：堆疊的 dismiss effect 隨這次 send 啟動，不掛在下方的載入 send 底下
+        await store.send(.campaigns(.view(.detailSelectionChanged("C1")))) {
+            $0.campaigns.path.append(
+                CampaignFeatureTestSupport.detailPath("C1", in: initial.campaigns)
+            )
+        }
+
+        // When
+        let loading = await store.send(.campaigns(.list(.view(.task)))) {
+            $0.campaigns.list.dateContext = CampaignDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = true
+            }
+        }
+
+        // Then
+        await loading.finish()
+        await store.receive(\.campaigns.list.delegate.loadRequested) {
+            $0.campaigns.$campaigns.withLock {
+                $0 = loaded
+            }
+            $0.orders.$campaigns.withLock {
+                $0 = loaded
+            }
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = false
+            }
+            $0.campaigns.load.$hasLoaded.withLock {
+                $0 = true
+            }
+        }
+        await store.receive(\.campaigns.load.loadRequested)
+        await store.receive(\.campaigns.load.campaignsResponse.success) {
+            $0.dashboard.campaigns = loaded
+            $0.insights.campaigns = loaded
+        }
+        await store.finish()
+        #expect(fetches.value == 1)
+        #expect(store.state.campaigns.path.count == 1)
+        #expect(store.state.campaigns.path.first?.detail?.campaignID == "C1")
     }
 }

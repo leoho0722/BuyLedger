@@ -12,7 +12,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersCompactView` 與 `OrdersView` 的快照測試，涵蓋各尺寸分類與多選模式
+/// Orders 窄版清單與寬版清單欄的快照測試，涵蓋多選模式
 @MainActor
 struct SnapshotOrdersTests {
 
@@ -31,13 +31,17 @@ struct SnapshotOrdersTests {
             }
 
             // When
-            let view = OrdersCompactView(
-                store: Store(initialState: state) {
-                    OrdersFeature()
-                },
-                language: .traditionalChinese
-            )
+            let view = NavigationStack {
+                OrdersCompactView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
                 .frame(width: 393, height: 852)
 
             // Then
@@ -93,13 +97,57 @@ struct SnapshotOrdersTests {
             }
 
             // When
-            let view = OrdersCompactView(
-                store: Store(initialState: state) {
-                    OrdersFeature()
-                },
-                language: .traditionalChinese
-            )
+            let view = NavigationStack {
+                OrdersCompactView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
+                .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
+    /// 驗證窄版清單中同一天的三筆訂單共用一張日期卡片，另一天的一筆獨立成卡，畫面符合基準圖
+    @Test
+    func ordersCompactView_同日三筆與他日一筆_符合基準圖() {
+        TestDependencies.withFixedNow {
+            // Given
+            let now = TestDependencies.fixedNow
+            let yesterday = now.addingTimeInterval(-24 * 60 * 60)
+            var state = OrdersFeature.State(orders: [
+                Self.makeGroupedOrder(id: "BL-GROUP-0001", customer: "小美", date: now),
+                Self.makeGroupedOrder(id: "BL-GROUP-0002", customer: "阿凱", date: now),
+                Self.makeGroupedOrder(id: "BL-GROUP-0003", customer: "小安", date: now),
+                Self.makeGroupedOrder(id: "BL-GROUP-0004", customer: "Mika", date: yesterday),
+            ])
+            state.refreshDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            state.load.$hasLoaded.withLock {
+                $0 = true
+            }
+
+            // When
+            let view = NavigationStack {
+                OrdersCompactView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
                 .frame(width: 393, height: 852)
 
             // Then
@@ -126,13 +174,17 @@ struct SnapshotOrdersTests {
             state.list.selectedOrderIDs = [LedgerOrder.sampleOrders[0].id]
 
             // When
-            let view = OrdersCompactView(
-                store: Store(initialState: state) {
-                    OrdersFeature()
-                },
-                language: .traditionalChinese
-            )
+            let view = NavigationStack {
+                OrdersCompactView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
                 .frame(width: 393, height: 852)
 
             // Then
@@ -163,7 +215,7 @@ struct SnapshotOrdersTests {
 
             // When
             let view = NavigationStack {
-                OrdersView(
+                OrdersRegularListContent(
                     store: Store(initialState: state) {
                         OrdersFeature()
                     },
@@ -201,7 +253,7 @@ struct SnapshotOrdersTests {
 
             // When
             let view = NavigationStack {
-                OrdersView(
+                OrdersRegularListContent(
                     store: Store(initialState: state) {
                         OrdersFeature()
                     },
@@ -219,13 +271,12 @@ struct SnapshotOrdersTests {
         }
     }
 
-    /// 驗證大尺寸 iPhone 橫向 (水平 `regular`、垂直 `compact`，956 × 440) 的訂單頁，維持單欄清單與整合篩選鈕，畫面符合基準圖
+    /// 驗證大尺寸 iPhone 橫向 (水平 `regular`、垂直 `compact`，956 × 440) 的訂單頁，分欄顯示清單與詳情提示，清單欄使用整合篩選鈕，畫面符合基準圖
     ///
-    /// - Note: 以 `OrdersView` 為受測的 `View` 才會依螢幕尺寸切換版面
-    /// - Note: 畫面中沒有側邊詳情欄
+    /// - Note: 以 `OrdersView` 為受測的 `View` 才會依尺寸分類切換版面
     /// - Note: 使用離屏快照，避免 key window 是直向 iPhone 而裁切
     @Test
-    func ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕() {
+    func ordersView_大尺寸iPhone橫向_分欄顯示清單與整合篩選鈕() {
         TestDependencies.withFixedNow {
             // Given
             var state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
@@ -252,5 +303,48 @@ struct SnapshotOrdersTests {
             // Then
             assertSnapshot(of: view, as: .image)
         }
+    }
+}
+
+// MARK: - Private Method
+
+private extension SnapshotOrdersTests {
+
+    /// 建立窄版清單快照用的訂單，只設定列表顯示與日期分組所需的欄位
+    ///
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - customer: 客戶名稱
+    ///   - date: 訂購日期
+    /// - Returns: 窄版清單快照使用的訂單
+    static func makeGroupedOrder(id: String, customer: String, date: Date) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: LedgerCustomer(name: customer, initials: "AB", tier: .vip),
+            status: .shipping,
+            currency: .twd,
+            date: date,
+            items: [LedgerOrderItem(name: "示範商品", quantity: 1, unitPrice: 1_000)],
+            itemCost: 600,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 1_000,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            categories: ["示範類別"],
+            paymentMethod: "信用卡",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: [],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
     }
 }

@@ -29,9 +29,9 @@ struct CampaignPresentationFeatureTests {
         #expect(state.queue.isFormClosing == false)
     }
 
-    /// 驗證 sheet 關閉動畫結束時，暫存的通知移進目的地，並清除關閉中旗標
+    /// 驗證 sheet 關閉動畫結束時，暫存的通知移進通知狀態，並清除關閉中旗標
     @Test
-    func finishFormClosing_關閉中有暫存通知_通知移進目的地() {
+    func finishFormClosing_關閉中有暫存通知_通知移進通知狀態() {
         // Given
         var state = CampaignPresentationFeature.State()
         state.queue.isFormClosing = true
@@ -41,7 +41,7 @@ struct CampaignPresentationFeatureTests {
         state.finishFormClosing()
 
         // Then
-        #expect(state.destination == Self.notice)
+        #expect(state.notice == Self.notice)
         #expect(state.queue.pendingNotice == nil)
         #expect(state.queue.isFormClosing == false)
     }
@@ -102,24 +102,25 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing)
     }
 
-    /// 驗證提示 alert 被關閉時，只清空目的地，不標記表單關閉中
+    /// 驗證獨立提示 alert 被關閉時，不標記表單關閉中
     @Test
     @MainActor
-    func destination_關閉提示_只清空目的地() async {
+    func notice_關閉提示_只清空通知狀態() async {
         // Given
         var initial = CampaignPresentationFeature.State()
-        initial.destination = Self.notice
+        initial.notice = Self.notice
         let store = TestStore(initialState: initial) {
             CampaignPresentationFeature()
         }
 
         // When
-        await store.send(.destination(.dismiss)) {
-            $0.destination = nil
+        await store.send(.notice(.dismiss)) {
+            $0.notice = nil
         }
 
         // Then
         #expect(store.state.destination == nil)
+        #expect(store.state.notice == nil)
         #expect(store.state.queue.isFormClosing == false)
     }
 
@@ -155,7 +156,7 @@ struct CampaignPresentationFeatureTests {
     func destination_確認刪除_轉交刪除意圖() async {
         // Given
         var initial = CampaignPresentationFeature.State()
-        initial.destination = Self.notice
+        initial.destination = CampaignFeatureTestSupport.deletionAlert(id: "C1", name: "團")
         let store = TestStore(initialState: initial) {
             CampaignPresentationFeature()
         }
@@ -176,7 +177,7 @@ struct CampaignPresentationFeatureTests {
     func destination_確認結團_轉交結團意圖() async {
         // Given
         var initial = CampaignPresentationFeature.State()
-        initial.destination = Self.notice
+        initial.destination = CampaignFeatureTestSupport.settleAlert(id: "C1", name: "團")
         let store = TestStore(initialState: initial) {
             CampaignPresentationFeature()
         }
@@ -194,11 +195,11 @@ struct CampaignPresentationFeatureTests {
     /// 驗證權限提示按下前往設定時，以注入的服務開啟系統設定一次，提示隨即關閉
     @Test
     @MainActor
-    func destination_前往設定_呼叫開啟設定服務() async {
+    func notice_前往設定_呼叫開啟設定服務() async {
         // Given
         let openCount = LockIsolated(0)
         var initial = CampaignPresentationFeature.State()
-        initial.destination = Self.notice
+        initial.notice = CampaignFeatureTestSupport.accessDeniedAlert
         let store = TestStore(initialState: initial) {
             CampaignPresentationFeature()
         } withDependencies: {
@@ -210,8 +211,8 @@ struct CampaignPresentationFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.openSettings)))) {
-            $0.destination = nil
+        await store.send(.notice(.presented(.openSettings))) {
+            $0.notice = nil
         }
 
         // Then
@@ -240,10 +241,59 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing == false)
     }
 
-    /// 驗證表單關閉中收到通知時，通知先暫存，目的地維持空白
+    /// 驗證確認框開啟中收到通知時先暫存，確認框保留且通知尚未呈現
     @Test
     @MainActor
-    func noticeRequested_表單關閉中_暫存通知且目的地維持空白() async {
+    func noticeRequested_確認框開啟中_暫存通知且保留確認框() async {
+        // Given
+        let confirmation = CampaignFeatureTestSupport.deletionAlert(id: "C1", name: "開團")
+        var initial = CampaignPresentationFeature.State()
+        initial.destination = confirmation
+        let store = TestStore(initialState: initial) {
+            CampaignPresentationFeature()
+        }
+
+        // When
+        await store.send(.noticeRequested(Self.notice)) {
+            $0.queue.pendingNotice = Self.notice
+        }
+
+        // Then
+        #expect(store.state.destination == confirmation)
+        #expect(store.state.notice == nil)
+    }
+
+    /// 驗證確認框關閉後，暫存通知才移進通知狀態
+    @Test
+    @MainActor
+    func destination_確認框關閉_呈現暫存通知() async {
+        // Given
+        let confirmation = CampaignFeatureTestSupport.deletionAlert(id: "C1", name: "開團")
+        var initial = CampaignPresentationFeature.State()
+        initial.destination = confirmation
+        initial.queue.pendingNotice = Self.notice
+        let store = TestStore(initialState: initial) {
+            CampaignPresentationFeature()
+        }
+
+        // When
+        await store.send(.destination(.dismiss)) {
+            $0.destination = nil
+            $0.queue.pendingNotice = nil
+            $0.notice = Self.notice
+        }
+
+        // Then
+        #expect(store.state.destination == nil)
+        #expect(store.state.notice == Self.notice)
+        #expect(store.state.queue.pendingNotice == nil)
+        #expect(store.state.queue.isFormClosing == false)
+    }
+
+    /// 驗證表單關閉中收到通知時，通知先暫存，通知狀態維持空白
+    @Test
+    @MainActor
+    func noticeRequested_表單關閉中_暫存通知且通知狀態維持空白() async {
         // Given
         var initial = CampaignPresentationFeature.State()
         initial.queue.isFormClosing = true
@@ -258,13 +308,14 @@ struct CampaignPresentationFeatureTests {
 
         // Then
         #expect(store.state.destination == nil)
+        #expect(store.state.notice == nil)
         #expect(store.state.queue.isFormClosing)
     }
 
-    /// 驗證沒有表單且不在關閉中時，通知直接設進目的地
+    /// 驗證沒有表單且不在關閉中時，通知直接設進通知狀態
     @Test
     @MainActor
-    func noticeRequested_沒有表單_直接呈現通知() async {
+    func noticeRequested_沒有表單_直接呈現通知狀態() async {
         // Given
         let store = TestStore(initialState: CampaignPresentationFeature.State()) {
             CampaignPresentationFeature()
@@ -272,10 +323,12 @@ struct CampaignPresentationFeatureTests {
 
         // When
         await store.send(.noticeRequested(Self.notice)) {
-            $0.destination = Self.notice
+            $0.notice = Self.notice
         }
 
         // Then
+        #expect(store.state.destination == nil)
+        #expect(store.state.notice == Self.notice)
         #expect(store.state.queue.pendingNotice == nil)
         #expect(store.state.queue.isFormClosing == false)
     }
@@ -300,17 +353,15 @@ private extension CampaignPresentationFeatureTests {
     }
 
     /// 一般提示 alert，作為目前呈現中的 alert 與一次性通知使用
-    static var notice: CampaignPresentationFeature.Destination.State {
-        .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.campaignSavedTry")
+    static var notice: AlertState<CampaignPresentationFeature.Destination.Alert> {
+        AlertState {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState("campaigns.general.message.campaignSavedTry")
+        }
     }
 }

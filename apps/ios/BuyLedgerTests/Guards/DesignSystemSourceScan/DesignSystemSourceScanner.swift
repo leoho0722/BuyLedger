@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Testing
 
 /// 掃描設計系統規則、來源檔案與行級豁免
 enum DesignSystemSourceScanner {}
@@ -15,7 +14,7 @@ enum DesignSystemSourceScanner {}
 
 extension DesignSystemSourceScanner {
 
-    /// 一列來源掃描情境，預期行號由 fixture 獨立指定
+    /// 一列來源掃描情境，預期行號由測試資料獨立指定
     struct SourceScanCase: Sendable {
 
         /// 包含待辨識引用或應略過內容的原始碼片段
@@ -81,19 +80,6 @@ extension DesignSystemSourceScanner {
             under: productionRoot,
             matching: DesignSystemSourcePatterns.languageDerivationPattern,
             excludingRelativePaths: ["Shared/Localization/AppLanguage.swift"]
-        )
-    }
-
-    /// 掃描產品程式碼的尺寸分類引用，只允許版面判斷入口使用
-    ///
-    /// - Returns: 版面判斷入口以外的尺寸分類引用位置
-    /// - Throws: 原始檔讀取或目錄掃描失敗時丟出錯誤
-    static func sizeClassViolations() throws -> [Violation] {
-        try findViolations(
-            under: productionRoot,
-            matching: DesignSystemSourcePatterns.sizeClassReferencePattern,
-            excludingRelativePaths: ["Shared/DesignSystem/Foundations/BLLayoutClass.swift"],
-            shouldHonorExemptions: shouldHonorSizeClassExemptions
         )
     }
 

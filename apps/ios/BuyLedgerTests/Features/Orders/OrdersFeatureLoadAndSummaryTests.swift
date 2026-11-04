@@ -11,13 +11,13 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersFeature` 的單元測試，以 TestStore 逐步驗證訂單載入、開團投影與 AI 摘要的目的地
+/// `OrdersFeature` 的單元測試，以 `TestStore` 逐步驗證訂單載入、開團投影與 AI 摘要的目的地
 @MainActor
 struct OrdersFeatureLoadAndSummaryTests {
 
-    /// 驗證根功能要求載入時，先清除舊的錯誤訊息，讀回訂單後自動選取第一筆
+    /// 驗證根功能要求載入時清除舊錯誤訊息，讀回訂單後不自動開啟詳情
     @Test
-    func rootRequest_載入訂單清單_選取第一筆訂單() async {
+    func rootRequest_載入訂單清單_不自動開啟詳情() async {
         // Given
         let orders = LedgerOrder.sampleOrders
         var state = OrdersFeature.State()
@@ -60,13 +60,8 @@ struct OrdersFeatureLoadAndSummaryTests {
                 $0 = orders
             }
         }
-        await store.receive(\.load.loadResponse) {
-            $0.list.selectedOrderID = "BL-2604-018"
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-2604-018",
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.load.loadResponse)
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 
@@ -170,7 +165,8 @@ struct OrdersFeatureLoadAndSummaryTests {
         // Then
         #expect(store.state.presentation.destination?.aiSummary?.model == "gpt-oss:120b")
         #expect(
-            store.state.presentation.destination?.aiSummary?.prompt.contains("(涵蓋目前列表所有類別)") == true
+            store.state.presentation.destination?.aiSummary?.prompt
+                .contains("(涵蓋目前列表所有類別)") == true
         )
     }
 

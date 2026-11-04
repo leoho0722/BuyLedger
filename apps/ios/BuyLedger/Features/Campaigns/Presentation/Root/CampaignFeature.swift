@@ -76,6 +76,9 @@ struct CampaignFeature {
             guard campaigns.contains(where: { $0.id == campaignID }) else {
                 return
             }
+            if path.count == 1, path.last?.detail?.campaignID == campaignID {
+                return
+            }
             path.removeAll()
             path.append(
                 .detail(
@@ -88,6 +91,16 @@ struct CampaignFeature {
                     )
                 )
             )
+        }
+
+        /// 清空所有詳情路徑，回到開團根清單
+        mutating func clearDetail() {
+            path.removeAll()
+        }
+
+        /// 載入完成後只移除已不存在開團的詳情
+        mutating func applyLoadedCampaigns() {
+            path.popUnavailable(campaigns: campaigns)
         }
 
         /// 更新列表的日期脈絡，不重新載入或評估結單狀態
@@ -118,11 +131,6 @@ struct CampaignFeature {
         /// - Parameter action: 堆疊元素的操作與返回
         case path(StackActionOf<Path>)
 
-        /// 呈現子 Feature 的事件
-        ///
-        /// - Parameter action: 編輯表單與 alert 的事件、一次性通知與子層委派
-        case presentation(CampaignPresentationFeature.Action)
-
         /// 列表子 Feature 的事件
         ///
         /// - Parameter action: 列表操作與委派請求
@@ -135,6 +143,11 @@ struct CampaignFeature {
 
         /// 父層要求載入開團，由載入子層處理去重
         case loadRequested
+
+        /// 呈現子 Feature 的事件
+        ///
+        /// - Parameter action: 編輯表單與 alert 的事件、一次性通知與子層委派
+        case presentation(CampaignPresentationFeature.Action)
 
         /// 提醒子 Feature 的事件
         ///
@@ -155,6 +168,11 @@ struct CampaignFeature {
 
             /// 編輯表單的 sheet 關閉動畫結束，讓暫存的通知接著呈現
             case formSheetDismissed
+
+            /// 原生分欄選取改變或返回清單
+            ///
+            /// - Parameter campaignID: 選取的開團識別值，`nil` 表示已返回清單
+            case detailSelectionChanged(Campaign.ID?)
         }
 
         /// 開團功能可能發出的跨 feature 意圖
@@ -200,6 +218,13 @@ struct CampaignFeature {
         Scope(state: \.load, action: \.load) {
             CampaignLoadFeature()
         }
+        .onChange(of: \.load.hasLoaded) { _, state in
+            guard state.load.hasLoaded else {
+                return .none
+            }
+            state.applyLoadedCampaigns()
+            return .none
+        }
 
         Scope(state: \.list, action: \.list) {
             CampaignListFeature()
@@ -226,7 +251,7 @@ struct CampaignFeature {
 
 private extension CampaignFeature {
 
-    /// 處理列表與詳情的請求、子 Feature 的委派與寫入結果，呈現相關的事件交給呈現子 Feature
+    /// 處理列表與詳情的請求、子 Feature 的委派與寫入結果，呈現事件交給呈現子 Feature
     ///
     /// - Parameters:
     ///   - state: 開團容器狀態
@@ -241,6 +266,14 @@ private extension CampaignFeature {
             state.presentation.finishFormClosing()
             return .none
 
+        case .view(.detailSelectionChanged(let campaignID)):
+            if let campaignID {
+                state.showDetail(campaignID: campaignID)
+            } else {
+                state.clearDetail()
+            }
+            return .none
+
         case .delegate:
             return .none
 
@@ -248,21 +281,6 @@ private extension CampaignFeature {
             return fulfill(request, state: &state)
 
         case .path:
-            return .none
-
-        case .presentation(.delegate(.saveRequested(let request))):
-            return save(request, state: &state)
-
-        case .presentation(.delegate(.deleteConfirmed(let id))):
-            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
-                return .none
-            }
-            return .send(.writes(.deleteRequested(id: id, name: campaign.name)))
-
-        case .presentation(.delegate(.settleConfirmed(let id))):
-            return .send(.writes(.settleRequested(id)))
-
-        case .presentation:
             return .none
 
         case .list(.delegate(.requested(let request))):
@@ -282,6 +300,21 @@ private extension CampaignFeature {
 
         case .loadRequested:
             return .send(.load(.loadRequested))
+
+        case .presentation(.delegate(.saveRequested(let request))):
+            return save(request, state: &state)
+
+        case .presentation(.delegate(.deleteConfirmed(let id))):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                return .none
+            }
+            return .send(.writes(.deleteRequested(id: id, name: campaign.name)))
+
+        case .presentation(.delegate(.settleConfirmed(let id))):
+            return .send(.writes(.settleRequested(id)))
+
+        case .presentation:
+            return .none
 
         case .reminder(.delegate(.failed(let failure))):
             return .send(.presentation(.noticeRequested(.reminderFailure(failure))))
@@ -325,10 +358,6 @@ private extension CampaignFeature {
             reminderLinks: state.reminderLinks
         ) {
         case .none:
-            return .none
-
-        case .showDetail(let id):
-            state.showDetail(campaignID: id)
             return .none
 
         case .edit(let original, let link):

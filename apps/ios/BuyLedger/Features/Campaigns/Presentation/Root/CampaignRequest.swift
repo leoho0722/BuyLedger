@@ -8,11 +8,6 @@
 /// 列表與詳情交給開團容器處理的操作請求
 enum CampaignRequest: Equatable, Sendable {
 
-    /// 顯示指定開團的詳情
-    ///
-    /// - Parameter id: 開團識別值
-    case showDetail(Campaign.ID)
-
     /// 建立新開團
     case create
 

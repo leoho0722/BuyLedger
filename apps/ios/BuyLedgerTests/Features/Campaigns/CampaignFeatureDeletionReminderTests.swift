@@ -224,7 +224,7 @@ struct CampaignFeatureDeletionReminderTests {
             \.presentation.noticeRequested,
             CampaignFeatureTestSupport.failureAlert("campaigns.general.message.campaignDeletedBut")
         ) {
-            $0.presentation.destination = CampaignFeatureTestSupport.failureAlert(
+            $0.presentation.notice = CampaignFeatureTestSupport.failureAlert(
                 "campaigns.general.message.campaignDeletedBut"
             )
         }

@@ -70,15 +70,7 @@ struct OrdersFeatureMergeWritesTests {
         }
         await store.receive(\.presentation.delegate.saveRequested)
         await store.receive(\.writes.saveRequested)
-        await store.receive(\.writes.delegate, .merged(id: expected.id)) {
-            $0.list.selectedOrderID = expected.id
-        }
-        await store.receive(\.list.delegate.selectionChanged, expected.id) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: expected.id,
-                orders: SharedReader(initial.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate, .merged(id: expected.id))
         await store.receive(\.presentation.destination.dismiss) {
             $0.presentation.destination = nil
             $0.presentation.queue.isFormClosing = true
@@ -99,6 +91,7 @@ struct OrdersFeatureMergeWritesTests {
             )
         }
         #expect(store.state.orders == [original, other])
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 

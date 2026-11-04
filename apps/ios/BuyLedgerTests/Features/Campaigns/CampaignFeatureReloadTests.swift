@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import Foundation
+import SwiftUI
 import Testing
 
 @testable import BuyLedger
@@ -41,6 +41,9 @@ struct CampaignFeatureReloadTests {
             $0 = [existing]
         }
         initial.presentation.destination = .edit(editState)
+        let expectedNotice = CampaignFeatureTestSupport.failureAlert(
+            "campaigns.general.message.campaignSavedTry"
+        )
         let fixture = try await CampaignFeatureTestSupport.makeReloadConsistencyDatabase(seeding: [
             existing,
         ])
@@ -63,17 +66,7 @@ struct CampaignFeatureReloadTests {
         await store.receive(\.writes.saveResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.save)) {
-            $0.presentation.queue.pendingNotice = .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("orders.list.label.operationFailed")
-                } actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.campaignSavedTry")
-                }
-            )
+            $0.presentation.queue.pendingNotice = expectedNotice
         }
 
         // When
@@ -143,17 +136,15 @@ struct CampaignFeatureReloadTests {
         await store.receive(\.writes.statusResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.status)) {
-            $0.presentation.destination = .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("orders.list.label.operationFailed")
-                } actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.campaignStatusUpdated")
+            $0.presentation.notice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+                TextState("orders.list.label.operationFailed")
+            } actions: {
+                ButtonState(role: .cancel) {
+                    TextState("orders.merge.label.ok")
                 }
-            )
+            } message: {
+                TextState("campaigns.general.message.campaignStatusUpdated")
+            }
         }
 
         // When
@@ -228,17 +219,15 @@ struct CampaignFeatureReloadTests {
         await store.receive(\.writes.settleResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.settle)) {
-            $0.presentation.destination = .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("orders.list.label.operationFailed")
-                } actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.campaignSettledTry")
+            $0.presentation.notice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+                TextState("orders.list.label.operationFailed")
+            } actions: {
+                ButtonState(role: .cancel) {
+                    TextState("orders.merge.label.ok")
                 }
-            )
+            } message: {
+                TextState("campaigns.general.message.campaignSettledTry")
+            }
         }
 
         // When

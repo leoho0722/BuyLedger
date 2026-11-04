@@ -39,6 +39,7 @@ struct FxView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .blReadableScrollContent(.form)
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Fx.root)
         .scrollDismissesKeyboard(.interactively)
@@ -154,30 +155,10 @@ private extension FxView {
             .padding(.horizontal, BLSpacing.medium)
             .background(.blFillTertiary)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-            .contentShape(Rectangle())
+            .contentShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.Fx.currencyPickerButton)
-    }
-
-    /// 幣別選擇 sheet 內容
-    var currencyPickerSheet: some View {
-        OptionPickerSheet(
-            title: "fx.rates.label.selectSourceCurrency",
-            options: store.availableCurrencyCodes,
-            selection: .single(
-                selected: store.fromCurrency.rawValue,
-                onSelect: {
-                    store.send(.view(.currencySelected($0)))
-                }
-            ),
-            emptyState: .init(
-                title: "orders.edit.label.currenciesAvailable",
-                description: "orders.edit.message.internetConnectionRequired"
-            ),
-            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
-            isSearchEnabled: true
-        )
     }
 
     /// 金額輸入欄
@@ -272,6 +253,26 @@ private extension FxView {
             .accessibilityLabel(Text("common.action.button.done"))
             .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
         }
+    }
+
+    /// 幣別選擇 sheet 內容
+    var currencyPickerSheet: some View {
+        OptionPickerSheet(
+            title: "fx.rates.label.selectSourceCurrency",
+            options: store.availableCurrencyCodes,
+            selection: .single(
+                selected: store.fromCurrency.rawValue,
+                onSelect: {
+                    store.send(.view(.currencySelected($0)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.edit.label.currenciesAvailable",
+                description: "orders.edit.message.internetConnectionRequired"
+            ),
+            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+            isSearchEnabled: true
+        )
     }
 }
 

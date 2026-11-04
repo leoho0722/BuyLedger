@@ -53,7 +53,7 @@ apps/ios/
 │   │   │   └── Data/             # AISummaryService 與 Ollama 請求／回應型別
 │   │   ├── App/                  # App 殼層
 │   │   │   ├── Presentation/
-│   │   │   │   ├── Root/         # RootFeature + RootView、RootSidebarLayout／RootTabLayout 與跨頁導覽
+│   │   │   │   ├── Root/         # RootFeature、RootView、RootNavigationLayout (原生根導覽)、RootNavigationOperations、SidebarBadgeCounts
 │   │   │   │   ├── RootLaunch/   # 無畫面：啟動幣別載入與系統重大時間變更
 │   │   │   │   ├── AppLock/      # AppLockFeature + AppLockView
 │   │   │   │   └── PersistenceFailure/ # 資料庫無法開啟時的復原畫面
@@ -109,7 +109,7 @@ apps/ios/
 │   │   ├── Orders/               # 訂單
 │   │   │   ├── Presentation/
 │   │   │   │   ├── Root/         # OrdersFeature (容器，持有共用訂單與 Root 投影)
-│   │   │   │   │   ├── Views/    # OrdersView 與 compact／regular 版面
+│   │   │   │   │   ├── Views/    # OrdersView (清單與詳情分欄宿主)
 │   │   │   │   │   ├── Requests/ # Root 與清單／詳情送進容器的請求
 │   │   │   │   │   └── Plans/    # 容器的請求、寫入與呈現計畫
 │   │   │   │   ├── OrderList/    # OrderListFeature (搜尋、多選、日期分組與 iPad 選取)
@@ -151,7 +151,7 @@ apps/ios/
 │   │   ├── Localization/         # AppLanguage、CurrencyDisplayName
 │   │   ├── Media/                # PhotoDataProcessor (照片降採樣與重編碼)
 │   │   └── DesignSystem/
-│   │       ├── Foundations/      # 色彩、字級、間距等 token，BLLayoutClass、BLFormatters 與 ViewModifiers/
+│   │       ├── Foundations/      # 色彩、字級、間距等 token，BLFormatters 與 ViewModifiers/
 │   │       └── Components/       # 可重用元件，依類型分 Avatar、Badges、Buttons、Cards、Charts、Chips、Forms、Images、Pickers、Progress、States、Status、Tags
 │   └── Resources/                # Info.plist、PrivacyInfo.xcprivacy、字串目錄、assets 與設定範本 (見「開發環境設定」)
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (BLAccessibilityID+<區域>.swift，同時編入 App 與 UITests)
@@ -164,9 +164,9 @@ apps/ios/
 │   ├── Fixtures/                 # 測試用固定資料
 │   └── Support/                  # TestDependencies、TestPaths 與共用的 <Base>TestSupport
 ├── BuyLedgerUITests/             # XCUITest
-│   ├── Support/                  # 共用 helper：Launch、Interactions、Assertions、Layout
+│   ├── Support/                  # 共用 helper 平放：自有型別一型一檔，系統型別擴充為 <Type>+<Feature>.swift (操作、等待、斷言、版面、開團流程與種子固定值)
 │   ├── Screens/                  # Page Object，依區域分 App、Orders、Campaigns、Dashboard、Insights、Customers、More、Tools，跨區共用的放 Shared
-│   └── Tests/                    # 流程、冒煙 (Smoke) 與效能 (Performance) 測試，依功能分組 (Orders 再分 Filters、Regular、Edit、Detail)
+│   └── Tests/                    # 流程、冒煙 (Smoke) 與效能 (Performance) 測試，依功能分組 (Orders 再分 Filters、Regular、Edit、Detail；跨功能的導覽連續性與版面檢查放 Navigation)
 ├── scripts/                      # upload-testflight.sh (Release 打包並上傳 TestFlight)
 ├── BuyLedger.xctestplan          # 單元測試計畫
 ├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫
@@ -245,16 +245,29 @@ mobilebuildmcp simulator build-and-run \
 
 三份測試計畫的語言／地區都鎖 zh-Hant／TW (不隨模擬器系統設定變動)，覆蓋率只統計 App target。
 
-單元測試與 snapshot 測試 (`BuyLedger` scheme，`BuyLedger.xctestplan`)：
+單元測試 (`BuyLedger` scheme，`BuyLedger.xctestplan`) 本機在實機執行 (iPhone 12 或 iPad Air 5)：
+
+```bash
+# 查詢已連接的實機 (以識別碼指定)
+mobilebuildmcp device list
+
+mobilebuildmcp device test \
+  --project-path apps/ios/BuyLedger.xcodeproj \
+  --scheme BuyLedger \
+  --device-id <裝置識別碼>
+```
+
+實機執行時，讀 repo 原始碼的守門測試 (`*ScanTests`、`*GuardsTests`、`LayerBoundaryTests` 等) 與 snapshot 測試以 `--extra-args -skip-testing:BuyLedgerTests/<類別>` 排除，改跑 iPhone 17 iOS 26.5 模擬器，以 `-only-testing` 指定類別，snapshot 範例如下：
 
 ```bash
 mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
-  --simulator-id <模擬器識別碼>
+  --simulator-id <iPhone 17 iOS 26.5 模擬器識別碼> \
+  --extra-args -only-testing:BuyLedgerTests/SnapshotDashboardTests
 ```
 
-Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。跑之前先把模擬器外觀鎖淺色 (`mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`)，否則自動外觀入夜切深色會讓整批 baseline 失敗。固定時間注入的規則見 [`.claude/rules/ios-unit-tests.md`](../../.claude/rules/ios-unit-tests.md) 的「Snapshot 測試」。
+Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。snapshot 跑在模擬器時先把外觀鎖淺色 (`mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`)，否則自動外觀入夜切深色會讓整批 baseline 失敗。守門測試會讀原始碼，執行期間不可改檔。固定時間注入的規則見 [`.claude/rules/ios-unit-tests.md`](../../.claude/rules/ios-unit-tests.md) 的「Snapshot 測試」。
 
 查 App target 覆蓋率 (不設門檻，僅供盤點盲區)：
 
@@ -262,16 +275,16 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 mobilebuildmcp simulator get-coverage-report --xcresult-path <測試輸出的 .xcresult 路徑> --target BuyLedger
 ```
 
-UI 自動化測試 (XCUITest，`BuyLedgerUITests` scheme，預設跑 `BuyLedgerUITests.xctestplan` 主回歸；啟動效能量測在 `BuyLedgerUITests-Performance.xctestplan`)：
+UI 自動化測試 (XCUITest，`BuyLedgerUITests` scheme，本機在實機執行，預設跑 `BuyLedgerUITests.xctestplan` 主回歸；啟動效能量測在 `BuyLedgerUITests-Performance.xctestplan`；實機前置見 `apps/ios/CLAUDE.md` 的「UI 測試」)：
 
 ```bash
-mobilebuildmcp simulator test \
+mobilebuildmcp device test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedgerUITests \
-  --simulator-id <模擬器識別碼>
+  --device-id <裝置識別碼>
 ```
 
-UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析，常用旗標為 `-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
+UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析，常用旗標為 `-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。硬規則 (一律用 identifier 定位、測試前必 seed、找不到元素不得 skip 掩蓋) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
 
 > 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`mobilebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`。
 
@@ -327,18 +340,18 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp` 以單一 `RootFeature` store 驅動 `RootView`：啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有；單元測試 host 不建立根畫面。`RootView` 依版面分類選擇 layout，`RootFeature.State.selectedTab` 驅動分頁：
+`BuyLedgerApp` 以單一 `RootFeature` store 驅動 `RootView`：啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有；單元測試 host 不建立根畫面。`RootView` 阻斷持久層失敗並鎖定畫面，`RootFeature.State.selectedTab` 驅動原生分頁：
 
-| 版面分類 | Layout | 說明 |
+| 呈現 | 元件 | 說明 |
 | --- | --- | --- |
-| regular 版面 (水平與垂直尺寸分類都是 regular，例如 iPad 全螢幕) | `RootSidebarLayout` | `NavigationSplitView`；訂單分頁為側邊欄、清單、詳情三欄，其他分頁為側邊欄與內容兩欄 |
-| compact 版面 (其餘組合，含 iPhone 任何機型橫向與 iPad 窄視窗) | `RootTabLayout` | `TabView` |
+| 原生自適應分頁 | `RootNavigationLayout` | `TabView` + `.sidebarAdaptable`，五個同層目的地；iPad 初始為頂部分頁列、叫出後為側邊欄，iPhone 與 iPad 窄視窗為底部分頁列 |
 
-版面分類由 `BLLayoutClass` 判斷：`RootView` 依視窗決定一次，以 `.environment(\.blLayoutClass, …)` 交給子樹，畫面不直接讀 `horizontalSizeClass`／`verticalSizeClass`；沒有經過 `RootView` 的 Preview 與截圖測試才由尺寸分類推導。大尺寸 iPhone 橫向的水平尺寸分類是 regular、垂直是 compact，所以仍走 compact 版面。
+版面不以全 App 的尺寸分類政策判定，各功能依自身可用區域與環境調整，捲動內容以 `blReadableScrollContent`、一般內容以 `blReadableContent` 限制閱讀寬度。
 
-- **訂單**：`OrdersView` 在 compact 版面走 `OrdersCompactView` (`NavigationStack`，以 `OrdersDetailNavigationFeature` 的 `StackState` 推入 `OrderDetailFeature`)；regular 版面提供三欄的清單欄與詳情欄 (`OrdersRegularDetailColumn`，沿用同一個 `OrderDetailFeature`，無選取時顯示空狀態)。編輯、合併與 AI 摘要 sheet 綁定 `OrdersPresentationFeature` 的單一 `destination`，掛在 `OrdersView` 外層、兩種版面共用。
-- **總覽與分析**：regular 版面並排卡片，compact 版面上下堆疊。
-- **更多**：`MoreFeature` 以 `StackState` 推入匯率工具、客戶名單、報價試算、四種主檔管理與設定，返回即釋放子畫面狀態；iPhone 切換分頁時保留堆疊，iPad 側邊欄切換前先清空 (`NavigationSplitView` 在路徑非空時切分頁會崩潰)。
+- **訂單**：`OrdersView` 以 `NavigationSplitView` 呈現清單欄與詳情欄，目前詳情只存在 `OrdersDetailNavigationFeature` 的 `StackState`；寬度不足時由系統收合為堆疊並提供原生返回。清單欄依自身環境選呈現：水平 compact 用窄版清單，水平 regular 用寬版清單欄，垂直 compact 時寬版清單欄改用精簡篩選。編輯、合併與 AI 摘要 sheet 綁定 `OrdersPresentationFeature` 的單一 `destination`，掛在 `OrdersView` 外層。
+- **開團**：`CampaignView` 以 `NavigationSplitView` 呈現開團清單與目前詳情，詳情只存在 `CampaignFeature` 的 `StackState`；清單選取由該路徑投影，未選取時詳情欄顯示提示。
+- **總覽與分析**：所有寬度都依同一順序垂直排列 (總覽為日期、本月摘要、含成本的四項 KPI、進行中開團、近期訂單；分析為期間、走勢、類別、成本、有資料才出現的開團毛利、熱力圖)，KPI 標準字級兩欄、輔助字級單欄；捲動內容以閱讀寬度限寬置中。
+- **更多**：`MoreView` 以 `NavigationSplitView` 呈現入口清單與目前工具 (匯率工具、客戶名單、報價試算、四種主檔管理與設定)，目前工具是 `MoreFeature` 的 `StackState` 根元素；重選同一工具保留狀態，改選其他工具才替換。工具的子畫面由詳情欄的 `NavigationStack` 承載；切分頁時保留，回到「更多」時仍在原目的地。
 
 ### 資料層
 
@@ -373,4 +386,4 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### Snapshot baseline 漂移
 
-設計大改時請刪掉對應 baseline (`BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/*.png`) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認模擬器外觀是淺色，以及測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
+設計大改時請刪掉對應 baseline (`BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/*.png`) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認 snapshot 跑在 iPhone 17 iOS 26.5 模擬器且外觀是淺色，以及測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。

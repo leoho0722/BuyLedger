@@ -264,7 +264,7 @@ struct RootFeaturePaymentMethodCorrectionTests {
         }
         await store.receive(\.more.path[id: 0].lookupManagement.correction.editResponse.failure)
         await store.receive(\.more.path[id: 0].lookupManagement.correction.delegate.failed) {
-            $0.more.path[id: 0, case: \.lookupManagement]?.destination = .writeFailure(
+            $0.more.path[id: 0, case: \.lookupManagement]?.notice = .lookupWriteFailure(
                 .paymentMethodEdit
             )
         }

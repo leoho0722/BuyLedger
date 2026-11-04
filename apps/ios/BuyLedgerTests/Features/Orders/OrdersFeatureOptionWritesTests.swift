@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersFeature` 的單元測試，以 TestStore 逐步驗證主檔選項的新增請求、寫入結果與來源表單更新
+/// `OrdersFeature` 的單元測試，以 `TestStore` 逐步驗證主檔選項的新增請求、寫入結果與來源表單更新
 @MainActor
 struct OrdersFeatureOptionWritesTests {
 
@@ -179,9 +179,9 @@ struct OrdersFeatureOptionWritesTests {
         await store.finish()
     }
 
-    /// 驗證編輯表單送出新增選項請求時，表單識別值、種類、名稱與旗標原樣交給根功能，清單的選取仍為 `nil`
+    /// 驗證編輯表單送出的新增選項請求保留識別值、種類、名稱與旗標
     @Test
-    func presentation_新增主檔選項_轉送來源表單與旗標且不改選取() async {
+    func presentation_新增主檔選項_轉送來源表單與旗標且不開啟詳情() async {
         // Given
         var state = OrdersFeatureTestSupport.makeOptionState()
         state.presentation.destination = .edit(
@@ -223,11 +223,11 @@ struct OrdersFeatureOptionWritesTests {
         // Then
         await store.receive(\.presentation.delegate, .optionAddRequested(request))
         await store.receive(\.delegate, .optionAddRequested(request))
-        #expect(store.state.list.selectedOrderID == nil)
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 
-    /// 驗證表單送出的名稱含頭尾空白時，交給根功能的請求會去除空白，只帶整理後的名稱，清單的選取仍為 `nil`
+    /// 驗證表單送出的選項名稱含頭尾空白時，交給根功能前會先去除空白
     @Test
     func presentation_新增主檔選項名稱含空白_轉送去除空白的請求() async {
         // Given
@@ -266,7 +266,7 @@ struct OrdersFeatureOptionWritesTests {
         // Then
         await store.receive(\.presentation.delegate, .optionAddRequested(request))
         await store.receive(\.delegate, .optionAddRequested(request))
-        #expect(store.state.list.selectedOrderID == nil)
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 }

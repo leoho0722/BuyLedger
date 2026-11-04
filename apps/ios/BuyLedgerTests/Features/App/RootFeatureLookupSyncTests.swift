@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試，以 TestStore 驗證商品類別改名、新增、刪除與寫入失敗時，訂單與主檔如何同步
+/// `RootFeature` 的單元測試，以 `TestStore` 驗證商品類別改名、新增、刪除與寫入失敗時，訂單與主檔如何同步
 @MainActor
 struct RootFeatureLookupSyncTests {
 
@@ -119,7 +119,7 @@ struct RootFeatureLookupSyncTests {
 
     /// 驗證訂單編輯中新增類別時，寫入執行前目錄尚無該項目，寫入成功後才同步到表單與主檔管理頁
     @Test
-    func orders_訂單編輯中新增分類_成功落盤後同步至查詢管理() async {
+    func orders_訂單編輯中新增分類_成功寫入儲存後同步至查詢管理() async {
         // Given
         let state = RootFeatureTestSupport.makeIsolatedRootState(lookupKind: .category) {
             var rootState = RootFeature.State()
@@ -177,7 +177,10 @@ struct RootFeatureLookupSyncTests {
         await store.receive(\.more.catalog.additionRequested, request)
         await store.receive(\.more.catalog.additionResponse)
         await store.receive(\.more.catalog.delegate, .additionCompleted(request, isStored: true))
-        await store.receive(\.more.delegate, .optionAdditionCompleted(request, isStored: true))
+        await store.receive(
+            \.more.delegate,
+            .optionAdditionCompleted(request: request, isStored: true)
+        )
         await store.receive(
             \.orders.rootRequest,
             .optionAdditionCompleted(request, isStored: true)
@@ -189,7 +192,7 @@ struct RootFeatureLookupSyncTests {
                 $0.draft.categories = ["手工藝品"]
             }
         }
-        // 管理頁尚未載入時也能讀到已落盤的新項目
+        // 管理頁尚未載入時也能讀到已寫入儲存的新項目
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["手工藝品"])
         #expect(observedCategories.value == [[]])
         await store.finish()
@@ -248,7 +251,7 @@ struct RootFeatureLookupSyncTests {
         await store.finish()
     }
 
-    /// 驗證商品類別改名寫入失敗時，類別清單與訂單維持原樣，不送出改名的調整請求，並顯示寫入失敗的提示
+    /// 驗證商品類別改名寫入失敗時，類別清單與訂單維持原樣，不送出改名的調整請求，並暫存寫入失敗的提示
     @Test
     func more_分類改名寫入失敗_保留訂單() async {
         // Given
@@ -302,7 +305,7 @@ struct RootFeatureLookupSyncTests {
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
         }
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.failure) {
-            $0.more.path[id: 0, case: \.lookupManagement]?.pendingAlert = .writeFailure(.rename)
+            $0.more.path[id: 0, case: \.lookupManagement]?.pendingNotice = .rename
         }
         #expect(renameKinds.value == [.category])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["服飾"])

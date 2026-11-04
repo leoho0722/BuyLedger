@@ -11,8 +11,13 @@ paths:
 
 `BuyLedgerUITests` 共用 `Support/`、Page Object (`Screens/`) 與 `App/Testing/` 的啟動掛鉤；執行方式、測試計畫與雜訊判讀見 `apps/ios/CLAUDE.md` 的「建置與開發指令」。App 端加 identifier 時同樣適用下方「定位與 identifier」。
 
+- **`BuyLedgerUITests` target 不能 `import Testing` (建置錯誤 `_Testing_Unavailable`)**：UI target 內不啟動 App 的純值自檢 (如 `AdaptiveLayoutCheckCounterexampleTests`) 也用 XCTest。
 - **選擇性執行與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
-- **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，在 Given 內 `launch(...)` 之後立刻 `XCTSkipUnless(isCompactLayout(app)／isRegularLayout(app), "<原因與另一版面覆蓋的測試>")`，再接其他 Given 步驟。版面依 App 實際畫面判斷 (`AppNavigator.isSidebarLayout`：側邊欄或訂單清單與詳情並排＝regular、底部分頁列＝compact)；skip 條件只能是版面，不得因元素找不到或其他狀態而 skip。
+- **實機前置 (開啟 UI 自動化、未接硬體鍵盤、解鎖) 見 `apps/ios/CLAUDE.md` 的「UI 測試」**：本機 UI 測試在實機執行，裝置為 iPhone 12 與 iPad Air 5。
+- **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，到達判斷版面所需的畫面後立刻宣告 `XCTSkipUnless`，再接其他 Given 步驟。skip 條件只能是版面，不得因元素找不到或其他狀態而 skip；skip 訊息寫明版面限制。
+    - 根導覽專屬案例：`launch` 後即可用 `AppNavigator(app:).rootLayout` 以 `requireValue` 取值後比對 `.regular`／`.compact` (側邊欄或頂部分頁列為 `.regular`，底部分頁列為 `.compact`，判不出來為 `nil`)。
+    - 訂單功能專屬案例：先 `RootNavigationScreen(app:).goToOrders()` 切到訂單分頁並等清單就緒，再以 `XCTestCase+PlatformScope.swift` 的 `isRegularLayout(app)`／`isCompactLayout(app)` 判斷 (依訂單前景並排或收合)；在訂單前景之前判斷會因無法辨識 Orders 前景欄位而失敗。
+    - 更多功能專屬案例：先切到更多分頁並等入口清單就緒，再以 `XCTestCase+PlatformScope.swift` 的 `isMoreRegularLayout(app)`／`isMoreCompactLayout(app)` 判斷 (依入口清單與目前工具是否並排)，不以 `rootLayout` 代替：根導覽與功能內的分欄各自決定。
 
 ## 定位與 identifier
 
@@ -24,13 +29,17 @@ paths:
     - 這類元素在 XCUITest 歸為 `staticText`，查詢用 `app.descendants(matching: .any)[id]`，不用 `otherElements`。
     - `LabeledContent` 的內建 value 讀不到，要顯式加 `.accessibilityElement(children: .combine)` + `.accessibilityValue(...)`。
 - **掛不上 identifier 的系統元件 (受控例外)**：
-    - 導覽列：以畫面根容器 identifier 判定就緒，導覽列用 `app.navigationBars` 定位。
-    - 系統 tab bar：`AppNavigator` 依 `RootTab` 宣告順序取按鈕，再等目的地根 identifier。
+    - 導覽列：以畫面根容器 identifier 判定就緒，導覽列用 `app.navigationBars` 定位；動態標題 (如多選筆數) 帶不出 identifier，以 label 字面值比對 (計畫已鎖語言)。
+    - 原生根分頁：`RootNavigationLayout` 在每個 `Tab` 上掛 `BLAccessibilityID.Root.tab(_:)`，`AppNavigator` 以此查找，分頁列與側邊欄共用同一組 identifier，不依按鈕順序取值。
+    - sheet 層數：以 `app.sheets.count` 驗「只有一層 sheet」(系統呈現容器沒有 identifier)；sheet 內的元素仍以 identifier 定位。
+    - 視窗與系統列框線：量測容器與保留區時以 `app.windows.firstMatch`、`app.tabBars.firstMatch`、`app.statusBars.firstMatch` 取框線，不用它們切換分頁；狀態列可能被系統隱藏 (如 iPhone 橫向)，不存在時不納入保留區，存在卻取不到框線就失敗。
     - TCA `AlertState`：以 `app.alerts.firstMatch` 判定呈現、`tapAlertButton(label:)` 依按鈕文字點擊 (計畫已鎖語言)；能自掛 identifier 的自訂 `.alert` 才用 `tapAlertButton(identifier:)`。
     - 自訂 `.alert` 內的 `TextField` 帶不出 identifier，以 `app.alerts.firstMatch.textFields.firstMatch` 定位 (參考 `OptionPickerScreen.typeNewOptionName`)；按鈕帶得出 identifier，但會以兩層同 identifier 的 Button 出現，直接查詢要加 `.firstMatch` (`tapAlertButton(identifier:)` 已處理)。
     - `Picker(.segmented)` 的選項：identifier 掛在 `Picker`，以 `segmentedControls.buttons` 依宣告順序 `boundBy` 取。
     - `.searchable` 的搜尋欄與其內建清除鈕：搜尋欄用 `OrdersScreen.hittableSearchField()` (見下方 sheet 疊搜尋欄一條)，清除鈕取該搜尋欄的 `buttons.firstMatch` (標籤隨系統語言變動)。
+    - `.searchable` 的系統結束鈕：窄版出現在導覽列，帶不出 identifier，以 label 字面值 `關閉` 比對 (計畫已鎖語言)。
 - **`Menu` 的 identifier 掛在 `Menu` 本身，不是 label 內的 `Label`**：選單項目掛在各 `Button`，測試以 `tapMenuItem` 先展開再點。
+    - iPadOS 27 的 `Menu` 內 `Picker(.inline)` 選項帶不出 identifier，呼叫 `tapMenuItem` 一律傳可見標籤作回退 (計畫已鎖語言)。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。
 - **sheet 疊在有搜尋欄的畫面上時，`app.searchFields.firstMatch` 會取到底層那一個**：iPad 的側邊欄版面讓底層 Orders 搜尋欄排在前面，iPhone 恰好順序相反所以不會中；改用 `app.searchFields.allElementsBoundByIndex.first(where: \.isHittableOnScreen)` 取第一個可互動的，取不到就 `failWithDiagnostics`。同型陷阱也適用於其他在 sheet 內重複出現的系統元件。
     - 系統返回鍵帶語言無關的 identifier `BackButton` (`Common.backButton`)。
@@ -45,44 +54,64 @@ paths:
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。
-- **compact 與 regular 版面差異由 `AppNavigator` 吸收** (compact 版面是底部分頁列，含 iPhone 任何方向與 iPad 窄視窗；regular 版面是 iPad 全螢幕的側邊欄，側邊欄收起時仍是 regular)。
-    - 側邊欄未出現而訂單清單與詳情並排時，`isSidebarLayout` 仍判為 regular；`selectTab` 在 regular 版面先從左緣拖曳叫出側邊欄 (`revealSidebarIfCollapsed`)。有目的地根容器的分頁一律等待根容器 (`destinationRootIdentifier(for:)`)，沒有根容器的分頁才依版面等待側邊欄列或底部分頁按鈕的選取態。
-- **欄位歸屬以 `Support/Layout/HorizontalBounds.swift` 取得的 frame 比對**：iPadOS 26 的內容會延伸到浮動側邊欄底下，捲動容器 (如 `Orders.listRoot`) 的左緣是 0，不能當欄位的左界；改用側邊欄右緣或畫面內可見的列當左界。
+- **版面差異由 `AppNavigator` 吸收**：`rootLayout` 只依側邊欄標記與五個根分頁的位置判定 (側邊欄或頂部分頁列為 `.regular`，底部分頁列為 `.compact`)，不以裝置類型或系統版本推測；compact 含 iPhone 任何方向與 iPad 窄視窗。
+    - `selectTab` 只做點擊：已選取即返回，否則經 `tapRootTab` 點擊。目標不在頂部分頁列上時由側邊欄點選，點選後側邊欄仍開著就收回。需要單獨叫出側邊欄時用 `revealSidebarIfCollapsed()` 點系統切換鈕；分頁列溢出時它不可用，因為它要求五個根分頁同時可見。
+    - 根分頁列在直向且英文語系可能溢出，More 被收進系統「下一頁」箭頭 (該按鈕無 identifier、標籤隨語言變)。切根分頁只走 `AppNavigator` 或 `RootNavigationScreen`，不直接點分頁列或「下一頁」。
+- **欄位歸屬以 `Support/XCTestCase+HorizontalBounds.swift` 取得的 frame 比對**：iPadOS 26 的內容會延伸到浮動側邊欄底下，捲動容器 (如 `Orders.listRoot`) 的左緣是 0，不能當欄位的左界；改用側邊欄右緣或畫面內可見的列當左界。
+    - iPadOS 27 的詳情欄 (根容器、空狀態容器與導覽列) 會延伸到清單欄底下，框線從清單欄左緣起：詳情欄位置改用內容錨點 (`XCTestCase+PlatformScope.swift` 的 `foregroundOrdersDetailFrame(in:)`)，導覽列以右緣超出清單欄判定為詳情欄。
     - 量欄寬時以左右內距相同的列推算 (`2 × (捲動容器右緣 − 列中心)`，參考 `OrderRegularColumnWidthTests`)；欄寬隨量到的視窗座標更新，斷言前在逾時內重量。
 
 ## 輸入、捲動與鍵盤
 
 - **表單下半的數字欄在其他文字欄輸入前先填**：別欄鍵盤升起後會蓋住它而聚焦失敗；被捲走時 `swipeDown` 回頂端再輸入。
-    - 數字鍵盤完成鍵一律掛 `Common.keyboardDoneButton`；共用收鍵盤 helper 與 `OrderEditScreen.tapNumericKeyboardDone` 只點擊這個 App 元素。
-    - 若 XCUITest 回報完成鍵不可互動，改點擊該元素 frame 的中心並等待鍵盤消失；仍未消失就附診斷失敗。共用 helper 不得改按系統收鍵盤鍵、送 return、依平台分支或以 `XCTSkip` 掩蓋；只有專門測試外部限制時才可明確 skip。
-- **只差幾點露出底緣的欄位用 `Scrolling.scrollToHittableGently`，不用整頁 `swipeUp`**：整頁 swipe 帶慣性，會把目標衝出螢幕。
+    - 數字鍵盤完成鍵一律掛 `Common.keyboardDoneButton`；收數字鍵盤一律走共用 helper `XCUIElement.dismissNumericKeyboard`，`OrderEditScreen.tapNumericKeyboardDone` 亦經它，測試碼不自行點完成鍵。
+    - 共用 helper 不得改按系統收鍵盤鍵、送 return、依裝置或系統版本分支，或以 `XCTSkip` 掩蓋；只有專門測試外部限制時才可明確 skip。
+- **只差幾點露出底緣的欄位用 `XCUIApplication.scrollToHittableGently`，不用整頁 `swipeUp`**：整頁 swipe 帶慣性，會把目標衝出螢幕。
     - 此 helper 要求目標已在可及性樹上；離屏未渲染的惰性列走下一條。
-- **惰性容器與 Form 的離屏 cell 可能存在但 frame 無效，直接查 `isHittable` 會讓 XCTest 記錄失敗**：透過 `Support/Assertions/Waiting.swift` 的 `isHittableOnScreen` 先排除不存在、座標非有限值或空 frame 的元素，再查可點性；等待用 `waitUntilHittable`，不能只以 `exists` 判斷已完成排版。
+- **惰性容器與 Form 的離屏 cell 可能存在但 frame 無效，直接查 `isHittable` 會讓 XCTest 記錄失敗**：透過 `Support/XCUIElement+Waiting.swift` 的 `isHittableOnScreen` 先排除不存在、座標非有限值或空 frame 的元素，再查可點性；等待用 `waitUntilHittable`，不能只以 `exists` 判斷已完成排版。
     - 查詢對到多個元素時 (如 identifier 擴散到圖表內的文字) 讀 `frame` 也會記錄失敗，`isHittableOnScreen` 以 `firstMatch` 判斷；新增讀 `frame` 的 helper 比照處理。
-    - 目標不可點時由 `Scrolling` helper 捲動後再等，不用 `isHittable` 述詞輪詢，避免 XCTest 先記錄失敗而走不到捲動備援。
+    - 目標不可點時由 `XCUIApplication+Scrolling.swift` 的 helper 捲動後再等，不用 `isHittable` 述詞輪詢，避免 XCTest 先記錄失敗而走不到捲動備援。
     - 水平 `ScrollView` 內的照片縮圖列相同。
 - **`Form` 內的 `Toggle` 要點內層 `switches.firstMatch`，不點外層開關元素**：外層元素涵蓋整列，點它的中心會落在標題文字上而不切換 (參考 `CampaignEditScreen.toggleReminder`、`CampaignDetailScreen.toggleUnpaidOnly`)。
     - 切換後以開關的 `value` 或切換造成的畫面變化斷言，否則沒切到也會假通過。
 - **List 惰性建立：sheet 停在 medium 高度或清單較長時，可視區外的列與組標題不在可及性樹上**：讀值或點擊前先捲動露出，以格子位置簽章不再變化判斷到底再換方向，不用固定次數盲滑 (參考 `OrdersScreen.revealElement`)。
+    - 位置簽章用格子相對於 sheet 的位置，每次手勢後等簽章連續兩次相同才判斷：拖動 sheet 本身會改變格子的螢幕座標，減速中讀值也會誤判到底。
+    - sheet 內往上找不用 `swipeDown()`：清單到頂端時帶慣性的下滑會把沒有未套用變更的 sheet 拉掉，改用 `press(forDuration:thenDragTo:withVelocity:thenHoldForDuration:)` 慢速輕拖並停住再放開。
 - **`swipeUp`／`swipeDown` 帶慣性，捲動後要點擊的元素先等 `frame` 連續兩次相同**：清單減速中點下去只會停住捲動、不會觸發按鈕 (參考 `OrdersScreen.waitUntilFrameStable`)。
 - **iPhone 模擬器第一鍵盤是注音，整段 `typeText` 含連續數字時第二個數字起會打成注音符號**：打完一個數字鍵盤就切回注音面板；含數字的文字逐字呼叫 `typeText` (參考 `OrdersScreen.typeSearchText`)。iPad 注音鍵盤有數字列，不會重現。
     - 逐字輸入也才抓得到「輸入一個字後失焦」這類缺陷：整段 `typeText` 會在畫面重繪前打完。
 - **`scrollDismissesKeyboard(.interactively)` 無法以 XCUITest 合成手勢觸發，不寫 UI 測試守它 (產品端仍保留)**：`KeyboardDismissTests` 只覆蓋 return 鍵與數字鍵盤完成鍵兩條路徑。
+- **iPadOS 27 的數字鍵盤可能是浮動面板，或貼在欄位旁的 Popover，兩者都沒有工具列完成鍵**：收數字鍵盤一律走 `dismissNumericKeyboard`，依畫面元素分流，不依裝置或系統版本。
+    - 浮動面板以鍵盤高度低於完整鍵盤 (`floatingPadMaximumHeight`) 判定；Popover 以 `Popover` 與 `PopoverDismissRegion` 判定，沒有 `Keyboard` 元素。
+    - 模擬器開著 Simulate Hardware Keyboard 時軟體鍵盤不出現，`Keyboard` 只剩全寬、高約 64 的工具列，同樣會判成浮動面板，失敗訊息為「數字鍵盤未能換成完整鍵盤」：屬環境狀態，不改 helper，到 Device Hub 的 Device 選單對該台取消勾選。重開模擬器不會清除，`toggle-connect-hardware-keyboard` 回報成功也不一定生效，以重跑 `KeyboardDismissTests` 判定。
+    - 完成鍵可點時直接點；完整鍵盤的完成鍵存在但不可點時點其 frame 中心。
+    - 浮動面板或 Popover 收不掉時，在本欄位點兩下換成完整鍵盤再點完成鍵。收起的判斷涵蓋鍵盤與 Popover 消失，並確認欄位已失去鍵盤焦點。
+- **iPadOS 27 的右對齊欄位游標不會因聚焦點擊就移到文字末端**：`clearAndType` 先點欄位中央取得焦點；欄位已有內容且非搜尋欄時，再點欄位右端把游標移到末端，刪除鍵才刪得到原值。
+    - 在既有內容後續打用 `appendText`，與 `clearAndType` 共用同一套聚焦與移游標步驟，只是不刪原值；不用「點欄位再 `typeText`」。
+    - 數字 Popover 的關閉區域會吃掉右端的點擊，浮動數字面板點右端也不會移動游標：點右端前若呈現兩者之一，先在欄位點兩下換成完整鍵盤，等完整鍵盤出現才點右端。
+    - 搜尋欄不點右端，也不送刪除鍵：聚焦中點擊會把游標移到點擊處，已有內容時改點其內建清除鈕清空。
+- **表單 sheet 在鍵盤升起時會整個上移，點擊要等框線穩定**：`tapAfterWaiting` 與 `clearAndType` 的每次點擊 (中央、右端) 都會在可點後等框線連續取樣相同，逾時仍不穩時照樣點擊。
+    - 只用座標或快取 frame 的點擊不經此等待，要自行處理。
+    - 自訂 `.alert` 在輸入後鍵盤升起時同樣會上移：`tapAlertButton` 點擊前等框線穩定，點擊後按鈕仍在且位置改變時重試一次。
+- **鍵盤常在打字後才升起，表單隨之上移，輸入前後都要等**：`clearAndType` 在輸入前後各等一次，且每段等待都有上限。
+    - 輸入前等鍵盤就位：完整鍵盤框線落在視窗內且連續不變，或浮動面板、數字 Popover 連續不變。逾時照樣輸入，並附上鍵盤狀態供失敗時判讀。
+    - 輸入後等欄位框線連續相同才返回。
+- **iPad 模擬器上 XCUITest 可能多次等滿 60 秒閒置 (log 出現 `App animations complete notification not received`)，步驟多的旅程可能因此超過 10 分鐘執行上限**：App CPU 接近 0、主執行緒停在 run loop，不是 App 空轉；同一條測試每次碰到的次數不同。
+    - 判讀：逾時前沒有斷言失敗且 log 有這段訊息時單獨重跑，至多兩次，完整走完才算通過；兩次都走不完、有斷言失敗或 CPU 持續偏高就當問題回報，不繼續重跑。
 
 ## 轉向測試
 
-- **轉向測試 (`XCUIDevice.shared.orientation`) 執行時，模擬器前端的 Device Hub 不可開著**：開著時裝置方向會改變但介面不轉，App 視窗維持直向，測試在等「視窗寬大於高」時逾時；關閉 Device Hub 後即恢復。
+- **轉向測試 (`XCUIDevice.shared.orientation`) 在實機執行**：setter 只設定裝置方向，不等介面轉完就斷言，會在直向取得 compact 版面而誤判通過；改用 `Support/XCTestCase+Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`，兩者都會等視窗方向確定才返回。
     - Device Hub 的旋轉鈕只轉外框，Orientation 選單也不一定讓介面轉向 (iPad 會轉、iPhone 17 Pro Max 不會)，兩者都不能用來驗證橫向版面。
-    - 轉向後等到 `app.windows.firstMatch` 寬大於高才斷言或截圖 (`Support/Layout/Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`)：setter 只設定裝置方向，沒等就斷言會在直向取得 compact 版面而誤判通過。
 - **需要實測橫向畫面時，以 Xcode 27.1 MCP 的 `orientation` 指令轉向**：介面會跟著轉，回傳完整的橫向截圖；Device Hub 的旋轉鈕與 Orientation 選單不能驗證橫向版面 (見上一條)。
-    - 只支援 iOS 27 以上的模擬器；UI 測試仍只跑 iOS 26.x。
+    - 只支援 iOS 27 以上的模擬器，與實機 XCUITest 無關。
     - 互動交給載入 `device-interaction` skill 的子代理：以 `DeviceInteractionStartSession` (不綁 workspace) 開連線，`DeviceInteractionSynthesize` 帶 `activationBundleId` 操作；以結構檔的 `Application UI orientation` 與 Window frame 確認方向。
     - 建置走 `mobilebuildmcp` (`build-and-run` 裝好再連線)，不讓 Xcode 建置。
     - 首次使用要在 Xcode 授權 MCP：授權時開另一個空白專案，不開 BuyLedger 專案，因為 Xcode 開啟 BuyLedger 時可能刪除 `Package.resolved`。
     - 連線回報 cannot be connected 時關掉 session，以新名稱重開：同名 session 短時間內不能重用。
     - 用完一定要 `DeviceInteractionEndSession`。
-    - Device Hub 開著不影響 Xcode MCP 轉向，但不與 XCUITest 轉向測試同時進行 (後者要關閉 Device Hub)。
-- **轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑 UI 測試後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
+    - Device Hub 開著不影響 Xcode MCP 轉向。
+- **模擬器上轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
     - 判別：`OrientationLayoutTests` 在「轉向後 App 視窗寬仍未大於高」失敗，且單獨重跑同樣失敗；沒有特定測試類別會穩定觸發，不必逐類排查，也不改測試碼或放寬等待。
     - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。開啟用 `mobilebuildmcp simulator-management open`，結束用 `osascript -e 'tell application "DeviceHub" to quit'` (App 名稱是 `DeviceHub`)。
 - **橫向時 `XCTAttachment(screenshot:)` 的截圖只擷取到部分畫面**：判讀版面以可見部分為準，不因看不到右側元素就判定版面錯誤；需要完整畫面時另以 `mobilebuildmcp ui-automation screenshot` 取得。

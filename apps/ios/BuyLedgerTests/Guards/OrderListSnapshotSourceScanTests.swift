@@ -52,8 +52,8 @@ struct OrderListSnapshotSourceScanTests {
             declaration: "var navigationContent: some View"
         ),
         OrdersLayoutCase(
-            file: "Presentation/Root/Views/OrdersView.swift",
-            declaration: "var regularListContent: some View"
+            file: "Presentation/Root/Views/OrdersRegularListContent.swift",
+            declaration: "var listContent: some View"
         ),
     ])
     func listSnapshot_兩種版面路徑_各取一次快照且重用工具列值(layoutCase: OrdersLayoutCase) throws {

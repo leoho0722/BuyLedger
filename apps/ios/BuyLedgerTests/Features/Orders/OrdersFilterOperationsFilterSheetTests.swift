@@ -103,9 +103,9 @@ struct OrdersFilterOperationsFilterSheetTests {
         #expect(state.committedFilterSelection.paymentMethod == nil)
     }
 
-    /// 驗證篩選改為類別「服飾」套用時，已套用類別更新、選取重選為符合條件的第一筆 B，並關閉篩選面板
+    /// 驗證篩選改為類別「服飾」時，已套用類別更新並關閉篩選面板
     @Test
-    func filterApplied_變更類別_套用並重選第一筆() {
+    func filterApplied_類別改為服飾_更新類別並關閉面板() {
         // Given
         let initialOrders = [
             OrdersFilterOperationsTestSupport.makeOrder(id: "A", category: "美妝"),
@@ -122,18 +122,16 @@ struct OrdersFilterOperationsFilterSheetTests {
 
         // Then
         #expect(state.selectedCategories == ["服飾"])
-        #expect(state.selectedOrderID == "B")
         #expect(state.destination == nil)
     }
 
-    /// 驗證套用的篩選與目前相同時，選取的 A 不變，篩選面板直接關閉
+    /// 驗證套用的篩選與目前相同時，篩選面板直接關閉，已套用篩選不變
     @Test
-    func filterApplied_沒有變更_關閉面板並保留選取() {
+    func filterApplied_沒有變更_關閉面板並保留篩選() {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             OrdersFilterOperationsTestSupport.makeOrder(id: "A", category: "美妝"),
         ])
-        state.selectedOrderID = "A"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
 
         // When
@@ -143,7 +141,7 @@ struct OrdersFilterOperationsFilterSheetTests {
         )
 
         // Then
-        #expect(state.selectedOrderID == "A")
+        #expect(state.selectedCategories == [])
         #expect(state.destination == nil)
     }
 

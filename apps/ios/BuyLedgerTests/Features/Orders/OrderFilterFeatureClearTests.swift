@@ -131,7 +131,7 @@ struct OrderFilterFeatureClearTests {
         #expect(store.state.hasUnappliedFilterChanges == false)
     }
 
-    /// 驗證清除後套用時，預設條件提交到清單並關閉面板，摘要還原為「全部」，選取的訂單不變且不發出選取變更
+    /// 驗證清除後套用時，預設條件提交到清單並關閉面板，摘要還原為「全部」，不委派任何請求
     @Test
     func destination_清除後套用_提交預設並還原全部摘要() async {
         // Given
@@ -142,7 +142,6 @@ struct OrderFilterFeatureClearTests {
         state.selectedDatePeriod = .thisMonth
         state.selectedCategories = ["beauty", "books"]
         state.selectedPaymentMethod = "信用卡"
-        state.selectedOrderID = "A"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
         state.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection = OrderFilterSelection(
@@ -172,13 +171,12 @@ struct OrderFilterFeatureClearTests {
             $0.destination = nil
         }
         #expect(store.state.filterSummary(language: .traditionalChinese) == "全部")
-        #expect(store.state.selectedOrderID == "A")
         #expect(store.state.destination == nil)
     }
 
-    /// 驗證三項暫存同時變更後套用，清單依新條件重選第一筆 beauty，只發出一次選取變更，摘要為「本月 · beauty · 轉帳」
+    /// 驗證三項暫存同時套用後，清單只列出符合最終條件的 beauty 訂單，不委派任何請求
     @Test
-    func destination_三項暫存都變更_提交完整條件並重選一次() async {
+    func destination_三項暫存都變更_提交完整條件並只列出命中訂單() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             OrdersFeatureTestSupport.makeOrder(
@@ -197,7 +195,6 @@ struct OrderFilterFeatureClearTests {
                 paymentMethod: "信用卡"
             ),
         ])
-        state.selectedOrderID = "card"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
         state.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection = OrderFilterSelection(
@@ -228,11 +225,10 @@ struct OrderFilterFeatureClearTests {
             $0.selectedDatePeriod = .thisMonth
             $0.selectedCategories = ["beauty"]
             $0.selectedPaymentMethod = "轉帳"
-            $0.selectedOrderID = "beauty"
             $0.destination = nil
         }
-        await store.receive(\.delegate.selectionChanged, "beauty")
         #expect(store.state.filterSummary(language: .traditionalChinese) == "本月 · beauty · 轉帳")
+        #expect(store.state.filteredOrders.map(\.id) == ["beauty"])
         #expect(store.state.destination == nil)
     }
 

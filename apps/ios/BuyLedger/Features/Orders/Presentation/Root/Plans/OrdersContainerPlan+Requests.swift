@@ -11,7 +11,7 @@ import Foundation
 
 extension OrdersContainerPlan {
 
-    /// 依共用請求與資料快照決定要呈現的表單、要推入的詳情或要轉送的寫入
+    /// 依共用請求與資料快照決定要呈現的表單或要轉送的寫入
     ///
     /// - Parameters:
     ///   - request: 清單或詳情的操作請求
@@ -62,9 +62,6 @@ extension OrdersContainerPlan {
 
         case .present(let destination):
             return .present(destination)
-
-        case .showDetail(let id):
-            return .showDetail(id)
 
         case .write(let action):
             return .write(action)

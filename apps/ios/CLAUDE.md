@@ -59,14 +59,13 @@
 
 ### UI 測試
 
-- **`BuyLedgerUITests` 走獨立 scheme，只覆蓋 iOS 26.x 模擬器**：`-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
+- **單元與 UI 測試的本機執行跑實機，不跑模擬器 (Duo 版面驗證與下方子項的例外除外)**：iPhone 12 (iOS 26.x，涵蓋最低版本) 與 iPad Air 5 (iPadOS 27.x)，以 UDID 固定同一台，走 `mobilebuildmcp device test`。Automatic signing 的 device build 要帶 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`。
+  - 實機前置：開啟 UI 自動化、未接硬體鍵盤、解鎖。iPad 軟體鍵盤須能顯示，先單獨跑 `KeyboardDismissTests` 通過才算前提成立；失敗時先修環境，不改產品端鍵盤工具列。
+  - 例外：讀 repo 原始碼的守門測試 (實機讀不到 Mac 上的檔案，一定失敗) 與 snapshot 測試 (基準是 iOS 26.5 模擬器淺色模式錄製的) 改跑 iPhone 17 iOS 26.5 模擬器，跑前執行 `mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`。守門測試執行時會讀原始碼，執行期間不可改檔。
+- **`BuyLedgerUITests` 走獨立 scheme**：`-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
   - 全功能回歸用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`，不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
   - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
-- **iPad UI 主回歸前確認軟體鍵盤可顯示 (硬體鍵盤已斷開)，並先單獨跑 `KeyboardDismissTests`，兩條都綠才算前提成立**：
-  - 優先在 Device Hub 未執行時以 `mobilebuildmcp simulator-management boot` 開機：不連接硬體鍵盤，也滿足轉向測試不可開 Device Hub 的條件 (見 `.claude/rules/ios-ui-tests.md`)。
-  - 否則在 Device Hub 選單取消勾選 Device › Keyboard › Simulate Hardware Keyboard；模擬器重開機後會恢復勾選，每次都要重做。
-  - `toggle-connect-hardware-keyboard` 不可靠：送出 `Cmd+Shift+K`，Simulator 不在前景時無聲失效，且需要未必已授權的輔助使用權限；寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。
-  - 回歸出現「數字鍵盤工具列的完成鍵未能收起鍵盤」時，看失敗時可及性樹 `Keyboard` 元素的 y 起點是否大於視窗高度；這類現象先修環境，不改產品端鍵盤工具列。
+- **session defaults 帶 `projectPath` 時，`mobilebuildmcp device test --test-products-path` 會回 `Mutually exclusive parameters provided: testProductsPath, projectPath`**：重用 test products 要拿掉 project 參數，或直接重新 build。
 - **訂單編輯表單 TextField 偶發的「Activation point invalid」屬環境雜訊**：失敗的測試與元素在連續重跑間不一致即為雜訊，單獨重跑轉綠即可，不改測試碼或放寬斷言；同一條穩定重現才是真缺陷。
 
 ### `ui-automation` 實測
@@ -79,6 +78,9 @@
 - **列位於分頁列範圍下方時 `touch` 會點到分頁列**，先捲動讓目標露出再點。
 - **sheet 內 `List` 最後一列的 `touch`／`tap` 可能回報成功卻沒觸發** (同一 sheet 其他列正常)：改以 XCUITest 驗證 (正式 UI 測試，或量完即刪的暫時測試)，不反覆重試。
 - **iPad 模擬器多工模式維持「全螢幕 App」**：「視窗 App」模式下 `snapshot-ui` 取不到可及性樹。
+- **iPhone Duo 模擬器有內外兩個顯示器**：`ui-automation screenshot` 無法指定顯示器而失敗，Xcode DeviceInteraction 擷取只拍外螢幕 (Open 時全黑)。Open 與縮放畫面以 macOS `screencapture` 截 Device Hub 畫布、AX 以 `snapshot-ui` 取；Closed 的版面量測用 Xcode 階層。
+  - Device Hub 的 Device 選單「Enter Resize Mode」可拖曳把手連續縮放 Duo (iPad 為灰色)，以「Exit Resize Mode」回到原姿勢。
+  - Open 下 `ui-automation swipe` 與 Device Hub 拖曳可能捲不動清單：改在 Closed 以 Xcode DeviceInteraction 操作後再展開 (選取跨姿勢保留)。
 - **進系統設定用 `simulator launch-app --bundle-id com.apple.Preferences` 後 `snapshot-ui`／`tap`**，不需要 `computer-use`；設定頁的開關與滑桿不一定取得到 ref。
 
 ### 其他
@@ -100,7 +102,7 @@
 ### Feature 之間
 
 - **綁 store 的畫面只吃自己 feature 的 scoped store**：跨 feature 資料走根 feature 單向同步的唯讀投影，純顯示值 (如目前的 App 語言) 走建構參數。
-  - 只有 `RootView`／`RootTabLayout`／`RootSidebarLayout` 三個導覽宿主可宣告根 store，由 `LayerBoundaryTests.filesDeclaringRootStore_功能目錄_僅由三個根導覽宿主持有` 鎖住；`MoreView` 只持有 `MoreFeature` 的 scoped store。
+  - `Features/` 內只有 `RootView` 與 `RootNavigationLayout` 可宣告根 store，由 `LayerBoundaryTests.filesDeclaringRootStore_功能目錄_僅由兩個根導覽宿主持有` 鎖住 (App 進入點 `BuyLedgerApp` 建立並持有根 store，不在掃描範圍)；`MoreView` 只持有 `MoreFeature` 的 scoped store。
   - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.$campaigns`、總覽與分析的副本)、載入狀態、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
 - **跨 feature 意圖由子層 reducer 以 delegate 交給根 feature**：畫面只送自身 Feature 的 `view` action，由 reducer 轉成 delegate；Root 的 view case 與子層 delegate case 呼叫同一個 `RootNavigationOperations` 方法 (如 `showOrders(customer:state:)`、`showCampaign(named:state:)`)，不以 `.send` 轉成另一個根 case，也不新增平行的根 action。
 - **父層不以 `.send` 或 reducer case 送出、攔截子層的 `.view(...)` action**。

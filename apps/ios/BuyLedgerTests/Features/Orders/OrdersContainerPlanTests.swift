@@ -12,7 +12,7 @@ import Testing
 /// `OrdersContainerPlan` 的單元測試，涵蓋請求所需的表單識別值與日期脈絡
 struct OrdersContainerPlanTests {
 
-    /// 驗證各種請求是否需要表單識別值，新增與有效編輯需要，合併、刪除、查看詳情與狀態變更等都不需要
+    /// 驗證各種請求是否需要表單識別值，新增與有效編輯需要，合併、刪除與狀態變更等不需要
     ///
     /// - Parameter scenario: 操作請求與預期是否需要表單識別值的案例
     @Test(arguments: FormIDCase.allCases)
@@ -74,7 +74,6 @@ extension OrdersContainerPlanTests {
             Self(request: .edit("missing"), isFormIDRequired: false),
             Self(request: .merge("A"), isFormIDRequired: false),
             Self(request: .delete("A"), isFormIDRequired: false),
-            Self(request: .showDetail("A"), isFormIDRequired: false),
             Self(
                 request: .batchStatusChange([LedgerOrder.fixture(id: "A")]),
                 isFormIDRequired: false
@@ -103,7 +102,6 @@ extension OrdersContainerPlanTests {
             Self(request: .merge("X"), isDateContextRequired: false),
             Self(request: .merge("missing"), isDateContextRequired: false),
             Self(request: .delete("A"), isDateContextRequired: false),
-            Self(request: .showDetail("A"), isDateContextRequired: false),
             Self(
                 request: .batchStatusChange([LedgerOrder.fixture(id: "A")]),
                 isDateContextRequired: false

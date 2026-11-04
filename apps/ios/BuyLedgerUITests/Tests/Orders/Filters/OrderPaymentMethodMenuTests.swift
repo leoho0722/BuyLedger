@@ -34,14 +34,12 @@ final class OrderPaymentMethodMenuTests: BLUITestCase {
     func testPaymentMethodMenu_選信用卡_清單只列信用卡八筆() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(
             isRegularLayout(app),
             "付款方式 Menu 只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋"
         )
-        let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
-            app.failWithDiagnostics("切到訂單分頁後畫面未就緒")
-        }
         let orders = OrdersScreen(app: app)
         if !orders.waitUntilReady() {
             app.failWithDiagnostics("訂單清單根 identifier 逾時仍未出現")
@@ -68,14 +66,12 @@ final class OrderPaymentMethodMenuTests: BLUITestCase {
     func testPaymentMethodMenu_選信用卡_觸發鈕標記已選取() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(
             isRegularLayout(app),
             "付款方式 Menu 只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋"
         )
-        let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
-            app.failWithDiagnostics("切到訂單分頁後畫面未就緒")
-        }
         let orders = OrdersScreen(app: app)
         if !orders.waitUntilReady() {
             app.failWithDiagnostics("訂單清單根 identifier 逾時仍未出現")

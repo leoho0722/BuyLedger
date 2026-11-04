@@ -130,6 +130,32 @@ struct SnapshotOrderEditSectionsTests {
         }
     }
 
+    /// 驗證最大輔助字級下的商品區段，數量步進器與單價上下堆疊排列，畫面符合基準圖
+    ///
+    /// - Throws: 找不到樣本訂單或 `Asia/Taipei` 時區不存在時由 `#require` 丟出
+    /// - Note: 使用名稱不超過兩行的訂單 (BL-2604-017)，避免離屏渲染把多行輸入框第三行下緣裁切
+    @Test
+    func orderEditItemsSection_最大輔助字級_商品列堆疊排列() throws {
+        try TestDependencies.withFixedNow {
+            // Given
+            let order = try #require(
+                LedgerOrder.sampleOrders.first {
+                    $0.id == "BL-2604-017"
+                }
+            )
+            let store = try Self.makeSectionStore(original: order)
+
+            // When
+            let view = Self.orderEditSection(height: 480) {
+                OrderEditItemsSection(store: store, focusedField: $0)
+            }
+            .environment(\.dynamicTypeSize, .accessibility5)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
     /// 驗證一般既有訂單的備註區段帶入既有備註，畫面符合基準圖
     ///
     /// - Throws: `Asia/Taipei` 時區不存在時由 `#require` 丟出

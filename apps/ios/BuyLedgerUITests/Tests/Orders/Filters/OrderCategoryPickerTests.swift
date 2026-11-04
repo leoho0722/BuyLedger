@@ -32,6 +32,8 @@ final class OrderCategoryPickerTests: BLUITestCase {
     func testCategoryPickerMultiSelect_同列點兩格並完成_觸發鈕顯示兩項() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)
@@ -53,6 +55,8 @@ final class OrderCategoryPickerTests: BLUITestCase {
     func testCategoryPickerSwipeDown_有未套用變更_不關閉() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)
@@ -74,6 +78,8 @@ final class OrderCategoryPickerTests: BLUITestCase {
     func testCategoryPickerCancel_捨棄確認選繼續編輯_留在選擇器() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)
@@ -100,6 +106,8 @@ final class OrderCategoryPickerTests: BLUITestCase {
     func testCategoryPickerSearch_輸入文字_顯示相符並隱藏不符類別() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)
@@ -111,14 +119,14 @@ final class OrderCategoryPickerTests: BLUITestCase {
         // Then
         let isTyped = picker.categoryPickerSearchValue == "食"
         let isMatchShown = orders.filterCategoryCell("零食").waitForExistence(timeout: 5)
-        let isOtherHidden = !orders.filterCategoryCell("美妝").exists
+        let isOtherShown = orders.filterCategoryCell("美妝").exists
         if !isTyped {
             app.failWithDiagnostics("選擇器搜尋欄未收到輸入「食」")
         }
         if !isMatchShown {
             app.failWithDiagnostics("搜尋「食」後應顯示零食")
         }
-        if !isOtherHidden {
+        if isOtherShown {
             app.failWithDiagnostics("搜尋「食」後不應顯示美妝")
         }
     }
@@ -129,6 +137,8 @@ final class OrderCategoryPickerTests: BLUITestCase {
     func testCategoryPickerSearch_清除搜尋_恢復被篩掉的類別並清空搜尋欄() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)

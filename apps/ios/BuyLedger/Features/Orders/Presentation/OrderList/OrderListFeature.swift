@@ -8,13 +8,13 @@
 import ComposableArchitecture
 import Foundation
 
-/// 訂單清單的篩選、搜尋、多選與日期分組
+/// 訂單清單的篩選、搜尋、批次勾選與日期分組
 @Reducer
 struct OrderListFeature {
 
     // MARK: - State
 
-    /// 清單的唯讀資料、篩選與選取
+    /// 清單的唯讀資料、篩選與批次勾選
     @ObservableState
     struct State: Equatable {
 
@@ -38,9 +38,6 @@ struct OrderListFeature {
 
         /// 目前套用的付款方式篩選；`nil` 代表全部付款方式
         var selectedPaymentMethod: String?
-
-        /// 詳情區目前選取訂單的識別值；`nil` 代表尚未選取
-        var selectedOrderID: LedgerOrder.ID?
 
         /// 是否處於多選模式 (進入後列點擊改為勾選、顯示批次工具列)
         var isSelecting = false
@@ -77,6 +74,15 @@ struct OrderListFeature {
                 datePeriod: selectedDatePeriod,
                 categories: selectedCategories,
                 paymentMethod: selectedPaymentMethod
+            )
+        }
+
+        /// 已套用的搜尋與篩選條件值，供容器觀察篩選條件變化
+        var filterConditions: FilterConditions {
+            FilterConditions(
+                searchText: searchText,
+                status: selectedStatus,
+                committedSelection: committedFilterSelection
             )
         }
 
@@ -142,6 +148,19 @@ struct OrderListFeature {
             self._errorMessage = errorMessage
         }
 
+        /// 清單已套用的搜尋與篩選條件快照
+        struct FilterConditions: Equatable {
+
+            /// 已套用的搜尋文字
+            let searchText: String
+
+            /// 已套用的訂單狀態
+            let status: OrderStatusFilter
+
+            /// 已套用的日期、類別與付款方式
+            let committedSelection: OrderFilterSelection
+        }
+
         /// 提供已套用篩選的本地化摘要，窄版與寬版共用相同的文字規則
         ///
         /// - Parameter language: 畫面使用的語言
@@ -164,12 +183,7 @@ struct OrderListFeature {
             OrderListDestinationOperations.refreshDateContext(context, state: &self)
         }
 
-        /// 將右欄選取重設為篩選結果的第一筆
-        mutating func selectFirstFilteredOrder() {
-            selectedOrderID = filteredOrders.first?.id
-        }
-
-        /// 套用跨功能篩選並重選第一筆，保留付款方式篩選
+        /// 套用跨功能篩選並保留付款方式篩選
         ///
         /// - Parameters:
         ///   - searchText: 客戶名稱搜尋；類別導覽時為空
@@ -194,9 +208,9 @@ struct OrderListFeature {
         /// - Parameter action: 實際互動
         case view(View)
 
-        /// 容器需要處理的事件
+        /// 容器需要處理的請求
         ///
-        /// - Parameter action: 操作請求或選取變更
+        /// - Parameter action: 操作請求
         case delegate(Delegate)
 
         /// 篩選目的地的呈現與子層事件
@@ -243,11 +257,6 @@ struct OrderListFeature {
             /// - Parameter text: 搜尋文字
             case searchTextChanged(String)
 
-            /// 使用者選取訂單
-            ///
-            /// - Parameter id: 訂單編號；`nil` 表示取消選取
-            case orderSelected(LedgerOrder.ID?)
-
             /// 使用者點擊「編輯」按鈕，要求編輯指定訂單
             ///
             /// - Parameter id: 要編輯的訂單編號
@@ -287,14 +296,9 @@ struct OrderListFeature {
 
             /// 使用者點擊「AI 總結」工具列按鈕
             case aiSummaryTapped
-
-            /// 點擊訂單列，請容器推入詳情
-            ///
-            /// - Parameter id: 訂單識別值
-            case orderTapped(LedgerOrder.ID)
         }
 
-        /// 交給容器的載入、操作與選取需求
+        /// 交給容器的載入與操作請求
         @CasePathable
         enum Delegate: Equatable {
 
@@ -305,11 +309,6 @@ struct OrderListFeature {
 
             /// 畫面出現或重試，請容器載入共用資料
             case loadRequested
-
-            /// 右欄選取已變更
-            ///
-            /// - Parameter id: 新選取的訂單；`nil` 表示清空
-            case selectionChanged(LedgerOrder.ID?)
         }
     }
 
@@ -354,22 +353,7 @@ private extension OrderListFeature {
             return .send(.delegate(.loadRequested))
 
         case .view(.categoryPickerTapped), .view(.filterSheetTapped):
-            let context = state.dateContext ?? OrderDateContext(now: date.now, calendar: calendar)
-            state.refreshDateContext(context)
-            if case .view(.categoryPickerTapped) = action {
-                OrdersFilterOperations.categoryPickerTapped(
-                    campaigns: state.$campaigns,
-                    context: context,
-                    state: &state
-                )
-            } else {
-                OrdersFilterOperations.filterSheetTapped(
-                    campaigns: state.$campaigns,
-                    context: context,
-                    state: &state
-                )
-            }
-            return .none
+            return presentFilterDestination(action: action, state: &state)
 
         case .view(let view):
             guard let delegate = OrderListInteraction.apply(view, state: &state) else {
@@ -383,5 +367,30 @@ private extension OrderListFeature {
         case .destination(let action):
             return OrderListDestinationOperations.apply(action, state: &state)
         }
+    }
+
+    /// 建立篩選目的地並刷新日期脈絡
+    ///
+    /// - Parameters:
+    ///   - action: 開啟類別選擇器或篩選面板的操作
+    ///   - state: 清單狀態
+    /// - Returns: 目的地建立後回傳 `.none`
+    func presentFilterDestination(action: Action, state: inout State) -> Effect<Action> {
+        let context = state.dateContext ?? OrderDateContext(now: date.now, calendar: calendar)
+        state.refreshDateContext(context)
+        if case .view(.categoryPickerTapped) = action {
+            OrdersFilterOperations.categoryPickerTapped(
+                campaigns: state.$campaigns,
+                context: context,
+                state: &state
+            )
+        } else {
+            OrdersFilterOperations.filterSheetTapped(
+                campaigns: state.$campaigns,
+                context: context,
+                state: &state
+            )
+        }
+        return .none
     }
 }

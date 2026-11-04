@@ -11,13 +11,13 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersFeature` 的單元測試，以 TestStore 逐步驗證新增訂單的寫入、照片與失敗處理
+/// `OrdersFeature` 的單元測試，以 `TestStore` 逐步驗證新增訂單的寫入、照片與失敗處理
 @MainActor
 struct OrdersFeatureCreateTests {
 
-    /// 驗證新增含照片的訂單並儲存後，新訂單帶著照片加入清單並被選取
+    /// 驗證新增含照片訂單存檔成功後加入清單但不自動開啟詳情
     @Test
-    func presentation_新增訂單含照片_儲存後加入訂單() async {
+    func presentation_新增含照片訂單存檔_不自動開啟詳情() async {
         // Given
         let photos = [Data([0xA1])]
 
@@ -32,6 +32,9 @@ struct OrdersFeatureCreateTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
+        state.load.$hasLoaded.withLock {
+            $0 = true
+        }
         state.presentation.destination = .edit(draft)
 
         let createdOrders = LockIsolated<[LedgerOrder]>([])
@@ -74,26 +77,18 @@ struct OrdersFeatureCreateTests {
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveResponse)
-        await store.receive(\.writes.delegate.saved) {
-            $0.list.selectedOrderID = "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        }
-        await store.receive(
-            \.list.delegate.selectionChanged,
-            "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        ) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-DRAFT-00000000-0000-0000-0000-000000000000",
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate.saved)
+        await store.finish()
+        #expect(store.state.orders == [expectedOrder])
+        #expect(store.state.detail.path.isEmpty)
         #expect(createdOrders.value == [expectedOrder])
     }
 
-    /// 驗證新增訂單儲存成功後，新訂單排在清單最前面並被選取
+    /// 驗證新增訂單存檔成功後加入清單但不自動開啟詳情
     ///
-    /// - Note: 新訂單一律走建立操作；誤走 `saveOrder` 會因未覆寫而讓測試失敗
+    /// - Note: 新訂單一律走建立操作，誤走 `saveOrder` 會讓測試失敗
     @Test
-    func presentation_新增訂單儲存成功_加入並選取新訂單() async {
+    func presentation_新增訂單存檔_不自動開啟詳情() async {
         // Given
         var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draft.customerName = "新客戶"
@@ -105,6 +100,9 @@ struct OrdersFeatureCreateTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
+        state.load.$hasLoaded.withLock {
+            $0 = true
+        }
         state.presentation.destination = .edit(draft)
 
         let createdOrders = LockIsolated<[LedgerOrder]>([])
@@ -147,18 +145,10 @@ struct OrdersFeatureCreateTests {
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveResponse)
-        await store.receive(\.writes.delegate.saved) {
-            $0.list.selectedOrderID = "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        }
-        await store.receive(
-            \.list.delegate.selectionChanged,
-            "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        ) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-DRAFT-00000000-0000-0000-0000-000000000000",
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate.saved)
+        await store.finish()
+        #expect(store.state.orders == [expectedOrder] + LedgerOrder.sampleOrders)
+        #expect(store.state.detail.path.isEmpty)
         #expect(createdOrders.value == [expectedOrder])
     }
 

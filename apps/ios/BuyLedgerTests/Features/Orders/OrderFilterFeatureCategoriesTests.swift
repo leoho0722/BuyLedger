@@ -195,10 +195,10 @@ struct OrderFilterFeatureCategoriesTests {
         #expect(reopened.categoryGroupExpansion.expandedKinds == [.ongoing])
     }
 
-    /// 驗證套用本月與兩項類別後，清單收到該篩選集合、選取改為 beauty 訂單、篩選摘要顯示「本月 · 2 項類別」，且面板關閉
+    /// 驗證套用本月與兩項類別後，清單仍列出命中的 snacks 訂單、更新篩選摘要並關閉面板，不委派任何請求
     @Test
     @MainActor
-    func destination_本月與兩項類別_提交集合並更新觸發摘要() async {
+    func destination_本月與兩項類別_列出命中訂單並更新摘要() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             OrdersFeatureTestSupport.makeOrder(id: "outside", category: "books"),
@@ -206,7 +206,6 @@ struct OrderFilterFeatureCategoriesTests {
             OrdersFeatureTestSupport.makeOrder(id: "snacks", category: "snacks"),
         ])
         state.selectedDatePeriod = .thisMonth
-        state.selectedOrderID = "snacks"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
         state.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection = OrderFilterSelection(
@@ -236,12 +235,11 @@ struct OrderFilterFeatureCategoriesTests {
         ) {
             $0.selectedDatePeriod = .thisMonth
             $0.selectedCategories = ["beauty", "snacks"]
-            $0.selectedOrderID = "beauty"
             $0.destination = nil
         }
-        await store.receive(\.delegate.selectionChanged, "beauty")
         #expect(store.state.filterSummary(language: .traditionalChinese) == "本月 · 2 項類別")
         #expect(store.state.destination == nil)
+        #expect(store.state.filteredOrders.map(\.id) == ["beauty", "snacks"])
     }
 }
 

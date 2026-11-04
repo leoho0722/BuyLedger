@@ -87,11 +87,14 @@ private extension DashboardView {
                 scrollContainer {
                     onboardingHero
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
 
             case .overview(let stats):
                 scrollContainer {
                     sections(stats: stats)
                 }
+                .blReadableScrollContent(.text)
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
             }
         }
     }
@@ -115,6 +118,12 @@ private extension DashboardView {
                     }
                 }
 
+                if !store.ongoingCampaignRows.isEmpty {
+                    RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                        .frame(height: listPlaceholderHeight)
+                        .foregroundStyle(.blFillQuaternary)
+                }
+
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .frame(height: listPlaceholderHeight)
                     .foregroundStyle(.blFillQuaternary)
@@ -122,6 +131,7 @@ private extension DashboardView {
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
         }
+        .blReadableScrollContent(.text)
         .overlay {
             BLDelayedProgressView()
         }
@@ -129,6 +139,19 @@ private extension DashboardView {
         .accessibilityElement()
         .accessibilityLabel(Text("common.action.label.loading"))
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.loading)
+    }
+
+    /// 組出首頁 onboarding 與總覽共用的捲動容器
+    ///
+    /// - Parameter content: 捲動容器內的內容
+    /// - Returns: 首頁內容捲動容器
+    func scrollContainer<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            content()
+                .padding(.horizontal, BLSpacing.large)
+                .padding(.vertical, BLSpacing.large)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     /// 第一次開 App 還沒有任何訂單時的引導畫面
@@ -179,33 +202,6 @@ private extension DashboardView {
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyState)
     }
 
-    /// 組出首頁內容的共用捲動容器，onboarding 與總覽都掛同一個根 identifier
-    ///
-    /// - Parameter content: 捲動容器內的內容
-    /// - Returns: 掛有根 identifier 的捲動容器
-    func scrollContainer<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
-        ScrollView {
-            content()
-                .padding(.horizontal, BLSpacing.large)
-                .padding(.vertical, BLSpacing.large)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
-    }
-
-    /// 組出大標題上方的日期子標，依記錄的日期與行事曆格式化
-    ///
-    /// - Parameter dateContext: 總覽記錄的現在時間與行事曆
-    /// - Returns: 日期子標 view
-    func titleHeader(dateContext: DashboardDateContext) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(DashboardFormatters.dateSubtitle(for: dateContext, locale: locale))
-                .font(BLTypographyStyle.footnote.font.weight(.medium))
-                .foregroundStyle(.blSecondaryLabel)
-                .accessibilityIdentifier(BLAccessibilityID.Dashboard.currentDateSubtitle)
-        }
-    }
-
     /// 組出有訂單時的各區段，由上而下是日期子標、本月摘要、進行中的開團與近期訂單
     ///
     /// - Parameter stats: 已計算的本月統計
@@ -221,6 +217,19 @@ private extension DashboardView {
             DashboardOngoingCampaignsSection(store: store)
 
             DashboardRecentOrdersSection(store: store, recentOrders: stats.recentOrders)
+        }
+    }
+
+    /// 組出大標題上方的日期子標，依記錄的日期與行事曆格式化
+    ///
+    /// - Parameter dateContext: 總覽記錄的現在時間與行事曆
+    /// - Returns: 日期子標 view
+    func titleHeader(dateContext: DashboardDateContext) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(DashboardFormatters.dateSubtitle(for: dateContext, locale: locale))
+                .font(BLTypographyStyle.footnote.font.weight(.medium))
+                .foregroundStyle(.blSecondaryLabel)
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.currentDateSubtitle)
         }
     }
 }

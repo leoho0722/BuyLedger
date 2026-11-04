@@ -148,11 +148,6 @@ struct CampaignListFeature {
             /// 點擊重試
             case retryTapped
 
-            /// 點擊開團列
-            ///
-            /// - Parameter id: 開團識別值
-            case campaignTapped(Campaign.ID)
-
             /// 選取狀態篩選
             ///
             /// - Parameter status: 所選狀態；`nil` 表示全部
@@ -252,9 +247,6 @@ private extension CampaignListFeature {
         case .view(.task), .view(.retryTapped):
             state.dateContext = CampaignDateContext(now: date.now, calendar: calendar)
             return .send(.delegate(.loadRequested))
-
-        case .view(.campaignTapped(let id)):
-            return .send(.delegate(.requested(.showDetail(id))))
 
         case .view(.statusFilterSelected(let status)):
             state.statusFilter = status

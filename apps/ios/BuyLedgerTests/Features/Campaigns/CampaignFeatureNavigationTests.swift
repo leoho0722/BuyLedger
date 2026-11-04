@@ -77,32 +77,6 @@ struct CampaignFeatureNavigationTests {
         #expect(state.path.ids.first != firstID)
     }
 
-    /// 驗證點選列表中的 C1 開團後，只推入一筆詳情，詳情的開團識別值與內容都對應 C1
-    @Test
-    @MainActor
-    func list_點選開團_推入對應開團的唯一詳情() async {
-        // Given
-        let campaign = Campaign.fixture(id: "C1", name: "團")
-        let initial = CampaignFeature.State()
-        initial.$campaigns.withLock {
-            $0 = [campaign]
-        }
-        let store = TestStore(initialState: initial) {
-            CampaignFeature()
-        }
-
-        // When
-        await store.send(.list(.view(.campaignTapped("C1"))))
-
-        // Then
-        await store.receive(\.list.delegate.requested) {
-            $0.path[id: 0] = CampaignFeatureTestSupport.detailPath("C1", in: initial)
-        }
-        #expect(store.state.path.count == 1)
-        #expect(store.state.path.first?.detail?.campaignID == "C1")
-        #expect(store.state.path.first?.detail?.content?.campaign == campaign)
-    }
-
     /// 驗證刪除成功時，堆疊移除該開團詳情，依序回報開團已刪除，並將刪除結果交給提醒流程
     @Test
     @MainActor
@@ -151,6 +125,172 @@ struct CampaignFeatureNavigationTests {
         await store.receive(\.delegate.campaignDeleted)
         await store.receive(\.reminder.campaignRemoved)
         #expect(store.state.path.first?.detail?.campaignID == "A")
+    }
+
+    /// 驗證推入與目前詳情相同的開團時，保留原本的詳情元素識別碼，不重新推入
+    @Test
+    func showDetail_重開相同開團_保留原元素識別碼() {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        state.showDetail(campaignID: "C1")
+        let initialID = state.path.ids.first
+
+        // When
+        state.showDetail(campaignID: "C1")
+
+        // Then
+        #expect(state.path.count == 1)
+        #expect(state.path.ids.first == initialID)
+    }
+
+    /// 驗證呼叫 clearDetail 時，清空所有詳情路徑回到根清單
+    @Test
+    func clearDetail_清空詳情路徑_堆疊為空() {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        state.showDetail(campaignID: "C1")
+
+        // When
+        state.clearDetail()
+
+        // Then
+        #expect(state.path.isEmpty)
+    }
+
+    /// 驗證以可用開團清單比對時，已選取的開團不在清單中，移除該詳情
+    @Test
+    func popUnavailable_已選開團不在清單_移除該詳情() {
+        // Given
+        let campaign1 = Campaign.fixture(id: "C1", name: "甲團")
+        let campaign2 = Campaign.fixture(id: "C2", name: "乙團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign1, campaign2]
+        }
+        state.showDetail(campaignID: "C1")
+
+        // When
+        state.path.popUnavailable(campaigns: [campaign2])
+
+        // Then
+        #expect(state.path.isEmpty)
+    }
+
+    /// 驗證以可用開團清單比對時，已選取的開團仍在清單中，保留該詳情與其元素識別碼
+    @Test
+    func popUnavailable_已選開團仍在清單_保留該詳情() {
+        // Given
+        let campaign1 = Campaign.fixture(id: "C1", name: "甲團")
+        let campaign2 = Campaign.fixture(id: "C2", name: "乙團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign1, campaign2]
+        }
+        state.showDetail(campaignID: "C2")
+        let idsBefore = state.path.ids
+
+        // When
+        state.path.popUnavailable(campaigns: [campaign1, campaign2])
+
+        // Then
+        #expect(state.path.ids == idsBefore)
+        #expect(state.path.first?.detail?.campaignID == "C2")
+    }
+
+    /// 驗證載入後已選取的開團若已不存在，清除該開團詳情
+    @Test
+    func applyLoadedCampaigns_已選開團不再存在_移除該開團詳情() {
+        // Given
+        let campaign1 = Campaign.fixture(id: "C1", name: "甲團")
+        let campaign2 = Campaign.fixture(id: "C2", name: "乙團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign1]
+        }
+        state.showDetail(campaignID: "C1")
+        state.$campaigns.withLock {
+            $0 = [campaign2]
+        }
+
+        // When
+        state.applyLoadedCampaigns()
+
+        // Then
+        #expect(state.path.isEmpty)
+    }
+
+    /// 驗證列表選取開團時，經 `detailSelectionChanged` 只推入一筆詳情，詳情的開團識別值與內容都對應該開團
+    @Test
+    @MainActor
+    func detailSelectionChanged_選取新開團_開啟對應詳情() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "團")
+        let initial = CampaignFeature.State()
+        initial.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        let store = TestStore(initialState: initial) {
+            CampaignFeature()
+        }
+
+        // When
+        await store.send(.view(.detailSelectionChanged("C1"))) {
+            $0.path[id: 0] = CampaignFeatureTestSupport.detailPath("C1", in: initial)
+        }
+
+        // Then
+        #expect(store.state.path.count == 1)
+        #expect(store.state.path.first?.detail?.campaignID == "C1")
+        #expect(store.state.path.first?.detail?.content?.campaign == campaign)
+    }
+
+    /// 驗證收合返回或取消選取傳入 nil 時，透過 view action 清空詳情路徑
+    @Test
+    @MainActor
+    func detailSelectionChanged_傳入nil_清空目前詳情() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "團")
+        var initial = CampaignFeature.State()
+        initial.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        initial.showDetail(campaignID: "C1")
+        let store = TestStore(initialState: initial) {
+            CampaignFeature()
+        }
+
+        // When
+        await store.send(.view(.detailSelectionChanged(nil))) {
+            $0.path.removeAll()
+        }
+
+        // Then
+        #expect(store.state.path.isEmpty)
+    }
+
+    /// 驗證初次載入開團後，不自動開啟第一筆開團詳情，路徑保持為空
+    @Test
+    func applyLoadedCampaigns_初次載入完成_不自動選取首筆() {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "首筆團")
+        var state = CampaignFeature.State()
+        state.$campaigns.withLock {
+            $0 = [campaign]
+        }
+
+        // When
+        state.applyLoadedCampaigns()
+
+        // Then
+        #expect(state.path.isEmpty)
     }
 }
 

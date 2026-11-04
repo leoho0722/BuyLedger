@@ -37,27 +37,6 @@ extension OrderEditScreen {
 @MainActor
 extension OrderEditScreen {
 
-    /// 判定儲存按鈕目前是否可用
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    /// - Returns: 儲存按鈕是否可用
-    func isSaveEnabled(file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
-        if !button.waitForExistence(timeout: 10) {
-            let saveButtonID = BLAccessibilityID.OrderEdit.saveButton
-            app.failWithDiagnostics(
-                "找不到 identifier 為 \(saveButtonID) 的儲存按鈕",
-                file: file,
-                line: line
-            )
-            return false
-        }
-
-        return button.isEnabled
-    }
-
     /// 清空並填入客戶名稱
     ///
     /// - Parameters:
@@ -158,7 +137,8 @@ extension OrderEditScreen {
     ) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
         // 使用預設拖曳範圍，避免 iPhone 找不到可點擊位置
-        if !app.scrollToHittableGently(field, within: rootElement) {
+        // 須完整落在表單可見範圍內才點擊，只露出底緣時點擊未能聚焦
+        if !app.scrollToFullyVisibleGently(field, within: rootElement) {
             // XCTest 的第一次點擊會觸發原生 scroll-to-focus
             // 之後才由 `clearAndType` 輸入
             field.tap()
@@ -208,6 +188,27 @@ extension OrderEditScreen {
             return
         }
         thumbnail.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 判定儲存按鈕目前是否可用
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 儲存按鈕是否可用
+    func isSaveEnabled(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
+        if !button.waitForExistence(timeout: 10) {
+            let saveButtonID = BLAccessibilityID.OrderEdit.saveButton
+            app.failWithDiagnostics(
+                "找不到 identifier 為 \(saveButtonID) 的儲存按鈕",
+                file: file,
+                line: line
+            )
+            return false
+        }
+
+        return button.isEnabled
     }
 
     /// 點工具列的儲存

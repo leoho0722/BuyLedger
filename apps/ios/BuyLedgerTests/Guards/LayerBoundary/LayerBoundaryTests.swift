@@ -19,11 +19,10 @@ struct LayerBoundaryTests {
     /// 功能層應提供的最低頂層宣告數
     private static let minimumFeatureDeclarationNameCount = 30
 
-    /// 允許持有根功能 store 的三個導覽宿主
+    /// 功能目錄內唯一允許持有根功能 `store` 的兩個根畫面檔案 (App 進入點不在掃描範圍)
     private static let rootStoreWhitelist: Set<String> = [
         "Features/App/Presentation/Root/RootView.swift",
-        "Features/App/Presentation/Root/RootTabLayout.swift",
-        "Features/App/Presentation/Root/RootSidebarLayout.swift",
+        "Features/App/Presentation/Root/RootNavigationLayout.swift",
     ]
 
     /// 驗證各正式原始碼目錄至少含 15 個檔案，避免其他分層守門因掃描不足而空轉通過
@@ -138,11 +137,11 @@ struct LayerBoundaryTests {
         )
     }
 
-    /// 驗證根功能 store 只由白名單內的三個導覽宿主持有
+    /// 驗證功能目錄內的根功能 `store` 只由 `RootView` 與 `RootNavigationLayout` 持有
     ///
     /// - Throws: 目錄或原始檔讀取失敗時丟出錯誤
     @Test
-    func filesDeclaringRootStore_功能目錄_僅由三個根導覽宿主持有() throws {
+    func filesDeclaringRootStore_功能目錄_僅由兩個根導覽宿主持有() throws {
         // Given
         let expectedFiles = Self.rootStoreWhitelist
 

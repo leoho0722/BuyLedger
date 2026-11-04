@@ -111,7 +111,7 @@ struct OrdersLoadStateTests {
         #expect(store.state.loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
-    /// 驗證根功能要求重新載入且讀取成功時，錯誤訊息清除，訂單換成讀回的結果並選取 RETRY-1，`loadState` 解析為 `loaded`
+    /// 驗證根功能要求重新載入且讀取成功時，錯誤清除、訂單更新但不自動開啟詳情，`loadState` 為 `loaded`
     @Test
     @MainActor
     func rootRequest_重新載入成功_恢復訂單內容() async {
@@ -150,16 +150,10 @@ struct OrdersLoadStateTests {
                 $0 = [order]
             }
         }
-        await store.receive(\.load.loadResponse) {
-            $0.list.selectedOrderID = "RETRY-1"
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "RETRY-1",
-                orders: SharedReader(initial.$orders)
-            )
-        }
+        await store.receive(\.load.loadResponse)
         await store.finish()
         #expect(store.state.orders == [order])
-        #expect(store.state.list.selectedOrderID == "RETRY-1")
+        #expect(store.state.detail.path.isEmpty)
         #expect(store.state.loadState == .loaded)
     }
 
@@ -194,7 +188,7 @@ struct OrdersLoadStateTests {
         #expect(store.state.load.hasLoaded == false)
     }
 
-    /// 驗證失敗後根功能要求重新載入，讀取只執行一次，讀回的訂單更新到列表並選取 RETRY-1，`loadState` 解析為 `loaded`
+    /// 驗證失敗後根功能要求重新載入時只讀取一次，更新訂單但不自動開啟詳情，`loadState` 為 `loaded`
     @Test
     @MainActor
     func rootRequest_失敗後切回訂單分頁_重讀並顯示訂單() async {
@@ -247,16 +241,11 @@ struct OrdersLoadStateTests {
             $0.$orders.withLock {
                 $0 = [order]
             }
-            $0.list.selectedOrderID = "RETRY-1"
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "RETRY-1",
-                orders: SharedReader(initial.$orders)
-            )
         }
         await store.finish()
         #expect(reads.value == 1)
         #expect(store.state.orders == [order])
-        #expect(store.state.list.selectedOrderID == "RETRY-1")
+        #expect(store.state.detail.path.isEmpty)
         #expect(store.state.loadState == .loaded)
     }
 }

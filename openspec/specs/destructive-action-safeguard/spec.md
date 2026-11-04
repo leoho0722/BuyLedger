@@ -574,3 +574,671 @@ code:
 tests:
   - shared/data-model/generator/test/datamodel-gen.test.ts
 -->
+
+---
+### Requirement: Swipe deletion keeps the row until the deletion succeeds
+
+A swipe action that starts a deletion requiring confirmation SHALL NOT remove the row from the presented list by itself. The row SHALL stay visible while the confirmation is shown, after the user cancels it, and after a confirmed deletion whose persistence fails; the row SHALL disappear only when the deletion succeeds, and removing it SHALL NOT terminate the app. The number of rows shown SHALL always equal the item count stated in the list header. The swipe delete control SHALL keep its red appearance, its label, and its identifier.
+
+#### Scenario: Failed swipe deletion keeps the row on iPadOS 27
+
+- **GIVEN** a category list with 生活雜貨, 服飾, 美妝, 精品 and lookup writes that fail
+- **WHEN** the user swipes 生活雜貨, taps delete, confirms, and dismisses the failure notice on an iPad running iPadOS 27
+- **THEN** 生活雜貨 is visible in the list and the header states 4 items with 4 rows shown
+
+#### Scenario: Cancelling a swipe deletion keeps the row
+
+- **GIVEN** a category list with 生活雜貨
+- **WHEN** the user swipes 生活雜貨, taps delete, and dismisses the confirmation without confirming
+- **THEN** 生活雜貨 remains visible and no persistence operation occurs
+
+#### Scenario: Successful swipe deletion removes the row without terminating the app
+
+- **GIVEN** a category list with 生活雜貨, 服飾, 美妝, 精品 and lookup writes that succeed
+- **WHEN** the user swipes 生活雜貨, taps delete, and confirms on an iPad running iPadOS 27 or an iPhone running iOS 26
+- **THEN** the app keeps running, 生活雜貨 is no longer shown, and the header states 3 items with 3 rows shown
+
+
+<!-- @trace
+source: adaptive-navigation-continuity
+updated: 2026-11-04
+code:
+  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLBarChartLayoutTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+HorizontalBounds.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrdersScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureDeletionReminderTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignRequestPlan.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureClearTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderEditScreen.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootSidebarLayout.swift
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsHeatmapCard.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/MenuInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_大尺寸iPhone橫向_分欄顯示清單與整合篩選鈕.1.png
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanWritesTests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Diagnostics.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/PaymentMethodEditForm/PaymentMethodEditFormFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureReloadDeleteTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsCategoryCard_393點寬最大輔助字級_金額不斷字.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/ReadableWidthUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureListEntryTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailView.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Assertions.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/ValueParsing.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersWriteOutcome.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerUITests/Screens/More/LookupManagementScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureCategoryPickerApplyTests.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerTests/Guards/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/DesignSystemSourceScanner.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature+Path.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersSearchCancellationTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ProjectionWriteBoundary/ProjectionWriteBoundaryGuardsTests.swift
+  - apps/ios/BuyLedgerTests/Support/OrderListFeatureTestSupport.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureForegroundTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotCampaignsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderEditSectionsTests/orderEditItemsSection_最大輔助字級_商品列堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依年分組_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFilterDelegatesTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignEditScreen.swift
+  - apps/ios/BuyLedgerTests/Support/RootFeatureTestSupport.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
+  - apps/ios/BuyLedgerTests/Support/View+LayoutMeasurement.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularAccessibilitySizeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergeSaveTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ToolReadableWidthGuardTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+More.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupRenameFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/SheetInteraction.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderFilterEmptyStatesTests/ordersView_寬版清單欄無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotToolsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_寬版_並排顯示hero與KPI.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderFilterEmptyStatesTests/ordersRegularListContent_寬版清單欄無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignRow.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersViewLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/NavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/TextInput.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureClearFilterPresentationTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+Waiting.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignSectionList.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootNavigationLayout.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignListView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依日分組同日三筆與他日一筆_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsTrendCard_393點寬最大輔助字級_走勢軸標不重疊.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureOrderFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularSearchBarTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailView_393點寬最大輔助字級_標頭與卡片留在畫面內.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrdersDetailNavigation/OrdersDetailSelection.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/QuoteScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Writes.swift
+  - apps/ios/BuyLedgerUITests/Support/BoundsCheck.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+CampaignFlow.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardSummarySection.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootTabLayout.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderDetailTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLoadRequestsTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDetailNavigationTests.swift
+  - apps/ios/BuyLedgerTests/AccessibilityIDs/BLAccessibilityIDTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeaturePresentationTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLookupSyncTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLReadableContentLayout.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardView.swift
+  - apps/ios/BuyLedgerUITests/Support/CheckOutcome.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationQueue.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/KeyboardDismissTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignDetail/CampaignDetailView.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLCardRowMetrics.swift
+  - apps/ios/BuyLedgerUITests/Support/PathCheck.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailItemsView.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBackInteraction.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureCreateTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersBaselineTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureClearFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersLayoutAssertions.swift
+  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteInputsCard.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignRequest.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/SettingsScreen.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_最大輔助字級_目標進度堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergeWritesTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Launch/BLUITestCase.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Waiting.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLReadableScrollContentLayout.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsSearchAndSelectionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureListRequestsTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+ValueParsing.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrderListInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignEdit/CampaignEditView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanTests.swift
+  - apps/ios/BuyLedgerTests/Guards/BottomBarPlacementScanTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveLayoutCheckCounterexampleTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeTests.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrdersFilterOperations.swift
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsCategoryCard.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupAddFormFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/CampaignListFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/Sections/OrderEditItemsSection.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依日分組含今天與昨天_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LanguageProjectionBoundaryTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnScopeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureWriteFailuresTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderFilterEmptyStatesTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFilterPathTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignPresentationQueueTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderEditSectionsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotToolsTests/quoteView_最大輔助字級_輸入列堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailSections_頁面內容寬361最大輔助字級_成本圖例與商品金額不斷字.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedgerUITests/Support/Launch/AppNavigator.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_寬版_並排顯示類別排行與成本結構.1.png
+  - apps/ios/BuyLedgerUITests/Support/Launch/LaunchOptions.swift
+  - apps/ios/BuyLedgerTests/Support/ViewLayoutMeasurementSupport.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersRequestOutcome.swift
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LanguageProjectionScanner.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/Orientation.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDateRefreshTests.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsCostStructureCard_393點寬最大輔助字級_圓餅圖與中心文字留在卡片內.1.png
+  - apps/ios/BuyLedgerUITests/Screens/Dashboard/DashboardScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailContentView.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/LookupRenameForm/LookupRenameFormFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/HorizontalBounds.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/PaymentMethodEditFormFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardHeroCard.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/AlertInteraction.swift
+  - apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/DesignSystemSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeaturePaymentMethodCorrectionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureFailureTimingFollowUpTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Insights/InsightsScreen.swift
+  - apps/ios/BuyLedgerUITests/Support/KPIPresenceCheck.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依月分組_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersView.swift
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotInsightsTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementPresentations.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListContent.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureReloadTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_選取其中一筆開團_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLLayoutClass.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_大尺寸iPhone橫向_類別排行與成本結構上下堆疊.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsSearchTests.swift
+  - apps/ios/BuyLedger/Features/More/Presentation/Root/MoreView.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureTabSelectionTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Orientation.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+MenuInteraction.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotDashboardTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/IdentifierCheck.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestConfiguration.swift
+  - apps/ios/BuyLedgerUITests/Support/CampaignSeedFixture.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_載入中_顯示載入骨架.1.png
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+TextInput.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_寬版_摘要在上四項KPI兩欄.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderSaveGuardTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureNavigationTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Components/OrdersFilterControlsView.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/FxScreen.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_英文月分組_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureEditFieldsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureFailuresTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrdersDetailNavigation/OrdersDetailNavigationFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCardRowPosition.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureEntrySelectionTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+PlatformScope.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailSections_頁面內容寬361最大輔助字級_大額金額完整不裁切.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedgerTests/Support/CampaignFeatureTestSupport.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/moreView_預設清單_顯示各入口.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureOptionWritesTests.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLLayoutClassTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/Scrolling.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_寬版_卡片依固定順序垂直排列.1.png
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureSidebarTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_寬版清單欄多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersCompactView.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLReadableScrollContentLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Assertions.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardKPITiles.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDeleteEditFailuresTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureDatesTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureTestSupport.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Requests/OrderRequestPlan.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SheetInteraction.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailCostView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignPresentationFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureAlertTimingTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularDetailColumn.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrientationLayoutTests.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLReadableContentLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Scrolling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderFilterSheetScreen.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersDetailNavigationFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/MoreNavigationSmokeTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupItemList.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCardRowBackground.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Requests/OrderRequest.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+StableVisibleFrame.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailCostView_393點寬最大輔助字級_成本卡圓餅圖與中心文字在卡片內.1.png
+  - apps/ios/BuyLedger/Features/FX/Presentation/Root/FxView.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureSharedOrdersTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersCompactListView.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLReadableContentType.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnWidthTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+AlertInteraction.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeaturePaymentMethodCorrectionTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationFeature+Destination.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Insights.swift
+  - apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_同日三筆與他日一筆_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanner.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLLayoutClassEnvironmentTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/OrderEditView.swift
+  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteView.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignListFeatureInteractionsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureStatusFailuresTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/LookupAddForm/LookupAddFormFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/PlatformScope.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignFlowTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Common.swift
+-->
+
+---
+### Requirement: A failed deletion reports the failure and keeps deletion available
+
+When a confirmed lookup or campaign deletion fails to persist, the screen SHALL present the failure notice after the confirmation dismisses; for lookups this applies whether the deletion started from the swipe action or the context menu. After the user dismisses the failure notice, starting another deletion SHALL present the deletion confirmation again. A failure notice SHALL NOT be lost because it is requested while the confirmation is still dismissing, and the screen SHALL NOT be left in a state where deletion requests show nothing.
+
+#### Scenario: Failure notice appears after a confirmed swipe deletion fails
+
+- **GIVEN** a category list with 生活雜貨 and lookup writes that fail
+- **WHEN** the user swipes 生活雜貨, taps delete, and confirms
+- **THEN** the failure notice 操作失敗 is presented
+- **AND** 生活雜貨 remains visible with the header stating 4 items
+
+#### Scenario: Failure notice appears after a confirmed context menu deletion fails
+
+- **GIVEN** a category list with 生活雜貨 and lookup writes that fail
+- **WHEN** the user long-presses 生活雜貨, chooses delete from the context menu, and confirms
+- **THEN** the failure notice 操作失敗 is presented
+- **AND** 生活雜貨 remains visible with the header stating 4 items
+
+#### Scenario: Deletion stays available after a failure notice
+
+- **GIVEN** a confirmed deletion of 生活雜貨 failed and the user dismissed the failure notice
+- **WHEN** the user starts deleting 服飾 from the swipe action
+- **THEN** the deletion confirmation for 服飾 is presented
+
+#### Scenario: Failure notice appears after a confirmed campaign deletion fails
+
+- **GIVEN** the campaign detail of 三月日本團 is shown and campaign writes fail
+- **WHEN** the user chooses 刪除開團 from the detail more menu and confirms
+- **THEN** the failure notice 操作失敗 is presented
+- **AND** after the user dismisses it, choosing 刪除開團 again presents the deletion confirmation
+
+<!-- @trace
+source: adaptive-navigation-continuity
+updated: 2026-11-04
+code:
+  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLBarChartLayoutTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+HorizontalBounds.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrdersScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureDeletionReminderTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignRequestPlan.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureClearTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderEditScreen.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootSidebarLayout.swift
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsHeatmapCard.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/MenuInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_大尺寸iPhone橫向_分欄顯示清單與整合篩選鈕.1.png
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanWritesTests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Diagnostics.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/PaymentMethodEditForm/PaymentMethodEditFormFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureReloadDeleteTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsCategoryCard_393點寬最大輔助字級_金額不斷字.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/ReadableWidthUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureListEntryTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailView.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Assertions.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/ValueParsing.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersWriteOutcome.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerUITests/Screens/More/LookupManagementScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureCategoryPickerApplyTests.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerTests/Guards/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/DesignSystemSourceScanner.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature+Path.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersSearchCancellationTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ProjectionWriteBoundary/ProjectionWriteBoundaryGuardsTests.swift
+  - apps/ios/BuyLedgerTests/Support/OrderListFeatureTestSupport.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureForegroundTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotCampaignsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderEditSectionsTests/orderEditItemsSection_最大輔助字級_商品列堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依年分組_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFilterDelegatesTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignEditScreen.swift
+  - apps/ios/BuyLedgerTests/Support/RootFeatureTestSupport.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
+  - apps/ios/BuyLedgerTests/Support/View+LayoutMeasurement.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularAccessibilitySizeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergeSaveTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ToolReadableWidthGuardTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+More.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupRenameFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/SheetInteraction.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderFilterEmptyStatesTests/ordersView_寬版清單欄無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotToolsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_寬版_並排顯示hero與KPI.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderFilterEmptyStatesTests/ordersRegularListContent_寬版清單欄無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignRow.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersViewLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/NavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/TextInput.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureClearFilterPresentationTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+Waiting.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignSectionList.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootNavigationLayout.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignListView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依日分組同日三筆與他日一筆_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsTrendCard_393點寬最大輔助字級_走勢軸標不重疊.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureOrderFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularSearchBarTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailView_393點寬最大輔助字級_標頭與卡片留在畫面內.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrdersDetailNavigation/OrdersDetailSelection.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/QuoteScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Writes.swift
+  - apps/ios/BuyLedgerUITests/Support/BoundsCheck.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+CampaignFlow.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardSummarySection.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootTabLayout.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderDetailTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLoadRequestsTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDetailNavigationTests.swift
+  - apps/ios/BuyLedgerTests/AccessibilityIDs/BLAccessibilityIDTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeaturePresentationTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLookupSyncTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLReadableContentLayout.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardView.swift
+  - apps/ios/BuyLedgerUITests/Support/CheckOutcome.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationQueue.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/KeyboardDismissTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFilterSheetTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignDetail/CampaignDetailView.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLCardRowMetrics.swift
+  - apps/ios/BuyLedgerUITests/Support/PathCheck.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailItemsView.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBackInteraction.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureCreateTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersBaselineTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureClearFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersLayoutAssertions.swift
+  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteInputsCard.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignRequest.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/SettingsScreen.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_最大輔助字級_目標進度堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergeWritesTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Launch/BLUITestCase.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Waiting.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLReadableScrollContentLayout.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsSearchAndSelectionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureListRequestsTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+ValueParsing.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrderListInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignEdit/CampaignEditView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanTests.swift
+  - apps/ios/BuyLedgerTests/Guards/BottomBarPlacementScanTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveLayoutCheckCounterexampleTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeTests.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrdersFilterOperations.swift
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsCategoryCard.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupAddFormFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/CampaignListFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/Sections/OrderEditItemsSection.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依日分組含今天與昨天_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LanguageProjectionBoundaryTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnScopeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureWriteFailuresTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderFilterEmptyStatesTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFilterPathTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignPresentationQueueTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderEditSectionsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotToolsTests/quoteView_最大輔助字級_輸入列堆疊排列.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailSections_頁面內容寬361最大輔助字級_成本圖例與商品金額不斷字.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Operations/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedgerUITests/Support/Launch/AppNavigator.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_寬版_並排顯示類別排行與成本結構.1.png
+  - apps/ios/BuyLedgerUITests/Support/Launch/LaunchOptions.swift
+  - apps/ios/BuyLedgerTests/Support/ViewLayoutMeasurementSupport.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersRequestOutcome.swift
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LanguageProjectionScanner.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/Orientation.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDateRefreshTests.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsCostStructureCard_393點寬最大輔助字級_圓餅圖與中心文字留在卡片內.1.png
+  - apps/ios/BuyLedgerUITests/Screens/Dashboard/DashboardScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailContentView.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/LookupRenameForm/LookupRenameFormFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/HorizontalBounds.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/PaymentMethodEditFormFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardHeroCard.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/AlertInteraction.swift
+  - apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/DesignSystemSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeaturePaymentMethodCorrectionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureFailureTimingFollowUpTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Insights/InsightsScreen.swift
+  - apps/ios/BuyLedgerUITests/Support/KPIPresenceCheck.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_依月分組_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersView.swift
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotInsightsTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementPresentations.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListContent.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureReloadTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_選取其中一筆開團_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLLayoutClass.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_大尺寸iPhone橫向_類別排行與成本結構上下堆疊.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsSearchTests.swift
+  - apps/ios/BuyLedger/Features/More/Presentation/Root/MoreView.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureTabSelectionTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Orientation.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+MenuInteraction.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotDashboardTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/IdentifierCheck.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestConfiguration.swift
+  - apps/ios/BuyLedgerUITests/Support/CampaignSeedFixture.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_載入中_顯示載入骨架.1.png
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+TextInput.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotDashboardTests/dashboardView_寬版_摘要在上四項KPI兩欄.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderSaveGuardTests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignFeatureNavigationTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Components/OrdersFilterControlsView.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/FxScreen.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotCampaignsTests/campaignListView_英文月分組_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureEditFieldsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureFailuresTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrdersDetailNavigation/OrdersDetailNavigationFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCardRowPosition.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureEntrySelectionTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+PlatformScope.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailSections_頁面內容寬361最大輔助字級_大額金額完整不裁切.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedgerTests/Support/CampaignFeatureTestSupport.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/moreView_預設清單_顯示各入口.1.png
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureOptionWritesTests.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLLayoutClassTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Interactions/Scrolling.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotInsightsTests/insightsView_寬版_卡片依固定順序垂直排列.1.png
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureSidebarTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersView_寬版清單欄多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersCompactView.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLReadableScrollContentLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Assertions/Assertions.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardKPITiles.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDeleteEditFailuresTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureDatesTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureTestSupport.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Requests/OrderRequestPlan.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SheetInteraction.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderDetail/Views/OrderDetailCostView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignPresentationFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupManagementFeatureAlertTimingTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularDetailColumn.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrientationLayoutTests.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLReadableContentLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Scrolling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderFilterSheetScreen.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersDetailNavigationFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/MoreNavigationSmokeTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupItemList.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCardRowBackground.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Requests/OrderRequest.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+StableVisibleFrame.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrderDetailTests/orderDetailCostView_393點寬最大輔助字級_成本卡圓餅圖與中心文字在卡片內.1.png
+  - apps/ios/BuyLedger/Features/FX/Presentation/Root/FxView.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureSharedOrdersTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersCompactListView.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLReadableContentType.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnWidthTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+AlertInteraction.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeaturePaymentMethodCorrectionTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignPresentation/CampaignPresentationFeature+Destination.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Insights.swift
+  - apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotOrdersTests/ordersCompactView_同日三筆與他日一筆_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanner.swift
+  - apps/ios/BuyLedgerTests/Shared/DesignSystem/BLLayoutClassEnvironmentTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/OrderEditView.swift
+  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteView.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignListFeatureInteractionsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureStatusFailuresTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/LookupAddForm/LookupAddFormFeature.swift
+  - apps/ios/BuyLedgerUITests/Support/Layout/PlatformScope.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignFlowTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Common.swift
+-->

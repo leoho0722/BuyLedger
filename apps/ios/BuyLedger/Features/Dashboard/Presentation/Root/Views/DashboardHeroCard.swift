@@ -104,7 +104,7 @@ private extension DashboardHeroCard {
         }
     }
 
-    /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏
+    /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏，輔助字級時改為垂直堆疊
     @ViewBuilder
     var goalProgressBar: some View {
         if stats.goal > 0 {
@@ -114,8 +114,11 @@ private extension DashboardHeroCard {
                 goal: stats.goal,
                 locale: locale
             )
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: BLSpacing.extraSmall))
+                : AnyLayout(HStackLayout(spacing: BLSpacing.small))
 
-            HStack(spacing: BLSpacing.small) {
+            layout {
                 // 軌道與文字固定使用白色
                 ProgressView(value: progress)
                     .progressViewStyle(

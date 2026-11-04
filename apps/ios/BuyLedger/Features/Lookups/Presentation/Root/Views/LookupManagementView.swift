@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單來源、商品類別、付款方式與對帳狀態的管理畫面
+/// 訂單來源、商品類別、付款方式與對帳狀態的管理畫面，表單與提示由分欄層的 `LookupManagementPresentations` 呈現
 struct LookupManagementView: View {
 
     // MARK: - Properties
@@ -45,25 +45,6 @@ struct LookupManagementView: View {
                 addButton
             }
         }
-        .sheet(
-            item: $store.scope(state: \.$destination, action: \.destination).add,
-            onDismiss: sendFormSheetDismissed
-        ) {
-            addSheet(store: $0)
-        }
-        .sheet(
-            item: $store.scope(state: \.$destination, action: \.destination).rename,
-            onDismiss: sendFormSheetDismissed
-        ) {
-            renameSheet(store: $0)
-        }
-        .sheet(
-            item: $store.scope(state: \.$destination, action: \.destination).editPaymentMethod,
-            onDismiss: sendFormSheetDismissed
-        ) {
-            paymentMethodEditSheet(store: $0)
-        }
-        .alert($store.scope(state: \.$destination, action: \.destination).alert)
     }
 }
 
@@ -81,125 +62,6 @@ private extension LookupManagementView {
         }
         .labelStyle(.iconOnly)
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.addButton)
-    }
-
-    /// 依新增表單狀態呈現名稱型或付款方式表單
-    ///
-    /// - Parameter addStore: 新增表單的 scoped store
-    /// - Returns: 依新增種類建立的表單 view
-    @ViewBuilder
-    func addSheet(store addStore: StoreOf<LookupAddFormFeature>) -> some View {
-        if addStore.state.hasClassification {
-            PaymentMethodEditorSheet(
-                title: store.state.kind.addFormTitle,
-                message: store.state.kind.addFormMessage,
-                namePlaceholder: store.state.kind.nameFieldPlaceholder,
-                submitTitle: "orders.list.button.add"
-            ) { name, isCardless, isBankTransfer, isCashOnDelivery in
-                addStore.send(
-                    .view(
-                        .saveButtonTapped(
-                            name: name,
-                            flags: PaymentMethodFlags(
-                                isCardless: isCardless,
-                                isBankTransfer: isBankTransfer,
-                                isCashOnDelivery: isCashOnDelivery
-                            )
-                        )
-                    )
-                )
-            }
-        } else {
-            LookupNameEditorSheet(
-                title: LocalizedStringKey(store.state.kind.addFormTitle),
-                message: store.state.kind.addFormMessage,
-                namePlaceholder: store.state.kind.nameFieldPlaceholder,
-                submitTitle: "orders.list.button.add"
-            ) {
-                addStore.send(.view(.saveButtonTapped(name: $0, flags: .none)))
-            }
-        }
-    }
-
-    /// 建立改名表單並送出已驗證的新名稱
-    ///
-    /// - Parameter renameStore: 改名表單的 scoped store
-    /// - Returns: 改名表單 view
-    func renameSheet(store renameStore: StoreOf<LookupRenameFormFeature>) -> some View {
-        LookupNameEditorSheet(
-            title: renameSheetTitle,
-            message: "orders.lookup.message.ordersReferencingName",
-            namePlaceholder: store.state.kind.nameFieldPlaceholder,
-            submitTitle: "orders.edit.button.save",
-            initialName: renameStore.state.originalName
-        ) {
-            renameStore.send(.view(.saveButtonTapped(name: $0)))
-        }
-    }
-
-    /// 建立付款方式編輯表單並送出名稱與旗標
-    ///
-    /// - Parameter editStore: 付款方式編輯表單的 scoped store
-    /// - Returns: 付款方式編輯表單 view
-    func paymentMethodEditSheet(store editStore: PaymentMethodEditStore) -> some View {
-        PaymentMethodEditorSheet(
-            title: "orders.lookup.label.editPaymentMethod",
-            message: "orders.lookup.message.editNameTags",
-            namePlaceholder: store.state.kind.nameFieldPlaceholder,
-            submitTitle: "orders.edit.button.save",
-            initialName: editStore.state.originalName,
-            isInitialCardless: editStore.state.flags.isCardless,
-            isInitialBankTransfer: editStore.state.flags.isBankTransfer,
-            isInitialCashOnDelivery: editStore.state.flags.isCashOnDelivery
-        ) { name, isCardless, isBankTransfer, isCashOnDelivery in
-            editStore.send(
-                .view(
-                    .saveButtonTapped(
-                        name: name,
-                        flags: PaymentMethodFlags(
-                            isCardless: isCardless,
-                            isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery
-                        )
-                    )
-                )
-            )
-        }
-    }
-}
-
-// MARK: - Nested Types
-
-private extension LookupManagementView {
-
-    /// 付款方式編輯表單使用的 scoped store
-    typealias PaymentMethodEditStore = StoreOf<PaymentMethodEditFormFeature>
-}
-
-// MARK: - Private Method
-
-private extension LookupManagementView {
-
-    /// 依主檔種類回傳重新命名表單標題
-    var renameSheetTitle: LocalizedStringKey {
-        switch store.state.kind {
-        case .orderSource:
-            "orders.lookup.label.renameOrderSource"
-
-        case .category:
-            "orders.lookup.label.renameProductCategory"
-
-        case .paymentMethod:
-            "orders.lookup.label.renamePaymentMethod"
-
-        case .reconciliationStatus:
-            "orders.lookup.label.renameStatus"
-        }
-    }
-
-    /// 通知 Feature 表單 sheet 關閉動畫已結束，讓暫存的提示接著顯示
-    func sendFormSheetDismissed() {
-        store.send(.view(.formSheetDismissed))
     }
 }
 

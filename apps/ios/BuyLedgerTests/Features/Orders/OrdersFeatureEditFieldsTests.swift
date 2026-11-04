@@ -287,15 +287,9 @@ struct OrdersFeatureEditFieldsTests {
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveResponse)
-        await store.receive(\.writes.delegate.saved) {
-            $0.list.selectedOrderID = expectedOrder.id
-        }
-        await store.receive(\.list.delegate.selectionChanged, expectedOrder.id) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: expectedOrder.id,
-                orders: SharedReader(initial.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate.saved)
+        await store.finish()
+        #expect(store.state.detail.path.isEmpty)
         #expect(createdOrders.value == [expectedOrder])
     }
 }

@@ -129,9 +129,14 @@ jobs:
         if: always()
         run: |
           XCRESULT=$(jq -r '.data.artifacts.xcresultPath // empty' "$RUNNER_TEMP/unit-test-result.json" 2>/dev/null || true)
+          # CLI 回傳的路徑以 ~ 開頭，來自變數時 shell 不會展開
+          XCRESULT="${XCRESULT/#\~/$HOME}"
           mkdir -p "$RUNNER_TEMP/test-results"
           if [ -n "$XCRESULT" ] && [ -e "$XCRESULT" ]; then
             cp -R "$XCRESULT" "$RUNNER_TEMP/test-results/"
+            # CLI 輸出的 testFailures 可能是空的，失敗名稱以結果檔摘要為準
+            xcrun xcresulttool get test-results summary --path "$XCRESULT" \
+              | jq '{result, passedTests, failedTests, testFailures}' || true
           fi
 
       - name: Upload test result bundle
@@ -207,9 +212,14 @@ jobs:
         if: always()
         run: |
           XCRESULT=$(jq -r '.data.artifacts.xcresultPath // empty' "$RUNNER_TEMP/ui-test-result.json" 2>/dev/null || true)
+          # CLI 回傳的路徑以 ~ 開頭，來自變數時 shell 不會展開
+          XCRESULT="${XCRESULT/#\~/$HOME}"
           mkdir -p "$RUNNER_TEMP/test-results"
           if [ -n "$XCRESULT" ] && [ -e "$XCRESULT" ]; then
             cp -R "$XCRESULT" "$RUNNER_TEMP/test-results/"
+            # CLI 輸出的 testFailures 可能是空的，失敗名稱以結果檔摘要為準
+            xcrun xcresulttool get test-results summary --path "$XCRESULT" \
+              | jq '{result, passedTests, failedTests, testFailures}' || true
           fi
 
       - name: Upload test result bundle

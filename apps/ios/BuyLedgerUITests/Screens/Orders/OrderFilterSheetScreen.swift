@@ -65,6 +65,7 @@ extension OrderFilterSheetScreen {
         line: UInt = #line
     ) {
         let cell = orders.filterCategoryCell(name)
+        ensureFilterSheetExpanded(for: cell, file: file, line: line)
         if !orders.revealFilterCategory(name) {
             app.failWithDiagnostics("篩選 sheet 內找不到類別「\(name)」", file: file, line: line)
         }
@@ -78,6 +79,7 @@ extension OrderFilterSheetScreen {
     /// - Returns: accessibility value；取不到時為 `nil`
     func filterGroupValue(_ kindID: String) -> String? {
         let header = orders.filterGroupHeader(kindID)
+        ensureFilterSheetExpanded(for: header)
         if !orders.revealElement(header, within: filterSheet) {
             app.failWithDiagnostics("篩選 sheet 內找不到組標題「\(kindID)」")
         }
@@ -96,6 +98,7 @@ extension OrderFilterSheetScreen {
         line: UInt = #line
     ) {
         let header = orders.filterGroupHeader(kindID)
+        ensureFilterSheetExpanded(for: header, file: file, line: line)
         if !orders.revealElement(header, within: filterSheet) {
             app.failWithDiagnostics("篩選 sheet 內找不到組標題「\(kindID)」", file: file, line: line)
         }
@@ -107,34 +110,50 @@ extension OrderFilterSheetScreen {
     ///
     /// - Parameters:
     ///   - periodID: 日期期間的識別值 (例如 `thisMonth`)
+    ///   - label: identifier 缺失時回退使用的可見標籤，預設依 `periodID` 映射
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     func selectFilterDatePeriod(
         _ periodID: String,
+        label: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         let menu = app.descendants(matching: .any)[BLAccessibilityID.Orders.filterDateMenuButton]
         menu.tapAfterWaiting(in: app, file: file, line: line)
         let item = BLAccessibilityID.Orders.filterDatePeriod(periodID)
-        _ = app.tapMenuItem(item, file: file, line: line)
+        let fallbackLabel = label ?? datePeriodLabel(for: periodID)
+        app.tapMenuItem(
+            item,
+            label: fallbackLabel,
+            file: file,
+            line: line
+        )
     }
 
     /// 選取付款方式 Menu 的指定項目
     ///
     /// - Parameters:
     ///   - name: 付款方式名稱
+    ///   - label: identifier 缺失時回退使用的可見標籤，預設為 `name`
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     func selectFilterPaymentMethod(
         _ name: String,
+        label: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
         let menuID = BLAccessibilityID.Orders.filterPaymentMethodMenuButton
         app.descendants(matching: .any)[menuID].tapAfterWaiting(in: app, file: file, line: line)
         let item = BLAccessibilityID.Orders.filterPaymentMethodOption(name)
-        _ = app.tapMenuItem(item, file: file, line: line)
+        let fallbackLabel = label ?? name
+        app.tapMenuItem(
+            item,
+            label: fallbackLabel,
+            file: file,
+            line: line
+        )
     }
 
     /// 在類別搜尋欄輸入文字
@@ -145,6 +164,7 @@ extension OrderFilterSheetScreen {
     ///   - line: 失敗時回報的行號
     func typeFilterSearch(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.Orders.filterSearchField].firstMatch
+        ensureFilterSheetExpanded(for: field, file: file, line: line)
         let clearID = BLAccessibilityID.Orders.filterSearchClearButton
         let clearButton = app.buttons[clearID].firstMatch
         orders.typeSearchText(
@@ -197,11 +217,17 @@ extension OrderFilterSheetScreen {
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 下滑篩選 sheet 嘗試關閉，無未套用變更時應關閉
+    /// 下滑篩選 sheet 嘗試關閉，無未套用變更時應關閉；全高時第一下可能只收回到半高，若尚未關閉則補第二次下滑
     ///
     /// - Returns: sheet 是否在逾時前關閉
     func dismissFilterSheetBySwipe() -> Bool {
-        app.dismissSheetBySwipe(filterSheet)
+        if app.dismissSheetBySwipe(filterSheet, timeout: 2) {
+            return true
+        }
+        guard filterSheet.exists else {
+            return true
+        }
+        return app.dismissSheetBySwipe(filterSheet, timeout: 5)
     }
 
     /// 下滑篩選 sheet 嘗試關閉，有未套用變更時應被擋下
@@ -230,5 +256,103 @@ private extension OrderFilterSheetScreen {
     /// 承載兩個 sheet 共用的類別格查詢、捲動與搜尋輸入 helper 的訂單清單 Page Object
     var orders: OrdersScreen {
         OrdersScreen(app: app)
+    }
+
+    /// 系統表單控點 (Grabber) 按鈕，存在於支援多種呈現高度的 sheet 上緣
+    var sheetGrabber: XCUIElement {
+        let predicate = NSPredicate(
+            format: "label == %@ OR label == %@ OR label == %@",
+            "表單控點",
+            "Grabber",
+            "Sheet Grabber"
+        )
+        let button = app.buttons.matching(predicate).firstMatch
+        if button.exists {
+            return button
+        }
+        return app.descendants(matching: .any).matching(predicate).firstMatch
+    }
+
+    /// 確保目標元素已在畫面上可點，若未可點且篩選 sheet 未達全高，則拖曳把手展開並確認高度變大
+    ///
+    /// - Parameters:
+    ///   - target: 要在畫面上點擊或操作的目標元素
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func ensureFilterSheetExpanded(
+        for target: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        if target.isHittableOnScreen {
+            return
+        }
+        _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1)
+        guard let sheetFrame = filterSheet.snapshotFrame,
+              let windowFrame = app.windows.firstMatch.snapshotFrame else {
+            return
+        }
+        if sheetFrame.height >= windowFrame.height * 0.75 {
+            return
+        }
+
+        let initialHeight = sheetFrame.height
+        let destination = app.windows.firstMatch.coordinate(
+            withNormalizedOffset: CGVector(dx: 0.5, dy: 0.05)
+        )
+
+        for _ in 0..<2 {
+            let grabber = sheetGrabber
+            if grabber.exists {
+                let start = grabber.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                start.press(forDuration: 0.1, thenDragTo: destination)
+            } else {
+                let start = filterSheet.coordinate(
+                    withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)
+                )
+                start.press(forDuration: 0.1, thenDragTo: destination)
+            }
+
+            let deadline = Date.now.addingTimeInterval(2)
+            while Date.now < deadline {
+                if let current = filterSheet.snapshotFrame,
+                   current.height >= initialHeight * 1.2 {
+                    _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1)
+                    return
+                }
+                _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+            }
+        }
+
+        let sheetDesc = filterSheet.snapshotFrame.map { "\($0)" } ?? "nil"
+        let windowDesc = app.windows.firstMatch.snapshotFrame.map { "\($0)" } ?? "nil"
+        app.failWithDiagnostics(
+            "篩選 sheet 拖曳兩次後仍未展開 (sheet 框線: \(sheetDesc), 視窗框線: \(windowDesc))",
+            file: file,
+            line: line
+        )
+    }
+
+    /// 依日期期間識別值取得對應的正體中文可見標籤字面值
+    ///
+    /// - Parameter periodID: 日期期間識別值
+    /// - Returns: 可見標籤字串
+    func datePeriodLabel(for periodID: String) -> String? {
+        switch periodID {
+        case "all":
+            return "全部時間"
+
+        case "thisWeek":
+            return "本週"
+
+        case "thisMonth":
+            return "本月"
+
+        case "lastMonth":
+            return "上月"
+
+        default:
+            return nil
+        }
     }
 }

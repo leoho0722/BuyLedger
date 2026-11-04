@@ -30,6 +30,8 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
             contentSizeCategory: .accessibilityExtraExtraExtraLarge
         )
         let app = launch(options)
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
 
         // When
@@ -49,6 +51,8 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
             contentSizeCategory: .accessibilityExtraExtraExtraLarge
         )
         let app = launch(options)
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         try openOrders(in: app)
 
@@ -65,6 +69,8 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
     func testRegularFilters_標準字級_篩選區固定在清單捲動範圍上方() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
 
         // When
@@ -84,6 +90,47 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
             清除篩選 frame = \(clearFrame)，清單捲動範圍 frame = \(listFrame)
             """
         )
+    }
+
+    /// 驗證 regular 版面最大輔助字級時，點清單標頭空白處不清除篩選，點清除篩選鈕本身才清除
+    ///
+    /// - Throws: 版面不適用、必要元素缺少或篩選狀態不符時丟出測試錯誤
+    func testRegularFilters_最大輔助字級點標頭空白處_篩選不變且清除鈕仍可清除() throws {
+        // Given
+        let options = LaunchOptions(
+            seed: .categoryFilter,
+            contentSizeCategory: .accessibilityExtraExtraExtraLarge
+        )
+        let app = launch(options)
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
+        try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
+        try openOrders(in: app)
+        let orders = OrdersScreen(app: app)
+        orders.selectPaymentMethodInRegularLayout("信用卡")
+        try requireCondition(
+            pollUntil(timeout: 3) { orders.paymentMethodTriggerLabel.contains("付款方式：信用卡") },
+            in: app,
+            "前提不成立：付款方式應為信用卡，實際為「\(orders.paymentMethodTriggerLabel)」"
+        )
+
+        // When
+        try tapHeaderGap(in: app)
+
+        // Then
+        let isClearedByGapTap = pollUntil(timeout: 2) {
+            orders.paymentMethodTriggerLabel.contains("付款方式：全部")
+        }
+        XCTAssertFalse(isClearedByGapTap, "點標頭空白處後付款方式應維持信用卡")
+
+        // When
+        orders.tapRegularClearFilters()
+
+        // Then
+        let isCleared = pollUntil(timeout: 3) {
+            orders.paymentMethodTriggerLabel.contains("付款方式：全部")
+        }
+        XCTAssertTrue(isCleared, "點清除篩選鈕後付款方式應回到全部")
     }
 }
 
@@ -140,5 +187,25 @@ private extension OrderRegularAccessibilitySizeTests {
             }
             previous = (name, frame)
         }
+    }
+
+    /// 點清單標頭內清除篩選鈕右側的空白處；點旁邊篩選按鈕之間的間隙會開到類別選擇器，所以避開間隙
+    ///
+    /// - Parameter app: 受測 App
+    /// - Throws: 必要元素缺少、不可點或右側空白不足時丟出測試錯誤
+    func tapHeaderGap(in app: XCUIApplication) throws {
+        let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
+        let listFrame = try requireValidFrame(of: list, in: app, context: "訂單清單捲動範圍")
+        let clearButton = app
+            .descendants(matching: .any)[BLAccessibilityID.Orders.clearFiltersButton]
+        let clearFrame = try requireHittableFrame(of: clearButton, in: app, context: "清除篩選")
+        let blankX = listFrame.maxX - 8
+        try requireCondition(
+            blankX - clearFrame.maxX >= 20,
+            in: app,
+            "前提不成立：清除篩選鈕右側空白不足，鈕 frame = \(clearFrame)，清單 frame = \(listFrame)"
+        )
+        let blankOffset = CGVector(dx: blankX, dy: clearFrame.midY)
+        app.coordinate(withNormalizedOffset: .zero).withOffset(blankOffset).tap()
     }
 }

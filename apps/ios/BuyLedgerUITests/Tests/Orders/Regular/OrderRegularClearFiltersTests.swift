@@ -39,6 +39,8 @@ final class OrderRegularClearFiltersTests: BLUITestCase {
     func testRegularClearFilters_有篩選條件_三項回到預設且狀態維持() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "清除篩選按鈕只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)
@@ -101,6 +103,8 @@ final class OrderRegularClearFiltersTests: BLUITestCase {
     func testRegularClearFilters_無篩選條件_按鈕停用() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "清除篩選按鈕只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
 

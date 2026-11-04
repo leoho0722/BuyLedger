@@ -35,6 +35,8 @@ final class OrderRegularSearchBarTests: BLUITestCase {
     func testRegularSearch_直向收鍵盤_標題保留且位置不變() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         let before = try searchBarPositions(of: orders, in: app, context: "直向搜尋前")
@@ -68,6 +70,8 @@ final class OrderRegularSearchBarTests: BLUITestCase {
     func testClearSearch_直向搜尋後清除文字_標題保留且位置不變() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         let before = try searchBarPositions(of: orders, in: app, context: "直向搜尋前")
@@ -102,6 +106,8 @@ final class OrderRegularSearchBarTests: BLUITestCase {
     func testRegularSearch_橫向收鍵盤_標題保留且位置不變() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         try rotateToLandscape(app)
@@ -136,6 +142,8 @@ final class OrderRegularSearchBarTests: BLUITestCase {
     func testClearSearch_橫向搜尋後清除文字_標題保留且位置不變() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         try rotateToLandscape(app)
@@ -222,6 +230,8 @@ private extension OrderRegularSearchBarTests {
     ///   - context: 失敗訊息中的檢查情境
     /// - Returns: 目前的版面
     /// - Throws: 清單根容器、搜尋欄或詳情欄導覽列缺少時丟出測試錯誤
+    /// - Note: iPadOS 27 的詳情欄導覽列會延伸到清單欄底下，因此以右緣超出清單欄右緣判定詳情欄導覽列
+    /// - Note: 橫向時根 sidebar 導覽列位於清單欄左側，清單欄導覽列須左右緣都在清單欄內
     func searchBarPositions(
         of orders: OrdersScreen,
         in app: XCUIApplication,
@@ -230,9 +240,11 @@ private extension OrderRegularSearchBarTests {
         let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
         let listFrame = try requireValidFrame(of: list, in: app, context: "\(context)，訂單清單根容器")
         let navigationBars = app.navigationBars.allElementsBoundByIndex.filter(\.isHittableOnScreen)
-        let listBar = navigationBars.first { $0.frame.maxX <= listFrame.maxX + 1 }
+        let listBar = navigationBars.first {
+            $0.frame.minX >= listFrame.minX - 1 && $0.frame.maxX <= listFrame.maxX + 1
+        }
         let detailBar = try requireValue(
-            navigationBars.first { $0.frame.minX >= listFrame.maxX - 1 },
+            navigationBars.first { $0.frame.maxX > listFrame.maxX + 1 },
             in: app,
             "找不到元素：\(context)，詳情欄導覽列"
         )

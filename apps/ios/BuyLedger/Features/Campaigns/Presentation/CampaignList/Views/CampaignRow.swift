@@ -53,6 +53,30 @@ struct CampaignRow: View {
 
 private extension CampaignRow {
 
+    /// 顯示按年分組時列上的開團日期
+    ///
+    /// - Parameter text: 已格式化的開團日期
+    /// - Returns: 次要色的日期標籤
+    func openDateLabel(_ text: String) -> some View {
+        Text(text)
+            .blTextStyle(.caption)
+            .foregroundStyle(.blSecondaryLabel)
+    }
+
+    /// 團名與右側的狀態標籤
+    var titleLine: some View {
+        HStack(alignment: .top, spacing: BLSpacing.small) {
+            Text(campaign.name)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .blTextStyle(.headline)
+                // 選取時系統會把預設前景改為單色，固定色盤色避免白字疊在白卡上
+                .foregroundStyle(.blLabel)
+
+            statusPills
+        }
+    }
+
     /// 開團狀態與已結團標籤
     var statusPills: some View {
         VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
@@ -64,18 +88,6 @@ private extension CampaignRow {
             if campaign.isSettled {
                 BLStatusPill("campaigns.list.label.settled", tone: .neutral, showsIndicator: false)
             }
-        }
-    }
-
-    /// 團名與右側的狀態標籤
-    var titleLine: some View {
-        HStack(alignment: .top, spacing: BLSpacing.small) {
-            Text(campaign.name)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .blTextStyle(.headline)
-
-            statusPills
         }
     }
 
@@ -113,16 +125,6 @@ private extension CampaignRow {
             trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale),
             value: summary.receivedRatio
         )
-    }
-
-    /// 顯示按年分組時列上的開團日期
-    ///
-    /// - Parameter text: 已格式化的開團日期
-    /// - Returns: 次要色的日期標籤
-    func openDateLabel(_ text: String) -> some View {
-        Text(text)
-            .blTextStyle(.caption)
-            .foregroundStyle(.blSecondaryLabel)
     }
 }
 

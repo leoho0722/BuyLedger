@@ -12,7 +12,7 @@ import Foundation
 
 extension CampaignPresentationFeature {
 
-    /// 開團畫面可呈現的編輯表單與 alert，同一時間只會有一個
+    /// 開團畫面可呈現的編輯表單與刪除、結團確認 alert
     @Reducer
     enum Destination {
 
@@ -21,7 +21,7 @@ extension CampaignPresentationFeature {
         /// - Parameter feature: 負責驗證名稱與草稿的表單 Feature
         case edit(CampaignEditFeature)
 
-        /// 刪除與結團確認，以及寫入與提醒失敗的一次性通知
+        /// 刪除與結團確認
         ///
         /// - Parameter alert: 要顯示的 alert 內容
         @ReducerCaseIgnored case alert(AlertState<Alert>)
@@ -63,7 +63,7 @@ extension CampaignPresentationFeature {
 
 // MARK: - Computed Properties
 
-extension CampaignPresentationFeature.Destination.State {
+extension AlertState where Action == CampaignPresentationFeature.Destination.Alert {
 
     /// 結單日自動轉狀態的寫入失敗通知
     static var autoCloseFailure: Self {
@@ -126,11 +126,16 @@ extension CampaignPresentationFeature.Destination.State {
             }
         )
     }
+}
+
+// MARK: - Internal Method
+
+extension AlertState where Action == CampaignPresentationFeature.Destination.Alert {
 
     /// 建立開團寫入失敗的一次性通知
     ///
     /// - Parameter failure: 寫入子 Feature 回報的失敗種類
-    /// - Returns: 包含失敗通知的 `Destination.State`
+    /// - Returns: 開團寫入失敗通知
     static func writeFailure(_ failure: CampaignWritesFeature.Failure) -> Self {
         switch failure {
         case .save:
@@ -150,25 +155,23 @@ extension CampaignPresentationFeature.Destination.State {
     /// 建立行事曆提醒失敗的一次性通知；權限被拒時附「前往設定」
     ///
     /// - Parameter failure: 提醒子 Feature 回報的失敗種類
-    /// - Returns: 包含失敗通知的 `Destination.State`
+    /// - Returns: 行事曆提醒失敗通知
     static func reminderFailure(_ failure: CampaignReminderFeature.Failure) -> Self {
         switch failure {
         case .accessDenied:
             // 要求使用者前往系統設定卻不提供跳轉，等於把導航成本轉嫁給使用者
-            return .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("campaigns.general.label.calendarAccessRequired")
-                } actions: {
-                    ButtonState(action: .openSettings) {
-                        TextState("orders.general.label.openSettings")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.allowCalendarAccess")
+            return AlertState<CampaignPresentationFeature.Destination.Alert> {
+                TextState("campaigns.general.label.calendarAccessRequired")
+            } actions: {
+                ButtonState(action: .openSettings) {
+                    TextState("orders.general.label.openSettings")
                 }
-            )
+                ButtonState(role: .cancel) {
+                    TextState("orders.merge.label.ok")
+                }
+            } message: {
+                TextState("campaigns.general.message.allowCalendarAccess")
+            }
 
         case .accessRestricted:
             // 裝置政策限制下無法前往設定
@@ -205,18 +208,16 @@ extension CampaignPresentationFeature.Destination.State {
 
 // MARK: - Equatable
 
-extension CampaignPresentationFeature.Destination.State: Equatable {
-
-}
+extension CampaignPresentationFeature.Destination.State: Equatable {}
 
 // MARK: - Private Method
 
-private extension CampaignPresentationFeature.Destination.State {
+private extension AlertState where Action == CampaignPresentationFeature.Destination.Alert {
 
     /// 建立標題為「操作失敗」、只有「知道了」按鈕的通知
     ///
     /// - Parameter message: 失敗原因
-    /// - Returns: 包含通知的 `Destination.State`
+    /// - Returns: 操作失敗通知
     static func operationFailure(_ message: TextState) -> Self {
         notice(TextState("orders.list.label.operationFailed"), message: message)
     }
@@ -226,18 +227,16 @@ private extension CampaignPresentationFeature.Destination.State {
     /// - Parameters:
     ///   - title: 通知標題
     ///   - message: 通知訊息
-    /// - Returns: 包含通知的 `Destination.State`
+    /// - Returns: 一次性通知
     static func notice(_ title: TextState, message: TextState) -> Self {
-        .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                title
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                message
+        AlertState<CampaignPresentationFeature.Destination.Alert> {
+            title
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            message
+        }
     }
 }

@@ -13,6 +13,9 @@ struct OrderDetailCostView: View {
 
     // MARK: - Properties
 
+    /// 目前的動態字級，無障礙字級時圖例名稱與金額上下排列
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// App 目前選用的語系
     @Environment(\.locale) private var locale
 
@@ -30,7 +33,7 @@ struct OrderDetailCostView: View {
 
     // MARK: - Body
 
-    /// 呈現訂單的成本拆解區段
+    /// 訂單的成本拆解區段
     var body: some View {
         costBreakdown
     }
@@ -40,7 +43,7 @@ struct OrderDetailCostView: View {
 
 private extension OrderDetailCostView {
 
-    /// 顯示區段標題，以及包在卡片內的圈狀圖與逐項圖例
+    /// 區段標題，以及包在卡片內的圈狀圖與逐項圖例
     var costBreakdown: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text("orders.detail.label.costBreakdown")
@@ -76,15 +79,17 @@ private extension OrderDetailCostView {
     /// - Parameter component: 詳情狀態提供的成本項目
     /// - Returns: 合併為單一朗讀單位的圖例列
     func legendRow(_ component: OrderCostBreakdown.Component) -> some View {
-        HStack(spacing: BLSpacing.small) {
-            RoundedRectangle(cornerRadius: indicatorRadius, style: .continuous)
-                .frame(width: indicatorSize, height: indicatorSize)
-                .foregroundStyle(costColor(for: component.tone))
-                .accessibilityHidden(true)
+        legendLayout {
+            HStack(spacing: BLSpacing.small) {
+                RoundedRectangle(cornerRadius: indicatorRadius, style: .continuous)
+                    .frame(width: indicatorSize, height: indicatorSize)
+                    .foregroundStyle(costColor(for: component.tone))
+                    .accessibilityHidden(true)
 
-            Text(LocalizedStringKey(component.title))
-                .blTextStyle(.footnote)
-                .foregroundStyle(.blSecondaryLabel)
+                Text(LocalizedStringKey(component.title))
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blSecondaryLabel)
+            }
 
             Spacer()
 
@@ -92,6 +97,7 @@ private extension OrderDetailCostView {
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
                 .monospacedDigit()
         }
+        .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
         .accessibilityElement(children: .combine)
     }
 }
@@ -115,6 +121,13 @@ private extension OrderDetailCostView {
                 valueDescription: $0.valueDescription
             )
         }
+    }
+
+    /// 圖例列的排列版面，標準字級橫排，無障礙字級時上下排列
+    var legendLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(spacing: BLSpacing.small))
     }
 
     /// 取得成本語意色調對應的色盤顏色

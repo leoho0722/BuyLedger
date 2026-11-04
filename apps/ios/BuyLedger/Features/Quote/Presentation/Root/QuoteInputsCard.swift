@@ -161,7 +161,7 @@ private extension QuoteInputsCard {
         .accessibilityValue(currencyCode)
     }
 
-    /// 組出數值輸入列，支援直接輸入精確數值
+    /// 組出數值輸入列，支援直接輸入精確數值；無障礙字級時改為上下堆疊排列
     ///
     /// - Parameters:
     ///   - label: 欄位名稱
@@ -179,36 +179,116 @@ private extension QuoteInputsCard {
         isDecimalEntryAllowed: Bool = false,
         identifier: String? = nil
     ) -> some View {
-        HStack(spacing: BLSpacing.small) {
-            Text(LocalizedStringKey(label))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .blTextStyle(.subhead)
-                .foregroundStyle(.blSecondaryLabel)
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BLSpacing.small))
+            : AnyLayout(HStackLayout(spacing: BLSpacing.small))
 
-            TextField(
-                LocalizedStringKey(label),
+        return layout {
+            fieldLabel(label)
+
+            inputRow(
+                label: label,
                 value: value,
-                format: .number.precision(
-                    isDecimalEntryAllowed ? .fractionLength(0...2) : .fractionLength(fractionDigits)
-                )
-                    .grouping(.never),
-                prompt: Text(verbatim: "0")
+                unit: unit,
+                fractionDigits: fractionDigits,
+                isDecimalEntryAllowed: isDecimalEntryAllowed,
+                identifier: identifier
             )
-            .frame(width: inputFieldWidth)
-            .textFieldStyle(.roundedBorder)
-            .multilineTextAlignment(.trailing)
-            .monospacedDigit()
-            .keyboardType(isDecimalEntryAllowed || fractionDigits > 0 ? .decimalPad : .numberPad)
-            .focused(focus)
-            .accessibilityIdentifier(identifier ?? "")
-
-            Text(LocalizedStringKey(unit))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                .frame(minWidth: unitMinWidth, alignment: .leading)
-                .blTextStyle(.footnote)
-                .foregroundStyle(.blSecondaryLabel)
         }
+    }
+
+    /// 顯示欄位名稱，無障礙字級時完整換行不裁切
+    ///
+    /// - Parameter label: 欄位的本地化鍵值
+    /// - Returns: 名稱標籤 view
+    func fieldLabel(_ label: String) -> some View {
+        Text(LocalizedStringKey(label))
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .blTextStyle(.subhead)
+            .foregroundStyle(.blSecondaryLabel)
+    }
+
+    /// 組出包含輸入框與單位的橫排，輔助字級時隨容器彈性調整寬度
+    ///
+    /// - Parameters:
+    ///   - label: 輸入框提示鍵值
+    ///   - value: 雙向繫結的值
+    ///   - unit: 單位字串
+    ///   - fractionDigits: 顯示的小數位數
+    ///   - isDecimalEntryAllowed: 是否允許輸入小數
+    ///   - identifier: UI 測試定位用的識別碼
+    /// - Returns: 輸入框與單位橫排 view
+    func inputRow(
+        label: String,
+        value: Binding<Decimal>,
+        unit: String,
+        fractionDigits: Int,
+        isDecimalEntryAllowed: Bool,
+        identifier: String?
+    ) -> some View {
+        HStack(spacing: BLSpacing.small) {
+            inputField(
+                label: label,
+                value: value,
+                fractionDigits: fractionDigits,
+                isDecimalEntryAllowed: isDecimalEntryAllowed,
+                identifier: identifier
+            )
+
+            unitLabel(unit)
+        }
+    }
+
+    /// 顯示數值輸入框，保留鍵盤類型、小數精度與焦點狀態；輔助字級時填滿可用寬度
+    ///
+    /// - Parameters:
+    ///   - label: 輸入框的提示鍵值
+    ///   - value: 雙向繫結的值
+    ///   - fractionDigits: 顯示的小數位數
+    ///   - isDecimalEntryAllowed: 是否允許輸入小數
+    ///   - identifier: UI 測試定位用的識別碼
+    /// - Returns: 輸入框 view
+    func inputField(
+        label: String,
+        value: Binding<Decimal>,
+        fractionDigits: Int,
+        isDecimalEntryAllowed: Bool,
+        identifier: String?
+    ) -> some View {
+        TextField(
+            LocalizedStringKey(label),
+            value: value,
+            format: .number.precision(
+                isDecimalEntryAllowed ? .fractionLength(0...2) : .fractionLength(fractionDigits)
+            )
+                .grouping(.never),
+            prompt: Text(verbatim: "0")
+        )
+        .frame(width: dynamicTypeSize.isAccessibilitySize ? nil : inputFieldWidth)
+        .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)
+        .textFieldStyle(.roundedBorder)
+        .multilineTextAlignment(.trailing)
+        .monospacedDigit()
+        .keyboardType(isDecimalEntryAllowed || fractionDigits > 0 ? .decimalPad : .numberPad)
+        .focused(focus)
+        .accessibilityIdentifier(identifier ?? "")
+    }
+
+    /// 顯示單位，輔助字級時依內容自然展開
+    ///
+    /// - Parameter unit: 單位文字或本地化鍵值
+    /// - Returns: 單位標籤 view
+    func unitLabel(_ unit: String) -> some View {
+        Text(LocalizedStringKey(unit))
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+            .frame(
+                minWidth: dynamicTypeSize.isAccessibilitySize ? nil : unitMinWidth,
+                alignment: .leading
+            )
+            .layoutPriority(dynamicTypeSize.isAccessibilitySize ? 1 : 0)
+            .blTextStyle(.footnote)
+            .foregroundStyle(.blSecondaryLabel)
     }
 }
 

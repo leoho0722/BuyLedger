@@ -13,6 +13,9 @@ struct OrderEditItemsSection: View {
 
     // MARK: - Properties
 
+    /// 目前的動態字級，用來在輔助字級堆疊步進器與單價
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
@@ -43,8 +46,8 @@ private extension OrderEditItemsSection {
     /// 商品編輯列、左滑刪除與新增商品入口
     @ViewBuilder
     var itemRows: some View {
-        ForEach($store.draft.items) { $item in
-            itemEditorRow(item: $item)
+        ForEach($store.draft.items) {
+            itemEditorRow(item: $0)
         }
         .onDelete {
             store.send(.view(.itemsDeleted($0)))
@@ -54,6 +57,60 @@ private extension OrderEditItemsSection {
             store.send(.view(.addItemTapped))
         } label: {
             Label("orders.edit.label.addItem", systemImage: "plus.circle.fill")
+        }
+    }
+
+    /// 顯示商品名稱、數量與單價的編輯列
+    ///
+    /// - Parameter item: 單筆商品的雙向綁定
+    /// - Returns: 商品名稱輸入框，加上數量步進器與單價輸入的編輯列
+    @ViewBuilder
+    func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            // 關閉內容類型，避免系統提供不相關建議
+            TextField("orders.list.label.itemName", text: item.name, axis: .vertical)
+                .lineLimit(1...3)
+                .font(BLTypographyStyle.body.font.weight(.medium))
+                .textContentType(nil)
+                .focused(focusedField, equals: .itemName(item.id))
+
+            itemControlsLayout {
+                Stepper(value: item.quantity, in: 1...999) {
+                    Text(
+                        AppLanguage.format(
+                            "orders.detail.label.quantity",
+                            item.quantity.wrappedValue,
+                            locale: locale
+                        )
+                    )
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blSecondaryLabel)
+                }
+
+                Spacer()
+
+                HStack(spacing: BLSpacing.extraSmall) {
+                    Text("orders.edit.label.unitPrice")
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(.blSecondaryLabel)
+
+                    TextField(
+                        "",
+                        value: item.unitPrice,
+                        format: .number.precision(.fractionLength(0)).grouping(.never)
+                    )
+                    .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 120)
+                    .frame(minHeight: BLHitTarget.minimum)
+                    .multilineTextAlignment(.trailing)
+                    .monospacedDigit()
+                    .labelsHidden()
+                    .keyboardType(.numberPad)
+                    .focused(focusedField, equals: .itemUnitPrice(item.id))
+                    .contentShape(.rect)
+                }
+            }
+            // 輔助字級下採用理想高度，避免 Spacer 在垂直排列中撐出多餘空白
+            .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
         }
     }
 
@@ -93,57 +150,17 @@ private extension OrderEditItemsSection {
                 .foregroundStyle(.blSecondaryLabel)
         }
     }
+}
 
-    /// 顯示商品名稱、數量與單價的編輯列
-    ///
-    /// - Parameter item: 單筆商品的雙向綁定
-    /// - Returns: 商品名稱輸入框，加上數量步進器與單價輸入的編輯列
-    @ViewBuilder
-    func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            // 關閉內容類型，避免系統提供不相關建議
-            TextField("orders.list.label.itemName", text: item.name, axis: .vertical)
-                .lineLimit(1...3)
-                .font(BLTypographyStyle.body.font.weight(.medium))
-                .textContentType(nil)
-                .focused(focusedField, equals: .itemName(item.id))
+// MARK: - Private Method
 
-            HStack(spacing: BLSpacing.medium) {
-                Stepper(value: item.quantity, in: 1...999) {
-                    Text(
-                        AppLanguage.format(
-                            "orders.detail.label.quantity",
-                            item.quantity.wrappedValue,
-                            locale: locale
-                        )
-                    )
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(.blSecondaryLabel)
-                }
+private extension OrderEditItemsSection {
 
-                Spacer()
-
-                HStack(spacing: BLSpacing.extraSmall) {
-                    Text("orders.edit.label.unitPrice")
-                        .blTextStyle(.footnote)
-                        .foregroundStyle(.blSecondaryLabel)
-
-                    TextField(
-                        "",
-                        value: item.unitPrice,
-                        format: .number.precision(.fractionLength(0)).grouping(.never)
-                    )
-                    .frame(maxWidth: 120)
-                    .frame(minHeight: BLHitTarget.minimum)
-                    .multilineTextAlignment(.trailing)
-                    .monospacedDigit()
-                    .labelsHidden()
-                    .keyboardType(.numberPad)
-                    .focused(focusedField, equals: .itemUnitPrice(item.id))
-                    .contentShape(.rect)
-                }
-            }
-        }
+    /// 數量步進器與單價輸入依動態字級切換的自適應佈局
+    var itemControlsLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BLSpacing.small))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: BLSpacing.medium))
     }
 }
 

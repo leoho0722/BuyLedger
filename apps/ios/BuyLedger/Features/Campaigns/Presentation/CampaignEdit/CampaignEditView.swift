@@ -32,6 +32,7 @@ struct CampaignEditView: View {
 
                 CampaignEditNotesSection(notes: $store.draft.notes, focusedField: $focusedField)
             }
+            .blReadableScrollContent(.form)
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)

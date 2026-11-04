@@ -46,6 +46,29 @@ final class CustomersTests: BLUITestCase {
         // Then
         assertEmptyState(BLAccessibilityID.Customers.listEmptyState, in: app)
     }
+
+    /// 驗證 AX5 最大字級下，客戶列仍可捲動露出並點選，點選後切到該客戶的訂單
+    func testTapCustomer_AX5字級_列仍可點選切到訂單() {
+        // Given
+        let options = LaunchOptions(
+            seed: .customerRanking,
+            contentSizeCategory: .accessibilityExtraExtraExtraLarge
+        )
+        let app = launch(options)
+        let customers = openCustomers(app)
+
+        // When
+        customers.tapCustomer(customerName: Self.topCustomerName)
+
+        // Then
+        let orders = OrdersScreen(app: app)
+        if !orders.waitUntilReady() {
+            failWithDiagnostics(
+                in: app,
+                "AX5 字級下點客戶「\(Self.topCustomerName)」後訂單清單根 identifier「\(orders.rootIdentifier)」逾時仍未出現"
+            )
+        }
+    }
 }
 
 // MARK: - Private Method

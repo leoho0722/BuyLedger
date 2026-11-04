@@ -44,6 +44,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetCategoryCells_同列點兩格_兩格都被選取且其他格不變() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -65,6 +67,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetCategoryCells_再點其中一格取消_只保留另一格() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -86,6 +90,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetApply_本月信用卡與兩類別_觸發鈕顯示兩項且結果為四筆() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -116,6 +122,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetClearThenApply_清除後套用_回到全部() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -131,6 +139,30 @@ final class OrderFilterSheetTests: BLUITestCase {
         assertListedOrderIDs(Self.allOrderIDs, orders)
     }
 
+    /// 驗證篩選 sheet 的值都是預設時，清除鈕為停用，無障礙層也回報不可互動
+    ///
+    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
+    func testFilterSheetClear_值皆為預設_清除鈕停用() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
+        try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面由清除篩選測試覆蓋")
+        let orders = openOrders(app)
+
+        // When
+        orders.openFilterSheet()
+
+        // Then
+        let clearButton = app.buttons[BLAccessibilityID.Orders.filterClearButton].firstMatch
+        try requireCondition(
+            clearButton.waitForExistence(timeout: 5),
+            in: app,
+            "找不到元素：篩選 sheet 的清除鈕"
+        )
+        XCTAssertFalse(clearButton.isEnabled, "值皆為預設時清除鈕應停用")
+    }
+
     /// 驗證篩選 sheet 有未套用的變更時下滑不會關閉，之後套用時暫存的「本月」日期選擇仍保留
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
@@ -138,6 +170,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetSwipeDown_有未套用變更_不關閉且保留選取() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -161,6 +195,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetSwipeDown_無變更_可關閉() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -181,6 +217,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetSwipeDown_選後再切回原狀_可關閉() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -205,6 +243,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetDiscard_繼續編輯_留在篩選畫面() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -230,6 +270,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetSearch_輸入文字_顯示相符並隱藏不符類別() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)
@@ -241,14 +283,14 @@ final class OrderFilterSheetTests: BLUITestCase {
         // Then
         let isTyped = filterSheet.filterSearchFieldValue == "食"
         let isMatchShown = orders.filterCategoryCell("零食").waitForExistence(timeout: 5)
-        let isOtherHidden = !orders.filterCategoryCell("美妝").exists
+        let isOtherShown = orders.filterCategoryCell("美妝").exists
         if !isTyped {
             app.failWithDiagnostics("搜尋欄未收到輸入「食」")
         }
         if !isMatchShown {
             app.failWithDiagnostics("搜尋「食」後應顯示零食")
         }
-        if !isOtherHidden {
+        if isOtherShown {
             app.failWithDiagnostics("搜尋「食」後不應顯示美妝")
         }
     }
@@ -259,6 +301,8 @@ final class OrderFilterSheetTests: BLUITestCase {
     func testFilterSheetSearch_清除搜尋_恢復被篩掉的類別並清空搜尋欄() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)

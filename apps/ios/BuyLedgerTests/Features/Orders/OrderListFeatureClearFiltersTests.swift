@@ -10,18 +10,18 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證清除篩選的重設與重選行為
+/// `OrderListFeature` 的單元測試，以 `TestStore` 逐步驗證清除篩選的重設與結果顯示
 @MainActor
 struct OrderListFeatureClearFiltersTests {
 
-    /// 驗證狀態、搜尋與三項篩選同時生效時，清除只重設日期、類別與付款方式，`purchased` 狀態與 Alice 搜尋保留，重選後只通知一次選取變更
+    /// 驗證清除三項篩選後，`purchased` 狀態與 Alice 搜尋保留，結果列出符合條件的訂單，且不委派任何請求
     ///
     /// - Throws: 前置篩選結果不符預期時由 `#require` 丟出
     @Test
-    func clearFiltersTapped_狀態搜尋與三項篩選並用_重設三項並重選一次() async throws {
+    func clearFiltersTapped_狀態搜尋與三項篩選並用_清除三項並保留狀態與搜尋() async throws {
         // Given
         let state = OrderListFeatureTestSupport.makeClearFiltersState()
-        try #require(state.filteredOrders.map(\.id) == ["selected"])
+        try #require(state.filteredOrders.map(\.id) == ["matched"])
         let store = TestStore(initialState: state) {
             OrderListFeature()
         } withDependencies: {
@@ -34,11 +34,9 @@ struct OrderListFeatureClearFiltersTests {
             $0.selectedDatePeriod = .all
             $0.selectedCategories = []
             $0.selectedPaymentMethod = nil
-            $0.selectedOrderID = "restored"
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "restored")
         #expect(store.state.selectedStatus == .status(.purchased))
         #expect(store.state.searchText == "Alice")
         #expect(
@@ -47,16 +45,16 @@ struct OrderListFeatureClearFiltersTests {
                 "dateOnly",
                 "categoryOnly",
                 "paymentOnly",
-                "selected",
+                "matched",
             ]
         )
         #expect(store.state.committedFilterSelection.isActive == false)
         #expect(store.state.destination == nil)
     }
 
-    /// 驗證三項篩選已是預設時按下清除，選取、狀態與搜尋都保留，不重選也不通知清單，清除後篩選仍為未啟用 (狀態與搜尋不算在內)
+    /// 驗證三項篩選已是預設時按下清除，狀態與搜尋都保留，不改變篩選，清除後篩選仍為未啟用 (狀態與搜尋不算在內)
     @Test
-    func clearFiltersTapped_三項已是預設_保留選取且不委派() async {
+    func clearFiltersTapped_三項已是預設_保留狀態與搜尋且不委派() async {
         // Given
         var state = OrderListFeatureTestSupport.makeClearFiltersState()
         state.selectedDatePeriod = .all
@@ -73,22 +71,20 @@ struct OrderListFeatureClearFiltersTests {
         await store.send(.view(.clearFiltersTapped))
 
         // Then
-        #expect(store.state.selectedOrderID == "selected")
         #expect(store.state.selectedStatus == .status(.purchased))
         #expect(store.state.searchText == "Alice")
         #expect(store.state.committedFilterSelection.isActive == false)
     }
 
-    /// 驗證清除類別後，即使第一筆仍是 A，清單仍通知一次選取變更，選取的 A 不變
+    /// 驗證類別變更後清除類別，清單顯示全部訂單，不委派任何請求
     @Test
-    func clearFiltersTapped_類別變更但首筆相同_仍委派一次選取() async {
+    func clearFiltersTapped_類別變更後清除_顯示全部訂單且不委派() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             LedgerOrder.fixture(id: "A", date: TestDependencies.fixedNow, categories: ["beauty"]),
             LedgerOrder.fixture(id: "B", date: TestDependencies.fixedNow, categories: ["books"]),
         ])
         state.selectedCategories = ["beauty"]
-        state.selectedOrderID = "A"
         let store = TestStore(initialState: state) {
             OrderListFeature()
         } withDependencies: {
@@ -102,14 +98,12 @@ struct OrderListFeatureClearFiltersTests {
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "A")
-        #expect(store.state.selectedOrderID == "A")
         #expect(store.state.filteredOrders.map(\.id) == ["A", "B"])
     }
 
-    /// 驗證清除後仍沒有訂單符合狀態與搜尋時，選取清為 `nil` 並通知清單，狀態與搜尋保留
+    /// 驗證清除後仍沒有訂單符合狀態與搜尋時，篩選結果為空，狀態與搜尋保留，不委派任何請求
     @Test
-    func clearFiltersTapped_清除後仍沒有相符訂單_清空選取並委派() async {
+    func clearFiltersTapped_清除後仍沒有相符訂單_保留狀態與搜尋且不委派() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             LedgerOrder.fixture(
@@ -134,7 +128,6 @@ struct OrderListFeatureClearFiltersTests {
         state.selectedDatePeriod = .thisMonth
         state.selectedCategories = ["beauty"]
         state.selectedPaymentMethod = "現金"
-        state.selectedOrderID = "removed"
         let store = TestStore(initialState: state) {
             OrderListFeature()
         } withDependencies: {
@@ -147,18 +140,16 @@ struct OrderListFeatureClearFiltersTests {
             $0.selectedDatePeriod = .all
             $0.selectedCategories = []
             $0.selectedPaymentMethod = nil
-            $0.selectedOrderID = nil
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, nil)
         #expect(store.state.selectedStatus == .status(.purchased))
         #expect(store.state.searchText == "Alice")
         #expect(store.state.filteredOrders.map(\.id) == [])
         #expect(store.state.committedFilterSelection.isActive == false)
     }
 
-    /// 驗證已選的 beauty 從訂單與主檔都消失後，清除篩選會清空已選類別，並把剩餘的 remaining 訂單重新選為第一筆
+    /// 驗證已選類別從資料消失後，清除篩選會還原篩選條件並顯示剩餘訂單，不委派任何請求
     ///
     /// - Throws: 類別消失的前置條件不符時由 `#require` 丟出
     @Test
@@ -178,7 +169,6 @@ struct OrderListFeatureClearFiltersTests {
             calendar: TestDependencies.fixedCalendar
         )
         state.selectedCategories = ["beauty"]
-        state.selectedOrderID = "removed"
         orders.withLock {
             $0 = [LedgerOrder.fixture(id: "remaining", date: TestDependencies.fixedNow)]
         }
@@ -196,11 +186,9 @@ struct OrderListFeatureClearFiltersTests {
         // When
         await store.send(.view(.clearFiltersTapped)) {
             $0.selectedCategories = []
-            $0.selectedOrderID = "remaining"
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "remaining")
         #expect(store.state.availableCategories == [])
         #expect(store.state.filteredOrders.map(\.id) == ["remaining"])
         #expect(store.state.hasCategoryFilter == false)

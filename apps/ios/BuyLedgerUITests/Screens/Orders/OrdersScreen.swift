@@ -51,6 +51,34 @@ extension OrdersScreen {
         app.descendants(matching: .any)[BLAccessibilityID.Orders.listEmptyState].exists
     }
 
+    /// 目前路徑投影到畫面的訂單識別碼，連續三次取樣相同才回傳
+    ///
+    /// - Note: 詳情根的值是顯示中的訂單識別碼；只見清單或詳情空狀態時為空字串；三者都不存在時為 `nil`
+    /// - Note: 根分頁徽章會覆寫訂單分頁內容最外層節點的 value，路徑因此改由詳情根的值投影
+    /// - Note: 連續取樣避開推入與返回動畫期間詳情根短暫殘留的值
+    /// - Note: 5 秒內未穩定時回傳最後一次取樣，由呼叫端的預期值斷言判定
+    var pathProjectedOrderID: String? {
+        let deadline = Date.now.addingTimeInterval(5)
+        var previous: String??
+        var stableSamples = 0
+        while true {
+            let current = currentPathProjection
+            if let previous, previous == current {
+                stableSamples += 1
+            } else {
+                stableSamples = 1
+            }
+            if stableSamples >= 3, current != nil {
+                return current
+            }
+            previous = current
+            guard Date.now < deadline else {
+                return current
+            }
+            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.25)
+        }
+    }
+
     /// 篩選入口目前的標題，例如「篩選：本月 · 2 項類別」
     var filterTriggerLabel: String {
         app.descendants(matching: .any)[BLAccessibilityID.Orders.filterButton].label
@@ -77,30 +105,6 @@ extension OrdersScreen {
 
 @MainActor
 extension OrdersScreen {
-
-    /// 取得目前畫面上可互動的訂單搜尋欄
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    /// - Returns: 目前可互動的系統搜尋欄
-    /// - Throws: 找不到可互動搜尋欄時丟出測試錯誤
-    func hittableSearchField(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) throws -> XCUIElement {
-        let deadline = Date.now.addingTimeInterval(10)
-        repeat {
-            if let field = app.searchFields.allElementsBoundByIndex.first(
-                where: \.isHittableOnScreen
-            ) {
-                return field
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
-        } while Date.now < deadline
-        app.failWithDiagnostics("找不到元素：可互動的訂單搜尋欄", file: file, line: line)
-        throw InteractionError.elementUnavailable
-    }
 
     /// 從清單更多選單進入多選並等到完成鈕可互動
     ///
@@ -160,6 +164,40 @@ extension OrdersScreen {
         chip.tapAfterWaiting(in: app, file: file, line: line)
     }
 
+    /// 把指定狀態膠囊完整捲入視窗可視範圍，對包含該膠囊的水平捲動容器做小幅拖曳
+    ///
+    /// - Parameters:
+    ///   - filterID: 狀態篩選的 identifier
+    ///   - window: 判定可視範圍的視窗元素
+    ///   - maxDrags: 拖曳次數上限，超過仍未完整露出即回傳 `false`
+    /// - Returns: 膠囊框線完整落在視窗內時為 `true`
+    func revealStatusChipFully(
+        filterID: String,
+        in window: XCUIElement,
+        maxDrags: Int = 6
+    ) -> Bool {
+        let chipID = BLAccessibilityID.Orders.statusChip(filterID)
+        let chip = app.descendants(matching: .any)[chipID].firstMatch
+        let scrollView = app.scrollViews.containing(.button, identifier: chipID).firstMatch
+        for attempt in 0...maxDrags {
+            guard let windowFrame = window.snapshotFrame, let chipFrame = chip.snapshotFrame else {
+                return false
+            }
+            if windowFrame.contains(chipFrame) {
+                return true
+            }
+            guard attempt < maxDrags, scrollView.exists else {
+                break
+            }
+            let isBeyondTrailingEdge = chipFrame.maxX > windowFrame.maxX
+            let startX: CGFloat = isBeyondTrailingEdge ? 0.7 : 0.3
+            let start = scrollView.coordinate(withNormalizedOffset: CGVector(dx: startX, dy: 0.5))
+            let end = scrollView.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.1, thenDragTo: end)
+        }
+        return false
+    }
+
     /// 在系統搜尋欄輸入關鍵字
     ///
     /// - Parameters:
@@ -177,6 +215,30 @@ extension OrdersScreen {
         )
     }
 
+    /// 取得目前畫面上可互動的訂單搜尋欄
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 目前可互動的系統搜尋欄
+    /// - Throws: 找不到可互動搜尋欄時丟出測試錯誤
+    func hittableSearchField(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> XCUIElement {
+        let deadline = Date.now.addingTimeInterval(10)
+        repeat {
+            if let field = app.searchFields.allElementsBoundByIndex.first(
+                where: \.isHittableOnScreen
+            ) {
+                return field
+            }
+            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
+        } while Date.now < deadline
+        app.failWithDiagnostics("找不到元素：可互動的訂單搜尋欄", file: file, line: line)
+        throw InteractionError.elementUnavailable
+    }
+
     /// 點指定訂單編號的清單列進入詳情
     ///
     /// - Parameters:
@@ -185,6 +247,11 @@ extension OrdersScreen {
     ///   - line: 失敗時回報的行號
     func tapOrder(orderID: String, file: StaticString = #filePath, line: UInt = #line) {
         let row = orderRow(orderID: orderID)
+        // 列在可視區上方時往回輕拖，位於下方或尚未建立時以滑動載入；列已可點時不捲動
+        if !row.isHittableOnScreen, app.stableVisibleFrame(of: row, within: rootElement) == nil {
+            app.failWithDiagnostics("捲動後訂單列 \(orderID) 仍不可點", file: file, line: line)
+            return
+        }
         row.tapAfterWaiting(in: app, file: file, line: line)
     }
 
@@ -240,7 +307,7 @@ extension OrdersScreen {
         trigger.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 選取 regular 版面付款方式 Menu 的指定項目
+    /// 選取 regular 版面付款方式 Menu 的指定項目，identifier 缺失時以名稱比對標籤
     ///
     /// - Parameters:
     ///   - name: 付款方式名稱
@@ -254,7 +321,12 @@ extension OrdersScreen {
         let menuID = BLAccessibilityID.Orders.paymentMethodMenuButton
         app.descendants(matching: .any)[menuID].tapAfterWaiting(in: app, file: file, line: line)
         let item = BLAccessibilityID.Orders.paymentMethodMenuOption(name)
-        _ = app.tapMenuItem(item, file: file, line: line)
+        _ = app.tapMenuItem(
+            item,
+            label: name,
+            file: file,
+            line: line
+        )
     }
 
     /// 點 regular 版面的日期膠囊選取指定期間
@@ -308,7 +380,7 @@ extension OrdersScreen {
         app.buttons[identifier].firstMatch.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 收集清單上列出的訂單編號，逐次以 `swipeUp` 露出下方的列，直到不再出現新的列
+    /// 收集清單上列出的所有訂單編號
     ///
     /// - Parameter maxSwipes: 最多 `swipeUp` 次數
     /// - Returns: 清單列出的訂單編號集合
@@ -318,6 +390,7 @@ extension OrdersScreen {
         var collected = Set<String>()
         var stableRounds = 0
         var swipes = 0
+        // 惰性清單的下方列需上捲後才會進入可及性樹
         while swipes < maxSwipes, stableRounds < 2 {
             let before = collected.count
             let rows = app.descendants(matching: .any).matching(
@@ -378,14 +451,15 @@ extension OrdersScreen {
         app.descendants(matching: .any)[BLAccessibilityID.Orders.categoryCell(name)]
     }
 
-    /// 捲動容器直到指定元素存在，先露出下方內容，找不到再露出上方內容
+    /// 依序找下方與上方內容，捲動後等待相對位置穩定再判斷目標與清單盡頭
     ///
     /// - Parameters:
     ///   - element: 要露出的元素 (類別格或組標題)
     ///   - container: 元素所在的可捲動 sheet
     ///   - maxSwipes: 單一方向最多滑動次數，作為安全上限
     /// - Returns: 元素是否在捲動後存在
-    /// - Note: 清單到底後換方向，不靠固定滑動次數判斷
+    /// - Note: 首尾格的位置以容器為基準，避免 sheet 位移被當成清單捲動
+    /// - Note: 位置簽章連續兩次相同後才檢查目標是否出現或清單是否到底
     func revealElement(
         _ element: XCUIElement,
         within container: XCUIElement,
@@ -492,47 +566,88 @@ extension OrdersScreen: Screen {
 @MainActor
 private extension OrdersScreen {
 
-    /// 依 `sweep` 的手勢滑動直到目標元素出現，或類別清單的位置簽章不再變動 (已到盡頭)
+    /// 單次讀取路徑投影：詳情根的值、清單或空狀態可見時的空字串，或都不存在時的 `nil`
+    var currentPathProjection: String? {
+        let detailRoot = app.descendants(matching: .any)[BLAccessibilityID.Orders.detailRoot]
+            .firstMatch
+        if detailRoot.exists {
+            return detailRoot.value as? String
+        }
+        let listRoot = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot].firstMatch
+        let emptyStateID = BLAccessibilityID.Orders.detailEmptyState
+        let emptyState = app.descendants(matching: .any)[emptyStateID].firstMatch
+        return listRoot.exists || emptyState.exists ? "" : nil
+    }
+
+    /// 依 `sweep` 的手勢滑動，直到目標出現或穩定位置簽章確認清單已到底
     ///
     /// - Parameters:
     ///   - container: 可捲動的容器
     ///   - sweep: 滑動方向與次數上限
     ///   - element: 要等待出現的目標元素
-    /// - Returns: 目標元素是否在到達盡頭前出現
+    /// - Returns: 目標元素是否在清單盡頭前出現
+    /// - Note: 手勢前確認 sheet 存在，手勢後等相對位置簽章穩定再判斷
     func scrollToEndOfCategories(
         in container: XCUIElement,
         sweep: ScrollSweep,
         until element: XCUIElement
     ) -> Bool {
-        var previous = categoryListSignature()
+        let direction = sweep.isRevealingContentBelow ? "往下找" : "往上找"
         for _ in 0..<sweep.maxSwipes {
+            guard container.exists else {
+                app.failWithDiagnostics("類別清單的 sheet 已關閉，無法繼續\(direction)")
+                return false
+            }
             if element.exists {
                 return true
             }
+            let previous = categoryListSignature(in: container)
             if sweep.isRevealingContentBelow {
                 container.swipeUp()
             } else {
-                container.swipeDown()
+                // 清單到頂端時快速下滑會把 sheet 拉掉，改用無慣性的輕拖
+                let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.35))
+                let end = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.65))
+                start.press(
+                    forDuration: 0.1,
+                    thenDragTo: end,
+                    withVelocity: .slow,
+                    thenHoldForDuration: 0.1
+                )
             }
-            let current = categoryListSignature()
-            if current == previous {
-                return element.exists
+            // 逾時仍未穩定代表還在捲動，不視為到底，下一輪開頭會再確認 sheet 是否存在
+            guard let current = waitForStableCategorySignature(in: container) else {
+                continue
             }
-            previous = current
+            guard container.exists else {
+                app.failWithDiagnostics("類別清單的 sheet 已關閉，無法繼續\(direction)")
+                return false
+            }
+            let hasReachedEnd = current == previous
+            if element.exists {
+                return true
+            }
+            if hasReachedEnd {
+                return false
+            }
         }
         return element.exists
     }
 
-    /// 取得類別格清單的位置簽章，包含格子數量與第一、最後一格的縱向位置
+    /// 取得類別格相對於容器的縱向位置簽章
     ///
-    /// - Returns: 清單目前的位置簽章
-    /// - Note: 只查首尾兩格的位置，避免對全部格子逐一取得框線
-    func categoryListSignature() -> String {
+    /// - Parameter container: 可捲動的容器
+    /// - Returns: 格子數量與首尾格相對位置；框線無效時回傳無效簽章
+    /// - Note: 只查首尾格並扣除容器上緣，避免對所有格子取框線或受 sheet 位移影響
+    func categoryListSignature(in container: XCUIElement) -> String {
         let prefix = BLAccessibilityID.Orders.categoryCell("")
         let cells = app.descendants(matching: .any).matching(
             NSPredicate(format: "identifier BEGINSWITH %@", prefix)
         )
         let count = cells.count
+        guard let containerFrame = currentFrame(of: container) else {
+            return "\(count)|invalid"
+        }
         guard count > 0 else {
             return "0"
         }
@@ -542,10 +657,12 @@ private extension OrdersScreen {
         guard let last = currentFrame(of: cells.element(boundBy: count - 1)) else {
             return "\(count)|invalid"
         }
-        return "\(count)|\(first.minY)|\(last.minY)"
+        let firstOffset = first.minY - containerFrame.minY
+        let lastOffset = last.minY - containerFrame.minY
+        return "\(count)|\(firstOffset)|\(lastOffset)"
     }
 
-    /// 以單次 `snapshot()` 取得元素框線，元素不存在、讀取失敗或框線無效時回傳 `nil`
+    /// 取得元素的有效框線，元素不存在、讀取失敗或框線無效時回傳 `nil`
     ///
     /// - Parameter element: 要讀取的元素
     /// - Returns: 有效的框線；取不到時為 `nil`
@@ -565,6 +682,28 @@ private extension OrdersScreen {
     func isValidFrame(_ frame: CGRect) -> Bool {
         !frame.isNull && !frame.isInfinite && !frame.isEmpty
             && frame.minX.isFinite && frame.minY.isFinite
+    }
+
+    /// 等待類別清單的相對位置簽章連續兩次相同
+    ///
+    /// - Parameter container: 可捲動的容器
+    /// - Returns: 十次取樣內的穩定簽章，逾時未穩定時為 `nil`
+    /// - Note: 取樣間隔 0.15 秒，等待手勢造成的減速結束
+    func waitForStableCategorySignature(in container: XCUIElement) -> String? {
+        var previous = categoryListSignature(in: container)
+        for _ in 1..<10 {
+            RunLoop.current.run(until: Date.now.addingTimeInterval(0.15))
+            let current = categoryListSignature(in: container)
+            if current.hasSuffix("|invalid") {
+                previous = current
+                continue
+            }
+            if current == previous {
+                return current
+            }
+            previous = current
+        }
+        return nil
     }
 
     /// 輪詢元素的框線，連續兩次讀到相同且有效的框線即視為慣性已停止

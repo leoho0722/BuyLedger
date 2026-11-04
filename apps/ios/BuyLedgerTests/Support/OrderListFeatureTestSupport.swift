@@ -36,7 +36,7 @@ extension OrderListFeatureTestSupport {
 
     /// 建立含 `purchased` 狀態、Alice 搜尋與三項篩選的清單狀態，並附上各自不相符的反例訂單
     ///
-    /// - Returns: 套用狀態、搜尋與三項篩選後的清單狀態，只剩 selected 一筆
+    /// - Returns: 套用狀態、搜尋與三項篩選後的清單狀態，只剩符合全部條件的一筆
     static func makeClearFiltersState() -> OrderListFeature.State {
         let alice = LedgerCustomer(name: "Alice", initials: "AL", tier: .regular)
         let bob = LedgerCustomer(name: "Bob", initials: "BO", tier: .regular)
@@ -92,7 +92,7 @@ extension OrderListFeatureTestSupport {
                 paymentMethod: "信用卡"
             ),
             LedgerOrder.fixture(
-                id: "selected",
+                id: "matched",
                 customer: alice,
                 status: .purchased,
                 date: now,
@@ -105,7 +105,6 @@ extension OrderListFeatureTestSupport {
         state.selectedDatePeriod = .thisMonth
         state.selectedCategories = ["beauty"]
         state.selectedPaymentMethod = "現金"
-        state.selectedOrderID = "selected"
         state.$lookupCatalog = SharedReader(value: LookupCatalog())
         return state
     }

@@ -43,7 +43,7 @@ extension BLAccessibilityID {
             case settings
         }
 
-        /// 導向各工具與設定的列 (以目的地 key 指定)
+        /// 取得導向各工具與設定列的識別碼 (以目的地 key 指定)
         ///
         /// - Parameter row: 更多分頁目的地
         /// - Returns: 對應目的地列的 accessibility identifier
@@ -61,7 +61,7 @@ extension BLAccessibilityID {
         /// 客戶清單無資料狀態容器
         static let listEmptyState = "customers.list.emptyState"
 
-        /// Top 3 卡片，key 取客戶名
+        /// 取得 Top 3 卡片的識別碼，以客戶名稱識別
         ///
         /// - Parameter customerName: 客戶名稱
         /// - Returns: 對應 Top 卡片的 accessibility identifier
@@ -69,7 +69,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("customers.topCard", key: customerName)
         }
 
-        /// 全部客戶列，key 取客戶名
+        /// 取得全部客戶列的識別碼，以客戶名稱識別
         ///
         /// - Parameter customerName: 客戶名稱
         /// - Returns: 對應客戶列的 accessibility identifier
@@ -146,7 +146,7 @@ extension BLAccessibilityID {
         /// App 版本列
         static let versionRow = "settings.versionRow"
 
-        /// 語言選項
+        /// 取得語言選項的識別碼，以語言選項識別值指定
         ///
         /// - Parameter key: 語言選項識別值
         /// - Returns: 對應語言選項的 accessibility identifier
@@ -164,11 +164,20 @@ extension BLAccessibilityID {
         /// 新增主檔項目的按鈕
         static let addButton = "lookupManagement.addButton"
 
+        /// 主檔清單標題「目前已建立 N 項」的 accessibility identifier
+        static let itemCountHeader = "lookupManagement.itemCountHeader"
+
+        /// 單欄名稱表單的根 accessibility identifier，用於計數呈現中的名稱表單
+        static let nameEditorRoot = "lookupManagement.nameEditor.root"
+
         /// 單欄名稱表單的輸入欄位
         static let nameField = "lookupManagement.nameField"
 
         /// 單欄名稱表單的送出按鈕
         static let nameSubmitButton = "lookupManagement.nameSubmitButton"
+
+        /// 單欄名稱表單的取消按鈕
+        static let nameCancelButton = "lookupManagement.nameCancelButton"
 
         /// 主檔管理頁的載入失敗文字
         static let loadFailureMessage = "lookupManagement.loadFailureMessage"
@@ -180,12 +189,13 @@ extension BLAccessibilityID {
         static let paymentMethodEditorRoot = "lookupManagement.paymentMethodEditor.root"
 
         /// 付款方式貨到付款旗標
-        static let paymentMethodCashOnDeliveryToggle = "lookupManagement.paymentMethodEditor.cashOnDeliveryToggle"
+        static let paymentMethodCashOnDeliveryToggle =
+            "lookupManagement.paymentMethodEditor.cashOnDeliveryToggle"
 
         /// 付款方式編輯表單儲存按鈕
         static let paymentMethodSaveButton = "lookupManagement.paymentMethodEditor.saveButton"
 
-        /// 刪除主檔項目的按鈕，以項目名稱識別
+        /// 取得刪除主檔項目按鈕的識別碼，以項目名稱識別
         ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 對應刪除按鈕的 accessibility identifier
@@ -193,7 +203,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("lookupManagement.deleteButton", key: name)
         }
 
-        /// 主檔項目列，以項目名稱識別
+        /// 取得主檔項目列的識別碼，以項目名稱識別
         ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 主檔項目列的 accessibility identifier
@@ -201,7 +211,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("lookupManagement.row", key: name)
         }
 
-        /// 編輯或重新命名操作按鈕，以項目名稱識別
+        /// 取得編輯按鈕的識別碼，以項目名稱識別
         ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 編輯操作按鈕的 accessibility identifier
@@ -209,7 +219,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("lookupManagement.editButton", key: name)
         }
 
-        /// 其他主檔的重新命名操作按鈕，以項目名稱識別
+        /// 取得其他主檔項目重新命名按鈕的識別碼，以項目名稱識別
         ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 重新命名操作按鈕的 accessibility identifier

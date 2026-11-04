@@ -8,13 +8,13 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單列表與詳情畫面
+/// 訂單功能的自適應清單與詳情分欄宿主
 struct OrdersView: View {
 
     // MARK: - Properties
 
-    /// 目前版面分類，用來區分窄版 (含 iPhone 橫向) 與寬版 (iPad 全螢幕) 佈局
-    @Environment(\.blLayoutClass) private var layoutClass
+    /// 訂單宿主可用的水平尺寸分類
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrdersFeature>
@@ -24,29 +24,40 @@ struct OrdersView: View {
 
     // MARK: - Body
 
-    /// 依版面分類顯示訂單瀏覽，並共用編輯、AI 總結與合併表單的呈現
+    /// 以唯一詳情路徑承載 Orders split 與共用表單的分欄宿主
     var body: some View {
         @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
+        @Bindable var list = store.scope(state: \.list, action: \.list)
 
-        platformContent
-            .sheet(
-                item: $presentation.scope(state: \.$destination, action: \.destination).edit,
-                onDismiss: sendFormSheetDismissed
-            ) {
-                OrderEditView(store: $0)
-            }
-            .sheet(
-                item: $presentation.scope(state: \.$destination, action: \.destination).aiSummary,
-                onDismiss: sendFormSheetDismissed
-            ) {
-                AISummaryView(store: $0)
-            }
-            .sheet(
-                item: $presentation.scope(state: \.$destination, action: \.destination).merge,
-                onDismiss: sendFormSheetDismissed
-            ) {
-                OrderMergeCandidateSheet(store: $0)
-            }
+        NavigationSplitView {
+            listContent
+        } detail: {
+            detailContent
+        }
+        .sheet(
+            item: $presentation.scope(state: \.$destination, action: \.destination).edit,
+            onDismiss: sendFormSheetDismissed
+        ) {
+            OrderEditView(store: $0)
+        }
+        .sheet(
+            item: $presentation.scope(state: \.$destination, action: \.destination).aiSummary,
+            onDismiss: sendFormSheetDismissed
+        ) {
+            AISummaryView(store: $0)
+        }
+        .sheet(
+            item: $presentation.scope(state: \.$destination, action: \.destination).merge,
+            onDismiss: sendFormSheetDismissed
+        ) {
+            OrderMergeCandidateSheet(store: $0)
+        }
+        .sheet(item: $list.scope(state: \.$destination, action: \.destination).filterSheet) {
+            OrderFilterSheet(store: $0)
+        }
+        .sheet(item: $list.scope(state: \.$destination, action: \.destination).categoryPicker) {
+            OrderCategoryPickerSheet(store: $0)
+        }
     }
 }
 
@@ -54,59 +65,60 @@ struct OrdersView: View {
 
 private extension OrdersView {
 
-    /// 寬版的訂單清單欄，承載搜尋、工具列與篩選選擇器
+    /// 清單欄內容，依 Orders 自身的水平尺寸分類決定並排或單欄
     @ViewBuilder
-    var regularListContent: some View {
-        @Bindable var listStore = store.scope(state: \.list, action: \.list)
-        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
-        let snapshot = listStore.state.listSnapshot()
-
-        OrdersRegularListColumn(store: listStore, orders: snapshot.orders)
-            .background(.blBackground)
-            // 載入結果由多個分頁共用，不隨畫面消失而取消
-            .task {
-                listStore.send(.view(.task))
-            }
-            // 搜尋欄無穩定識別值，UI 測試改查 `searchFields`
-            .searchable(
-                text: $listStore.searchText.sending(\.view.searchTextChanged),
-                placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("orders.list.placeholder.searchCustomersOrder")
-            )
-            // 多選筆數由清單欄頂部顯示，標題固定為訂單
-            .rootNavigationTitle("orders.list.title", language: language)
-            // 大標題在搜尋結束後會留白且不顯示標題，並把搜尋欄下推
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                OrdersToolbarContent(
-                    isAllFilteredSelected: snapshot.isAllSelected,
-                    filteredIDs: snapshot.ids,
-                    store: listStore
-                )
-            }
-            .alert($presentation.scope(state: \.$destination, action: \.destination).alert)
-            .sheet(
-                item: $listStore.scope(state: \.$destination, action: \.destination).filterSheet
-            ) {
-                OrderFilterSheet(store: $0)
-            }
-            .sheet(
-                item: $listStore.scope(state: \.$destination, action: \.destination).categoryPicker
-            ) {
-                OrderCategoryPickerSheet(store: $0)
-            }
+    var listContent: some View {
+        if Self.usesRegularList(horizontalSizeClass: horizontalSizeClass) {
+            OrdersRegularListContent(store: store, language: language)
+        } else {
+            OrdersCompactView(store: store, language: language)
+        }
     }
 
-    /// 依版面分類選擇對應的訂單瀏覽內容
-    @ViewBuilder
-    var platformContent: some View {
-        switch layoutClass {
-        case .compact:
-            OrdersCompactView(store: store, language: language)
+    /// 目前詳情或未選取提示，alert 只掛在可見層
+    var detailContent: some View {
+        OrdersRegularDetailColumn(store: store)
+            .alert(OrdersView.alertBinding(store: store, isDetail: true))
+    }
+}
 
-        case .regular:
-            regularListContent
+// MARK: - Nested Types
+
+extension OrdersView {
+
+    /// 訂單容器共用的 alert 綁定型別
+    typealias AlertBinding = Binding<
+        Store<
+            AlertState<OrdersPresentationFeature.Destination.Alert>,
+            OrdersPresentationFeature.Destination.Alert
+        >?
+    >
+}
+
+// MARK: - Internal Method
+
+extension OrdersView {
+
+    /// 判斷清單是否採並排排列；缺少尺寸分類時退回單欄，清單與詳情仍可由原生返回到達
+    ///
+    /// - Parameter horizontalSizeClass: Orders 自身的水平尺寸分類
+    /// - Returns: 只有 `.regular` 時為 `true`
+    static func usesRegularList(horizontalSizeClass: UserInterfaceSizeClass?) -> Bool {
+        horizontalSizeClass == .regular
+    }
+
+    /// 提供目前可見層的 alert 綁定，另一層使用常數 `nil`
+    ///
+    /// - Parameters:
+    ///   - store: Orders 容器的狀態與事件來源
+    ///   - isDetail: 是否為目前詳情層
+    /// - Returns: 目前可見層的 alert 綁定
+    static func alertBinding(store: StoreOf<OrdersFeature>, isDetail: Bool) -> AlertBinding {
+        guard isDetail == !store.detail.path.isEmpty else {
+            return .constant(nil)
         }
+        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
+        return $presentation.scope(state: \.$destination, action: \.destination).alert
     }
 }
 
@@ -131,14 +143,11 @@ private extension OrdersView {
         return state
     }()
 
-    // 固定寬版清單欄：compact 分支自帶 NavigationStack，外層再包會疊成兩層
-    NavigationStack {
-        OrdersView(
-            store: Store(initialState: previewState) {
-                OrdersFeature()
-            },
-            language: .traditionalChinese
-        )
-        .environment(\.blLayoutClass, .regular)
-    }
+    OrdersView(
+        store: Store(initialState: previewState) {
+            OrdersFeature()
+        },
+        language: .traditionalChinese
+    )
+    .environment(\.horizontalSizeClass, .regular)
 }

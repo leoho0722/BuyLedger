@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證系統搜尋列取消後的篩選狀態
+/// `OrderListFeature` 的單元測試，以 `TestStore` 逐步驗證系統搜尋列取消後的篩選狀態
 @MainActor
 struct OrdersSearchCancellationTests {
 
@@ -24,16 +24,15 @@ struct OrdersSearchCancellationTests {
         makeOrder(id: "C", customer: "阿華", category: "零食"),
     ]
 
-    /// 驗證搜尋列取消、查詢改為空字串時，查詢清空，選取的 A 維持不變，清單恢復為 A、B、C 三筆，並送出 `delegate.selectionChanged`
+    /// 驗證搜尋列取消並清空查詢時，清單恢復為 A、B、C 三筆
     ///
     /// - Throws: 搜尋前置條件不成立時丟出測試錯誤
     @Test
     func searchTextChanged_取消搜尋_清空查詢並恢復完整清單() async throws {
         // Given
         var initial = OrderListFeatureTestSupport.makeState(orders: Self.orders)
-        initial.searchText = "小美"
-        initial.selectedOrderID = "A"
-        try #require(initial.filteredOrders.map(\.id) == ["A"])
+        initial.searchText = "阿明"
+        try #require(initial.filteredOrders.map(\.id) == ["B"])
         let store = TestStore(initialState: initial) {
             OrderListFeature()
         } withDependencies: {
@@ -44,24 +43,21 @@ struct OrdersSearchCancellationTests {
         // When
         await store.send(.view(.searchTextChanged(""))) {
             $0.searchText = ""
-            $0.selectedOrderID = "A"
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged)
         #expect(store.state.searchText.isEmpty)
         let restored = store.state.filteredOrders
         #expect(restored.map(\.id) == ["A", "B", "C"])
     }
 
-    /// 驗證搜尋列取消時只解除查詢，已套用的類別篩選維持「美妝」，清單剩 A、B 兩筆，並送出 `delegate.selectionChanged`
+    /// 驗證搜尋列取消時解除查詢，已套用類別篩選維持「美妝」
     @Test
     func searchTextChanged_取消搜尋且有類別篩選_保留其他篩選() async {
         // Given
         var initial = OrderListFeatureTestSupport.makeState(orders: Self.orders)
         initial.selectedCategories = ["美妝"]
-        initial.searchText = "小美"
-        initial.selectedOrderID = "A"
+        initial.searchText = "阿明"
         let store = TestStore(initialState: initial) {
             OrderListFeature()
         } withDependencies: {
@@ -72,11 +68,9 @@ struct OrdersSearchCancellationTests {
         // When
         await store.send(.view(.searchTextChanged(""))) {
             $0.searchText = ""
-            $0.selectedOrderID = "A"
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged)
         #expect(store.state.selectedCategories == ["美妝"])
         let restored = store.state.filteredOrders
         #expect(restored.map(\.id) == ["A", "B"])

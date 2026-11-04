@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 更多分頁的入口畫面
+/// 更多分頁的入口清單與目前工具的分欄畫面
 struct MoreView: View {
 
     // MARK: - Properties
@@ -21,28 +21,20 @@ struct MoreView: View {
 
     // MARK: - Body
 
-    /// 包含更多頁清單與堆疊目的地的導覽容器
+    /// 入口清單為內容欄，目前工具為詳情欄；寬度不足時由系統收合為堆疊
     var body: some View {
-        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+        NavigationSplitView {
             entryList
-        } destination: { destinationStore in
-            switch destinationStore.case {
-            case .customers(let customersStore):
-                CustomersView(store: customersStore)
-
-            case .fx(let fxStore):
-                FxView(store: fxStore)
-
-            case .lookupManagement(let managementStore):
-                LookupManagementView(store: managementStore)
-
-            case .quote(let quoteStore):
-                QuoteView(store: quoteStore)
-
-            case .settings(let settingsStore):
-                SettingsView(store: settingsStore)
-            }
+        } detail: {
+            detailContent
         }
+        // 主檔表單與提示掛在分欄層：詳情欄內的呈現在摺展時會被系統重新呈現，草稿與確認框會失去對應的呈現
+        .background {
+            lookupPresentations
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(BLAccessibilityID.Common.selectedItem(.more))
+        .accessibilityValue(Text(verbatim: selectedRowKey))
     }
 }
 
@@ -50,53 +42,54 @@ struct MoreView: View {
 
 private extension MoreView {
 
-    /// 顯示工具、管理項目與設定的列表內容
-    @ViewBuilder
+    /// 工具、管理項目與設定的入口清單，選取值由目前工具推導
     var entryList: some View {
-        List {
+        List(selection: selectionBinding) {
             Section("orders.list.label.tools") {
-                entryButton(.fx)
+                entryRow(.fx)
             }
 
             Section("orders.detail.label.manage") {
-                entryButton(.customers)
+                entryRow(.customers)
 
-                entryButton(.orderSources)
+                entryRow(.lookup(.orderSource))
 
-                entryButton(.categories)
+                entryRow(.lookup(.category))
 
-                entryButton(.paymentMethods)
+                entryRow(.lookup(.paymentMethod))
 
-                entryButton(.reconciliationStatuses)
+                entryRow(.lookup(.reconciliationStatus))
 
-                entryButton(.quote)
+                entryRow(.quote)
             }
 
             Section {
-                entryButton(.settings)
+                entryRow(.settings)
             } header: {
                 Text(verbatim: "App")
             }
         }
+        .navigationSplitViewColumnWidth(min: 260, ideal: 300, max: 360)
+        .listStyle(.insetGrouped)
+        .navigationLinkIndicatorVisibility(.hidden)
         .accessibilityIdentifier(BLAccessibilityID.More.root)
         .rootNavigationTitle("common.action.label.more", language: language)
     }
 
-    /// 建立保留系統按壓高亮的入口列與 accessibility identifier
+    /// 建立可被選取的入口列，選取時標記為已選取，箭頭自繪以對齊基準外觀
     ///
     /// - Parameter entry: 更多頁目的地
-    /// - Returns: 對應目的地的導覽列
-    func entryButton(_ entry: MoreFeature.Entry) -> some View {
-        Button {
-            store.send(.view(.entryTapped(entry)))
-        } label: {
+    /// - Returns: 對應目的地的列
+    func entryRow(_ entry: MoreFeature.Entry) -> some View {
+        NavigationLink(value: entry) {
             HStack {
+                // 標題不指定前景色，讓選取列由系統套用對應的單色前景
                 Label {
                     Text(LocalizedStringKey(entryTitle(for: entry)))
                         .font(BLTypographyStyle.body.font.weight(.medium))
-                        .foregroundStyle(.blLabel)
                 } icon: {
                     Image(systemName: entrySystemImage(for: entry))
+                        .font(BLTypographyStyle.body.font)
                         .foregroundStyle(entryTint(for: entry))
                 }
 
@@ -109,12 +102,95 @@ private extension MoreView {
             }
         }
         .accessibilityIdentifier(accessibilityRow(for: entry))
+        .accessibilityAddTraits(store.currentEntry == entry ? .isSelected : [])
+    }
+
+    /// 目前工具的導覽宿主；沒有目前工具時顯示未選取提示
+    @ViewBuilder
+    var detailContent: some View {
+        if let pathID = store.path.ids.last,
+           let toolStore = store.scope(state: \.path[id: pathID], action: \.path[id: pathID]) {
+            NavigationStack {
+                toolView(for: toolStore)
+            }
+            // 切換工具時重建堆疊，清掉前一個工具推入的子頁；同一工具重選 ID 不變
+            .id(pathID)
+        } else {
+            ContentUnavailableView(
+                "common.navigation.detailEmptyState",
+                systemImage: "square.grid.2x2",
+                description: Text("common.navigation.selectItemPrompt")
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.blBackground)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(BLAccessibilityID.Common.detailEmptyState)
+        }
+    }
+
+    /// 依目前工具的種類呈現對應畫面
+    ///
+    /// - Parameter destinationStore: 目前工具的導覽元素 store
+    /// - Returns: 對應工具的畫面
+    @ViewBuilder
+    func toolView(for destinationStore: StoreOf<MoreFeature.Path>) -> some View {
+        switch destinationStore.case {
+        case .customers(let customersStore):
+            CustomersView(store: customersStore)
+
+        case .fx(let fxStore):
+            FxView(store: fxStore)
+
+        case .lookupManagement(let managementStore):
+            LookupManagementView(store: managementStore)
+
+        case .quote(let quoteStore):
+            QuoteView(store: quoteStore)
+
+        case .settings(let settingsStore):
+            SettingsView(store: settingsStore)
+        }
+    }
+
+    /// 目前工具為主檔管理時的表單與提示宿主，其他工具或沒有選取時不呈現
+    @ViewBuilder
+    var lookupPresentations: some View {
+        if let lookupStore = currentLookupStore {
+            LookupManagementPresentations(store: lookupStore)
+        }
     }
 }
 
 // MARK: - Private Method
 
 private extension MoreView {
+
+    /// 清單選取值由目前工具推導；使用者選取時只送出入口意圖
+    var selectionBinding: Binding<MoreFeature.Entry?> {
+        Binding {
+            store.currentEntry
+        } set: {
+            store.send(.view(.entrySelected($0)))
+        }
+    }
+
+    /// 目前工具為主檔管理時的子 store，其他工具或沒有選取時為 `nil`
+    var currentLookupStore: StoreOf<LookupManagementFeature>? {
+        guard let pathID = store.path.ids.last,
+              let toolStore = store.scope(state: \.path[id: pathID], action: \.path[id: pathID]),
+              case .lookupManagement(let lookupStore) = toolStore.case else {
+            return nil
+        }
+        return lookupStore
+    }
+
+    /// 目前工具對應的目的地 key，未開啟工具時為空字串
+    var selectedRowKey: String {
+        guard let entry = store.currentEntry else {
+            return ""
+        }
+        return rowKey(for: entry).rawValue
+    }
 
     /// 回傳更多頁目的地的標題
     ///
@@ -123,28 +199,19 @@ private extension MoreView {
     func entryTitle(for entry: MoreFeature.Entry) -> String {
         switch entry {
         case .fx:
-            "settings.more.label.exchangeRates"
+            return "settings.more.label.exchangeRates"
 
         case .customers:
-            "settings.more.label.customers"
+            return "settings.more.label.customers"
 
         case .quote:
-            "settings.more.label.quoteCalculator"
+            return "settings.more.label.quoteCalculator"
 
-        case .orderSources:
-            LookupKind.orderSource.entryTitle
-
-        case .categories:
-            LookupKind.category.entryTitle
-
-        case .paymentMethods:
-            LookupKind.paymentMethod.entryTitle
-
-        case .reconciliationStatuses:
-            LookupKind.reconciliationStatus.entryTitle
+        case .lookup(let kind):
+            return kind.entryTitle
 
         case .settings:
-            "orders.edit.title.settings"
+            return "orders.edit.title.settings"
         }
     }
 
@@ -155,28 +222,19 @@ private extension MoreView {
     func entrySystemImage(for entry: MoreFeature.Entry) -> String {
         switch entry {
         case .fx:
-            "dollarsign.arrow.circlepath"
+            return "dollarsign.arrow.circlepath"
 
         case .customers:
-            "person.2"
+            return "person.2"
 
         case .quote:
-            "function"
+            return "function"
 
-        case .orderSources:
-            LookupKind.orderSource.systemImage
-
-        case .categories:
-            LookupKind.category.systemImage
-
-        case .paymentMethods:
-            LookupKind.paymentMethod.systemImage
-
-        case .reconciliationStatuses:
-            LookupKind.reconciliationStatus.systemImage
+        case .lookup(let kind):
+            return kind.systemImage
 
         case .settings:
-            "gear"
+            return "gear"
         }
     }
 
@@ -187,28 +245,31 @@ private extension MoreView {
     func entryTint(for entry: MoreFeature.Entry) -> Color {
         switch entry {
         case .fx:
-            .blAccent
+            return .blAccent
 
         case .customers:
-            .blPurple
+            return .blPurple
 
         case .quote:
-            .blGreen
+            return .blGreen
 
-        case .orderSources:
-            .blTeal
+        case .lookup(let kind):
+            switch kind {
+            case .orderSource:
+                return .blTeal
 
-        case .categories:
-            .blOrange
+            case .category:
+                return .blOrange
 
-        case .paymentMethods:
-            .blRed
+            case .paymentMethod:
+                return .blRed
 
-        case .reconciliationStatuses:
-            .blIndigo
+            case .reconciliationStatus:
+                return .blIndigo
+            }
 
         case .settings:
-            .blSecondaryLabel
+            return .blSecondaryLabel
         }
     }
 
@@ -217,33 +278,42 @@ private extension MoreView {
     /// - Parameter entry: 更多頁目的地
     /// - Returns: 對應目的地列的 accessibility identifier
     func accessibilityRow(for entry: MoreFeature.Entry) -> String {
-        let row: BLAccessibilityID.More.Row
+        BLAccessibilityID.More.row(rowKey(for: entry))
+    }
+
+    /// 回傳入口對應的列識別 key
+    ///
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 與 accessibility 列識別一致的 key
+    func rowKey(for entry: MoreFeature.Entry) -> BLAccessibilityID.More.Row {
         switch entry {
         case .fx:
-            row = .fx
+            return .fx
 
         case .customers:
-            row = .customers
+            return .customers
 
         case .quote:
-            row = .quote
+            return .quote
 
-        case .orderSources:
-            row = .orderSources
+        case .lookup(let kind):
+            switch kind {
+            case .orderSource:
+                return .orderSources
 
-        case .categories:
-            row = .categories
+            case .category:
+                return .categories
 
-        case .paymentMethods:
-            row = .paymentMethods
+            case .paymentMethod:
+                return .paymentMethods
 
-        case .reconciliationStatuses:
-            row = .reconciliationStatuses
+            case .reconciliationStatus:
+                return .reconciliationStatuses
+            }
 
         case .settings:
-            row = .settings
+            return .settings
         }
-        return BLAccessibilityID.More.row(row)
     }
 }
 

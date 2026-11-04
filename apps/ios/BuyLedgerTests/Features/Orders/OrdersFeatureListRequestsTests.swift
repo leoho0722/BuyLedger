@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersFeature` 的單元測試，以 TestStore 逐步驗證清單請求的載入、詳情推入與合併日期脈絡
+/// `OrdersFeature` 的單元測試，以 `TestStore` 逐步驗證清單請求的載入、詳情推入與合併日期脈絡
 @MainActor
 struct OrdersFeatureListRequestsTests {
 
@@ -43,32 +43,6 @@ struct OrdersFeatureListRequestsTests {
         await store.receive(\.delegate.loadRequested)
         #expect(store.state.list.hasLoaded)
         #expect(store.state.list.isLoading == false)
-    }
-
-    /// 驗證點擊清單中的訂單列後，畫面推入該訂單的詳情
-    @Test
-    func list_點擊訂單列_經請求計畫推入詳情() async {
-        // Given
-        let order = LedgerOrder.fixture(id: "A")
-        let expectedOrders = SharedReader(value: [order])
-        let store = TestStore(initialState: OrdersFeature.State(orders: [order])) {
-            OrdersFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-        }
-
-        // When
-        await store.send(.list(.view(.orderTapped("A"))))
-
-        // Then
-        await store.receive(\.list.delegate.requested, .showDetail("A")) {
-            $0.detail.path[id: 0] = .detail(
-                OrderDetailFeature.State(orderID: "A", orders: expectedOrders)
-            )
-        }
-        #expect(store.state.detail.path.count == 1)
-        #expect(store.state.detail.path[id: 0]?.detail?.orderID == "A")
     }
 
     /// 驗證清單已記錄日期脈絡時開始合併，合併候選沿用清單的時間與時區，即使注入的時間與時區不同也不覆寫

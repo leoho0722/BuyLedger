@@ -58,17 +58,15 @@ struct CampaignFeatureReloadDeleteTests {
         await store.receive(\.writes.deleteResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
-            $0.presentation.destination = .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("orders.list.label.operationFailed")
-                } actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.campaignDeletedTry")
+            $0.presentation.notice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+                TextState("orders.list.label.operationFailed")
+            } actions: {
+                ButtonState(role: .cancel) {
+                    TextState("orders.merge.label.ok")
                 }
-            )
+            } message: {
+                TextState("campaigns.general.message.campaignDeletedTry")
+            }
         }
 
         // When
@@ -143,17 +141,15 @@ struct CampaignFeatureReloadDeleteTests {
         await store.receive(\.writes.deleteResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
-            $0.presentation.destination = .alert(
-                AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("orders.list.label.operationFailed")
-                } actions: {
-                    ButtonState(role: .cancel) {
-                        TextState("orders.merge.label.ok")
-                    }
-                } message: {
-                    TextState("campaigns.general.message.campaignDeletedTry")
+            $0.presentation.notice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+                TextState("orders.list.label.operationFailed")
+            } actions: {
+                ButtonState(role: .cancel) {
+                    TextState("orders.merge.label.ok")
                 }
-            )
+            } message: {
+                TextState("campaigns.general.message.campaignDeletedTry")
+            }
         }
 
         // When

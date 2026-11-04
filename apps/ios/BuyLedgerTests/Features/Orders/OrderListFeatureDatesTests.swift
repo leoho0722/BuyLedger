@@ -14,15 +14,14 @@ import Testing
 /// `OrderListFeature` 的單元測試，涵蓋日期篩選、日期脈絡刷新與日期區段分組
 struct OrderListFeatureDatesTests {
 
-    /// 驗證選擇本月時，清單依已記錄的日期脈絡判定本月，不採用注入的即時時間，只留下 APRIL 並重選它
+    /// 驗證選擇本月時，清單依已記錄日期脈絡篩出 APRIL，排除 MAY，不委派任何請求
     @Test
     @MainActor
-    func datePeriodSelected_即時時間與記錄不同_依記錄日期篩選並重選() async {
+    func datePeriodSelected_即時時間與記錄不同_依記錄日期篩選() async {
         // Given
         let april = LedgerOrder.fixture(id: "APRIL", date: TestDependencies.fixedNow)
         let may = LedgerOrder.fixture(id: "MAY", date: Date(timeIntervalSince1970: 1_777_593_600))
-        var initial = OrderListFeatureTestSupport.makeState(orders: [may, april])
-        initial.selectedOrderID = "MAY"
+        let initial = OrderListFeatureTestSupport.makeState(orders: [may, april])
         let store = TestStore(initialState: initial) {
             OrderListFeature()
         } withDependencies: {
@@ -33,11 +32,9 @@ struct OrderListFeatureDatesTests {
         // When
         await store.send(.view(.datePeriodSelected(.thisMonth))) {
             $0.selectedDatePeriod = .thisMonth
-            $0.selectedOrderID = "APRIL"
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "APRIL")
         #expect(store.state.filteredOrders.map(\.id) == ["APRIL"])
     }
 
@@ -77,8 +74,10 @@ struct OrderListFeatureDatesTests {
     }
 
     /// 驗證刷新時區為 UTC+8 後，相隔兩小時的兩筆訂單落在同一天，合併為一個今天的區段，且依時間由新到舊排列
+    ///
+    /// - Throws: 時區無法建立時由 `#require` 丟出
     @Test
-    func refreshDateContext_時區不同_同一日訂單合併成一個區段() {
+    func refreshDateContext_時區不同_同一日訂單合併成一個區段() throws {
         // Given
         let early = LedgerOrder.fixture(
             id: "EARLY",
@@ -86,7 +85,8 @@ struct OrderListFeatureDatesTests {
         )
         let late = LedgerOrder.fixture(id: "LATE", date: Date(timeIntervalSince1970: 1_777_597_200))
         var calendar = TestDependencies.fixedCalendar
-        calendar.timeZone = TimeZone(secondsFromGMT: 28_800) ?? .gmt
+        let zone = try #require(TimeZone(secondsFromGMT: 28_800))
+        calendar.timeZone = zone
         var state = OrdersFeature.State(orders: [early, late])
 
         // When

@@ -521,6 +521,9 @@ extension RootFeatureTestSupport {
             \.more.catalog.delegate,
             .additionCompleted(request, isStored: isStored)
         )
-        await store.receive(\.more.delegate, .optionAdditionCompleted(request, isStored: isStored))
+        await store.receive(
+            \.more.delegate,
+            .optionAdditionCompleted(request: request, isStored: isStored)
+        )
     }
 }

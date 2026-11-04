@@ -29,14 +29,20 @@ struct LookupManagementFeature {
         /// 是否已完成首次載入
         var hasLoaded = false
 
-        /// 表單已送出並正在關閉
+        /// 表單是否已送出並正在關閉
         var isFormSheetDismissing = false
 
-        /// 表單關閉期間等待呈現的 alert
+        /// 表單關閉期間等待呈現的確認框
         var pendingAlert: Destination.State?
 
-        /// 目前呈現中的表單或 alert
+        /// 表單關閉期間等待呈現的寫入失敗通知
+        var pendingNotice: Destination.WriteFailure?
+
+        /// 目前呈現中的表單或確認框
         @Presents var destination: Destination.State?
+
+        /// 目前呈現中的寫入失敗通知，與 `destination` 分開呈現
+        @Presents var notice: AlertState<Destination.Alert>?
 
         /// 付款方式更正流程的狀態
         var correction = PaymentMethodCorrectionFeature.State()
@@ -83,10 +89,15 @@ struct LookupManagementFeature {
         /// - Parameter action: 要轉送給根畫面的結果
         case delegate(Delegate)
 
-        /// 表單與 alert 目的地事件
+        /// 表單與確認框的目的地事件
         ///
         /// - Parameter action: 目前目的地的呈現事件
         case destination(PresentationAction<Destination.Action>)
+
+        /// 寫入失敗通知的呈現事件
+        ///
+        /// - Parameter action: 通知 alert 的呈現事件
+        case notice(PresentationAction<Destination.Alert>)
 
         /// 新增寫入結果
         ///
@@ -165,13 +176,16 @@ struct LookupManagementFeature {
 
     // MARK: - Body
 
-    /// 組合付款方式更正、核心邏輯與目的地 reducer
+    /// 組合付款方式更正、核心邏輯、確認框與寫入失敗通知的 reducer
     var body: some ReducerOf<Self> {
         Scope(state: \.correction, action: \.correction) {
             PaymentMethodCorrectionFeature()
         }
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
+        // 目的地清空後才沖出暫存的寫入失敗通知
+        Reduce(releasePendingNotice)
+            .ifLet(\.$notice, action: \.notice)
     }
 }
 
@@ -217,6 +231,10 @@ private extension LookupManagementFeature {
 
         case .view(.formSheetDismissed):
             state.isFormSheetDismissing = false
+            if let pendingNotice = state.pendingNotice {
+                state.notice = .lookupWriteFailure(pendingNotice)
+                state.pendingNotice = nil
+            }
             if let pendingAlert = state.pendingAlert {
                 state.destination = pendingAlert
                 state.pendingAlert = nil
@@ -269,6 +287,9 @@ private extension LookupManagementFeature {
         case .destination:
             return .none
 
+        case .notice:
+            return .none
+
         case .addResponse(.success(let addition)):
             state.$catalog.withLock {
                 $0.add(name: addition.name, kind: state.kind, flags: addition.flags)
@@ -276,14 +297,11 @@ private extension LookupManagementFeature {
             return .none
 
         case .addResponse(.failure):
-            presentAlertAfterFormSheetDismissal(.writeFailure(.add), state: &state)
+            presentNotice(.add, state: &state)
             return .none
 
         case .correction(.delegate(.confirmationRequired(let count))):
-            presentAlertAfterFormSheetDismissal(
-                .retroactiveConfirmation(affectedOrderCount: count),
-                state: &state
-            )
+            presentDestination(.retroactiveConfirmation(affectedOrderCount: count), state: &state)
             return .none
 
         case .correction(.delegate(.edited(let plan))):
@@ -294,7 +312,7 @@ private extension LookupManagementFeature {
             return .send(.delegate(.paymentMethodEdited(plan)))
 
         case .correction(.delegate(.failed)):
-            presentAlertAfterFormSheetDismissal(.writeFailure(.paymentMethodEdit), state: &state)
+            presentNotice(.paymentMethodEdit, state: &state)
             return .none
 
         case .correction:
@@ -305,7 +323,7 @@ private extension LookupManagementFeature {
             return .none
 
         case .deleteResponse(.failure):
-            state.destination = .writeFailure(.delete)
+            presentNotice(.delete, state: &state)
             return .none
 
         case .itemsResponse(.success(let catalog)):
@@ -325,7 +343,7 @@ private extension LookupManagementFeature {
             return .send(.delegate(.itemRenamed(rename)))
 
         case .renameResponse(.failure):
-            presentAlertAfterFormSheetDismissal(.writeFailure(.rename), state: &state)
+            presentNotice(.rename, state: &state)
             return .none
         }
     }
@@ -337,16 +355,46 @@ private extension LookupManagementFeature {
         LookupItemOperations(lookupService: lookupService)
     }
 
-    /// 表單正在關閉時先暫存提示，等 `formSheetDismissed` 再呈現；沒有表單在關閉就直接呈現
+    /// 目的地呈現中或表單正在關閉時先暫存寫入失敗通知，否則直接放進通知狀態
     ///
     /// - Parameters:
-    ///   - alert: 要呈現的目的地狀態
+    ///   - failure: 失敗的主檔操作
     ///   - state: 要更新的主檔管理狀態
-    func presentAlertAfterFormSheetDismissal(_ alert: Destination.State, state: inout State) {
-        if state.isFormSheetDismissing {
-            state.pendingAlert = alert
+    func presentNotice(_ failure: Destination.WriteFailure, state: inout State) {
+        if state.isFormSheetDismissing || state.destination != nil {
+            state.pendingNotice = failure
         } else {
-            state.destination = alert
+            state.notice = .lookupWriteFailure(failure)
         }
+    }
+
+    /// 表單正在關閉時先暫存確認框，否則直接放進目的地
+    ///
+    /// - Parameters:
+    ///   - destination: 要呈現的目的地狀態
+    ///   - state: 要更新的主檔管理狀態
+    func presentDestination(_ destination: Destination.State, state: inout State) {
+        if state.isFormSheetDismissing {
+            state.pendingAlert = destination
+        } else {
+            state.destination = destination
+        }
+    }
+
+    /// 目的地已清空且表單不在關閉中時，把暫存的寫入失敗通知放進通知狀態
+    ///
+    /// - Parameters:
+    ///   - state: 要更新的主檔管理狀態
+    ///   - action: 這次收到的主檔事件，此處只檢查目的地處理後的狀態
+    /// - Returns: 沒有後續操作，固定回 `.none`
+    func releasePendingNotice(state: inout State, action: Action) -> Effect<Action> {
+        guard state.destination == nil,
+              !state.isFormSheetDismissing,
+              let pendingNotice = state.pendingNotice else {
+            return .none
+        }
+        state.notice = .lookupWriteFailure(pendingNotice)
+        state.pendingNotice = nil
+        return .none
     }
 }

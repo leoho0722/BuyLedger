@@ -14,9 +14,9 @@ import Testing
 /// `OrdersFilterOperations` 的單元測試，直接呼叫各篩選方法並斷言狀態變化，另含 `OrderFilterSelection.isActive` 的真值表
 struct OrdersFilterOperationsTests {
 
-    /// 驗證切換為 `delivered` 狀態時，`selectedStatus` 更新，選取改為第一筆相符的 B
+    /// 驗證切換為 `delivered` 狀態時，只更新狀態篩選
     @Test
-    func statusFilterSelected_切換狀態_重選第一筆相符訂單() {
+    func statusFilterSelected_切換已交付_更新狀態() {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             OrdersFilterOperationsTestSupport.makeOrder(id: "A", status: .quoting),
@@ -28,14 +28,13 @@ struct OrdersFilterOperationsTests {
 
         // Then
         #expect(state.selectedStatus == .status(.delivered))
-        #expect(state.selectedOrderID == "B")
     }
 
-    /// 驗證切換為 `thisMonth` 時，三月的 A 被排除，選取改為第一筆相符的 B
+    /// 驗證切換為 `thisMonth` 時，只更新日期區間
     ///
     /// - Throws: 日期無法建立時丟出測試錯誤
     @Test
-    func datePeriodSelected_切換日期_重選第一筆相符訂單() throws {
+    func datePeriodSelected_切換本月_更新日期區間() throws {
         // Given
         let march = try OrdersFilterOperationsTestSupport.date(year: 2026, month: 3, day: 15)
         var state = OrderListFeatureTestSupport.makeState(orders: [
@@ -48,12 +47,11 @@ struct OrdersFilterOperationsTests {
 
         // Then
         #expect(state.selectedDatePeriod == .thisMonth)
-        #expect(state.selectedOrderID == "B")
     }
 
-    /// 驗證套用類別「服飾」時，已套用類別更新、選取改為第一筆相符的 B，並關閉類別選擇器
+    /// 驗證套用類別「服飾」時，更新類別並關閉選擇器
     @Test
-    func categoryApplied_切換類別_重選第一筆相符訂單並關閉() {
+    func categoryApplied_套用服飾_更新類別並關閉() {
         // Given
         let initialOrders = [
             OrdersFilterOperationsTestSupport.makeOrder(id: "A", category: "美妝"),
@@ -70,13 +68,12 @@ struct OrdersFilterOperationsTests {
 
         // Then
         #expect(state.selectedCategories == ["服飾"])
-        #expect(state.selectedOrderID == "B")
         #expect(state.destination == nil)
     }
 
-    /// 驗證切換為付款方式「現金」時，已套用付款方式更新，選取改為第一筆相符的 B
+    /// 驗證切換為付款方式「現金」時，只更新付款方式
     @Test
-    func paymentMethodFilterSelected_切換付款方式_重選第一筆相符訂單() {
+    func paymentMethodFilterSelected_切換現金_更新付款方式() {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             OrdersFilterOperationsTestSupport.makeOrder(id: "A", paymentMethod: "信用卡"),
@@ -88,7 +85,6 @@ struct OrdersFilterOperationsTests {
 
         // Then
         #expect(state.selectedPaymentMethod == "現金")
-        #expect(state.selectedOrderID == "B")
     }
 
     /// 驗證日期、類別或付款方式任一偏離預設時篩選啟用，類別集合只要非空即算啟用 (連只含空字串也算)，三者皆為預設時停用

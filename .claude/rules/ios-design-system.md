@@ -37,11 +37,21 @@ paths:
     - 只有代表獨立具名層級的字重才新增 case (如 `title3Bold`)；純強調用的組合 (`subheadline` 搭 `.semibold` 等) 不論出現幾次都留在呼叫端。
     - `.bold()` 與 `.weight(.bold)` 的 snapshot 光柵化結果不同，收斂時沿用原寫法，兩者不可互換。
     - 隨元件尺寸等比縮放的字級 (`BLAvatar` 縮寫、`@ScaledMetric` 驅動的數字) 維持 `.font(.system(size:))`。
-- **版面判斷只經 `BLLayoutClass`／`blLayoutClass`**：畫面宣告 `@Environment(\.blLayoutClass) private var layoutClass` 後比對 `.compact`／`.regular`；production 程式在 `Shared/DesignSystem/Foundations/BLLayoutClass.swift` 以外不引用 `horizontalSizeClass`／`verticalSizeClass` (讀取、寫入 environment、成員存取都算)。
-    - regular 版面要水平與垂直尺寸分類都是 regular (iPad 全螢幕)：只看水平會把大尺寸 iPhone 橫向誤判成 iPad，窄視窗的 iPad 與 iPhone 任何方向都是 compact 版面。
-    - 版面由 `RootView` 依視窗決定一次，以 `.environment(\.blLayoutClass, …)` 交給子樹：split view 的欄位可能回報與視窗不同的尺寸分類 (例如 content 欄的水平分類為 compact)，子樹不得自行重新推導。沒有經過 `RootView` 的 Preview 與截圖測試由尺寸分類推導。
-    - 由 `DesignSystemSourceScanTests` 的 `sizeClassViolations_引用尺寸分類_僅出現在版面判斷入口` (規則十一) 守住，不接受 `design-system-scan-exempt` 豁免標記。
-    - 掃描保證只涵蓋剝除器建模的詞法形式：`//` 行註解、非巢狀的 `/* … */` 區塊註解、單行與多行一般字串。字串內插、原始字串與擴充分隔符號 (`#"…"#`)、正規表示式字面值、巢狀區塊註解在保證範圍外，該處與其後幾行的引用都可能漏判或誤判，寫這些形式時人工複核。
+- **版面不以全 App 尺寸分類政策判定**：各功能依自身可用區域與環境調整 (閱讀寬度見下方)，不建立全域的 compact／regular 分類；根導覽的分頁列與側邊欄由原生 `TabView` 決定。
+    - `DesignSystemSourceScanner` 的尺寸分類器 (規則十一) 不掃 production，只由詞法案例測試 (`sizeClassViolations_規格範例表各列_分類結果符合預期`) 使用；詞法保證只涵蓋剝除器建模的形式：`//` 行註解、非巢狀的 `/* … */` 區塊註解、單行與多行一般字串。字串內插、原始字串與擴充分隔符號 (`#"…"#`)、正規表示式字面值、巢狀區塊註解在保證範圍外，遇到這些形式時人工複核。
+    - split view 的欄位可能回報與視窗不同的尺寸分類 (例如 content 欄的水平分類為 compact)，不以欄位的尺寸分類推導版面。
+- **閱讀寬度依容器選修飾**：`ScrollView`／`List`／`Form` 這類捲動容器用 `blReadableScrollContent(_:)` (以 `contentMargins` 限寬)，非捲動的內容區塊用 `blReadableContent(_:)`；不包整個 `NavigationSplitView` 或導覽列。
+    - 閱讀寬度修飾跨越上限時只能更新可選邊距，不得切換 view 結構；避免重建容器與其內部焦點、`@State` 或捲動位置。
+    - `ScrollView` 的置中邊距計算：
+        - `size.width` 已扣水平安全區。
+        - `.scrollContent` 邊距再加在安全區之後；計算置中邊距時不再扣 `safeAreaInsets`。
+    - `List`／`Form` 的安全區處理：
+        - 必須直接對 `List`／`Form` 值呼叫專用 overload；若先接上其他修飾並把值轉成一般 `View`，會改選一般 overload。
+        - `.scrollContent` 的左右閱讀邊距分別設定 `.leading` 與 `.trailing`，各自納入對應的幾何安全區；純函式測試邊距計算，實際列位置以 live UI 幾何量測確認。
+        - 渲染測試 host 以 `additionalSafeAreaInsets` 注入安全區時，`List`／`Form` 會自行避開；真實裝置與分欄內容不會，因此不以渲染測試驗證 `List`／`Form` 的安全區置中。
+    - `.scrollContent` 邊距與列本身的 `listRowInsets` 各自控制不同層級；設定閱讀上限時保留列內距，並把列限制在安全區內。
+    - 例外：內容本身已用 `GeometryReader` 給明確寬度的捲動畫面 (訂單詳情 `OrderDetailContentView`) 只把上限換成 `BLReadableContentType` 的對應值，不再疊加 `blReadableScrollContent`：兩套限寬各自量測容易分歧，拿掉明確寬度又會改變內部圖表收到的尺寸。
+- **清單列要呈現共用卡片外觀時用 `BLCardRowBackground`／`BLCardRowPosition` 逐列給背景** (`listRowBackground`＋`cardRowInsets`)，不把多列包進一張 `BLCard`：分欄清單的每個選取項目必須是直接列。分組標題列另設 `.environment(\.defaultMinListRowHeight, 0)` 的清單才不會被最小列高撐高。
 
 ## 色彩
 
@@ -71,7 +81,7 @@ paths:
     - `BLHeroGradientStart`／`End` 沒有 High Contrast 變體，新增依賴此漸層的畫面時留意。
 - **層級用字重與字級表達，呼叫端不得用不透明度自訂降階**：色盤內為達到本專案 4.5:1 文字對比地板而定義的單一次要文字色是例外；實測顯示系統 `secondaryLabel` 在淺色外觀下未達該門檻，因此 `.blSecondaryLabel` 保留 `.opacity(0.6)`。
 - **不以實色模仿系統 bar、不以半透明色模仿玻璃材質**：需要 bar 底用 `.background(.bar)` 並讓捲動內容延伸到下方。
-- **`DesignSystemSourceScanTests` 以掃描守門色彩、幣別名稱、語言判斷與版面判斷各入口，以及元件縮放參數的傳值 (規則十二，見 `ios-accessibility-localization.md`)**：色彩、幣別與語言規則需要例外時，在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)；版面規則與規則十二不接受豁免標記，帶理由的標記也一樣失敗。
+- **`DesignSystemSourceScanTests` 以掃描守門色彩、幣別名稱、語言判斷，以及元件縮放參數的傳值 (規則十二，見 `ios-accessibility-localization.md`)**：色彩、幣別與語言規則需要例外時，在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)；規則十二不接受豁免標記，帶理由的標記也一樣失敗。
     - 色相名稱清單 `namedHueTokenPattern` 是封閉集合，SwiftUI 新增具名系統色時要同步補進它的兩個交替。
 - **對比門檻由 `ContrastComplianceTests` 把關** (helper 為 `ColorContrast`)。
 
@@ -85,6 +95,7 @@ paths:
     - 訂單搜尋用 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁值選擇列用 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`。
 - **含工具列 `.borderedProminent` 按鈕的畫面，snapshot 測試改用 `.image(drawHierarchyInKeyWindow: true)`**：離屏渲染會整張變黑，實際執行正常 (參考 `paymentMethodEditorSheet_新增付款方式_顯示空白表單`)。
 - **破壞性用 `Button(role: .destructive)` 表達**，`BLButtonStyle` 不提供破壞性變體。
+    - 例外：`swipeActions` 內只開啟確認對話框的刪除鈕用一般 `Button` 加 `.tint(.blRed)` (參考 `LookupItemList`)：iPadOS 27 點下 destructive 角色的滑動鈕會先移除列，確認刪除後資料再刪一次，清單列數不符而閃退；破壞性語意由確認對話框承擔。
 - **自繪背景的 `ButtonStyle` 自己讀 `@Environment(\.isEnabled)`**，否則停用態看起來與可用時相同。
 - **可點擊元素用 `Button`，不用 `onTapGesture`**：手勢沒有按壓態，也不支援 switch control 與外接鍵盤。
 - **`ScrollView` 內容不常駐掛 `simultaneousGesture(DragGesture())`**：會搶走捲動的 pan，onChanged 內判斷不做事也擋不住；條件性手勢用 `.simultaneousGesture(_:isEnabled:)`。
@@ -92,4 +103,8 @@ paths:
     - 尺寸取 `BLHitTarget.minimum`；形狀用元件自身形狀 (膠囊用 `.contentShape(.capsule)`)，避免相鄰命中區在圓角處重疊。
     - 需要維持貼齊角落的外觀時用 `.offset(...)` 推回原位；命中區撐高造成的版面位移是必然代價，元件視覺尺寸不變。
 - **`Label` 在 `Form`／`List` row 內且後接 `Spacer` 時加 `.labelStyle(.titleAndIcon)`**，否則 icon 與文字被撐到兩端。
+- **iPad 有硬體鍵盤焦點時，split list 的選取列會套用系統強調樣式，未指定前景色的文字會轉成單色**：
+    - 自訂 `.listRowBackground` 繪製卡片的選取列，主要文字指定色盤前景色 `.blLabel` (參考 `OrdersRegularListColumn.navigableRow`、`CampaignRow.titleLine`)。
+    - 使用系統預設選取外觀的列 (`MoreView.entryRow`) 不指定前景色。
+    - 離屏 snapshot 與 XCUITest 沒有鍵盤焦點，無法重現此狀態；修改這類列時啟用模擬器硬體鍵盤，以 UI Automation 確認。
 - **`List` 列設定 (`listRowInsets`／`listRowSeparator`／`listRowBackground`) 必須是列 View 最外層的修飾**：外面再包 `.onGeometryChange` 等修飾會讓列設定失效 (列內距回到預設、分隔線重現)，`formatting.md` 的 modifier 四組順序不適用於列設定 (參考 `OrderCategoryGrid.gridRow`)。
