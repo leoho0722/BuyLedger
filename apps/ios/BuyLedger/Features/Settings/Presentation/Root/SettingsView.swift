@@ -39,6 +39,7 @@ struct SettingsView: View {
 
             aboutSection
         }
+        .blReadableScrollContent(.form)
         .accessibilityIdentifier(BLAccessibilityID.Settings.root)
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isGoalFieldFocused, to: $isGoalFieldFocused)
@@ -97,6 +98,38 @@ private extension SettingsView {
         }
     }
 
+#if DEBUG
+    /// AI 總結模型選擇器 (僅 DEBUG 建置提供)
+    @ViewBuilder
+    var modelPicker: some View {
+        OptionPickerSheet(
+            title: "settings.preference.label.selectAiModel",
+            options: AISummaryModelCatalog.candidates,
+            selection: .single(
+                selected: store.aiSummaryModel,
+                onSelect: {
+                    store.send(.view(.aiSummaryModelSelected($0)))
+                }
+            ),
+            addition: .prompt(
+                .init(
+                    buttonTitle: "settings.preference.label.customModel",
+                    title: "settings.preference.label.customAiModel",
+                    message: "settings.preference.message.enterModelName",
+                    placeholder: "settings.preference.message.modelNameFor"
+                )
+            ) {
+                store.send(.view(.aiSummaryModelSelected($0)))
+            },
+            emptyState: .init(
+                title: "settings.preference.label.modelsAvailable",
+                description: "settings.preference.message.enterCustomModel"
+            ),
+            isEmbedded: true
+        )
+    }
+#endif
+
     /// 預設幣別設定區段
     var defaultCurrencySection: some View {
         Section("orders.edit.label.defaultCurrency") {
@@ -113,6 +146,28 @@ private extension SettingsView {
             }
             .accessibilityIdentifier(BLAccessibilityID.Settings.defaultCurrencyRow)
         }
+    }
+
+    /// 預設幣別選擇器
+    @ViewBuilder
+    var currencyPicker: some View {
+        OptionPickerSheet(
+            title: "settings.preference.label.selectDefaultCurrency",
+            options: store.availableCurrencies.map(\.rawValue),
+            selection: .single(
+                selected: store.defaultCurrency.rawValue,
+                onSelect: {
+                    store.send(.view(.defaultCurrencySelected($0)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.edit.label.currenciesAvailable",
+                description: "orders.edit.message.internetConnectionRequired"
+            ),
+            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+            isSearchEnabled: true,
+            isEmbedded: true
+        )
     }
 
     /// 月度淨獲利目標設定區段
@@ -161,60 +216,6 @@ private extension SettingsView {
             LabeledContent("settings.preference.label.author", value: "Leo Ho")
         }
     }
-
-    /// 預設幣別選擇器
-    @ViewBuilder
-    var currencyPicker: some View {
-        OptionPickerSheet(
-            title: "settings.preference.label.selectDefaultCurrency",
-            options: store.availableCurrencies.map(\.rawValue),
-            selection: .single(
-                selected: store.defaultCurrency.rawValue,
-                onSelect: {
-                    store.send(.view(.defaultCurrencySelected($0)))
-                }
-            ),
-            emptyState: .init(
-                title: "orders.edit.label.currenciesAvailable",
-                description: "orders.edit.message.internetConnectionRequired"
-            ),
-            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
-            isSearchEnabled: true,
-            isEmbedded: true
-        )
-    }
-
-#if DEBUG
-    /// AI 總結模型選擇器 (僅 DEBUG 建置提供)
-    @ViewBuilder
-    var modelPicker: some View {
-        OptionPickerSheet(
-            title: "settings.preference.label.selectAiModel",
-            options: AISummaryModelCatalog.candidates,
-            selection: .single(
-                selected: store.aiSummaryModel,
-                onSelect: {
-                    store.send(.view(.aiSummaryModelSelected($0)))
-                }
-            ),
-            addition: .prompt(
-                .init(
-                    buttonTitle: "settings.preference.label.customModel",
-                    title: "settings.preference.label.customAiModel",
-                    message: "settings.preference.message.enterModelName",
-                    placeholder: "settings.preference.message.modelNameFor"
-                )
-            ) {
-                store.send(.view(.aiSummaryModelSelected($0)))
-            },
-            emptyState: .init(
-                title: "settings.preference.label.modelsAvailable",
-                description: "settings.preference.message.enterCustomModel"
-            ),
-            isEmbedded: true
-        )
-    }
-#endif
 
     /// 數字鍵盤的完成按鈕
     @ToolbarContentBuilder

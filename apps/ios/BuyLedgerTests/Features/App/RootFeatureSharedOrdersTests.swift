@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試，以 TestStore 驗證訂單載入、儲存與收款更新時，開團、更多、總覽與分析的訂單投影如何同步
+/// `RootFeature` 的單元測試，以 `TestStore` 驗證訂單載入、儲存與收款更新時，開團、更多、總覽與分析的訂單投影如何同步
 @MainActor
 struct RootFeatureSharedOrdersTests {
 
@@ -37,11 +37,6 @@ struct RootFeatureSharedOrdersTests {
             $0.orders.load.$hasLoaded.withLock {
                 $0 = true
             }
-            $0.orders.list.selectedOrderID = "O1"
-            $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "O1",
-                orders: SharedReader(value: loaded)
-            )
             $0.campaigns.$orders.withLock {
                 $0 = loaded
             }

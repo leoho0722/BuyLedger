@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersFeature` 的單元測試，以 TestStore 搭配磁碟資料庫，逐步驗證刪除與編輯寫入失敗後的資料復原
+/// `OrdersFeature` 的單元測試，以 `TestStore` 搭配磁碟資料庫，逐步驗證刪除與編輯寫入失敗後的資料復原
 @MainActor
 struct OrdersFeatureDeleteEditFailuresTests {
 
@@ -86,14 +86,9 @@ struct OrdersFeatureDeleteEditFailuresTests {
                 $0 = [original]
             }
         }
-        await store.receive(\.load.loadResponse) {
-            $0.list.selectedOrderID = original.id
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "O1",
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.load.loadResponse)
         #expect(store.state.orders == [original], "寫入失敗後重新讀取資料庫，讀回的仍是原訂單")
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 
@@ -181,14 +176,9 @@ struct OrdersFeatureDeleteEditFailuresTests {
                 $0 = persistedOrders
             }
         }
-        await store.receive(\.load.loadResponse) {
-            $0.list.selectedOrderID = originalID
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-2604-018",
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.load.loadResponse)
         #expect(store.state.orders == persistedOrders, "寫入失敗後重新讀取資料庫，讀回的仍是原訂單")
+        #expect(store.state.detail.path.isEmpty)
         await store.finish()
     }
 }

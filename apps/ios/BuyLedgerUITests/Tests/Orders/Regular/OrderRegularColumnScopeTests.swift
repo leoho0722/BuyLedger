@@ -32,6 +32,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_直向_清單控制項只在清單欄內() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
 
         // When
@@ -47,6 +49,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_橫向_清單控制項只在清單欄內() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
 
@@ -63,6 +67,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_直向_可見欄位依序並排且不重疊() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
 
         // When
@@ -79,13 +85,13 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_直向叫出收起的側邊欄_覆蓋清單且不推移清單欄() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         _ = try openSelectedOrder(in: app)
-        let sidebar = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
         let row = OrdersScreen(app: app).orderRow(orderID: Self.orderID)
         let rowBefore = try requireHittableFrame(of: row, in: app, context: "叫出側邊欄前，選取訂單列")
-        if sidebar.exists {
-            let sidebarFrame = try requireValidFrame(of: sidebar, in: app, context: "叫出前的側邊欄")
+        if let sidebarFrame = try sidebarColumnFrame(in: app, context: "叫出前") {
             try XCTSkipIf(
                 sidebarFrame.maxX <= rowBefore.minX + 1,
                 "側邊欄直接並排時沒有收起狀態；並排的欄位順序由 testRegularColumns_直向_可見欄位依序並排且不重疊 覆蓋"
@@ -98,7 +104,11 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
 
         // Then
         try requireCondition(isSidebarRevealed, in: app, "左緣滑動未能叫出側邊欄")
-        let sidebarFrame = try requireValidFrame(of: sidebar, in: app, context: "叫出的側邊欄")
+        let sidebarFrame = try requireValue(
+            sidebarColumnFrame(in: app, context: "叫出後"),
+            in: app,
+            "找不到叫出後的側邊欄欄位邊界"
+        )
         let rowAfter = try requireValidFrame(of: row, in: app, context: "叫出側邊欄後，選取訂單列")
         try requireCondition(
             abs(rowAfter.minX - rowBefore.minX) <= 1 && sidebarFrame.maxX > rowAfter.minX,
@@ -116,6 +126,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_橫向_三欄依序並排且不重疊() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         _ = try openSelectedOrder(in: app)
 
@@ -132,6 +144,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_選取訂單_詳情導覽列承載客戶與選單() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
 
         // When
@@ -139,6 +153,9 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
 
         // Then
         try assertDetailNavigationBar(in: app)
+        let rowIdentifier = BLAccessibilityID.Orders.row(orderID: Self.orderID)
+        let row = app.descendants(matching: .any)[rowIdentifier].firstMatch
+        try requireCondition(row.isSelected, in: app, "目前訂單列應帶選取特徵")
     }
 
     /// 驗證 regular 版面進入多選後，全選、批次狀態與完成鈕留在清單欄，詳情欄仍保有原訂單的導覽列
@@ -147,6 +164,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_進入多選_清單控制項與詳情導覽列各自獨立() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
 
@@ -177,6 +196,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_直向多選勾選一筆_清單欄頂部顯示已選筆數() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         try orders.enterSelectionMode()
@@ -203,6 +224,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_橫向多選勾選一筆_清單欄頂部顯示已選筆數() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         try orders.enterSelectionMode()
@@ -230,6 +253,8 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_搜尋無符合訂單_詳情只顯示空狀態() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
         // 詳情選單與客戶導覽列先確認存在，之後的消失斷言才有對照
@@ -251,23 +276,25 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
                 "無選取時詳情選單仍存在：\(identifier)"
             )
         }
-        let navigationBars = try rightHandNavigationBars(in: app)
+        let customerBar = app.navigationBars.matching(identifier: Self.customerName).firstMatch
         try requireCondition(
-            !navigationBars.contains { $0.identifier == Self.customerName },
+            customerBar.waitForDisappearance(),
             in: app,
-            "無選取時清單欄右側仍有原客戶「\(Self.customerName)」的詳情導覽列"
+            "無選取時仍有原客戶「\(Self.customerName)」的詳情導覽列"
         )
     }
 
-    /// 驗證 regular 版面切到總覽後，訂單的清單與詳情欄消失且總覽佔滿側邊欄以外的區域
+    /// 驗證 regular 版面直向切到總覽後，訂單的清單與詳情欄消失且總覽貼齊視窗左右緣
     ///
-    /// - Throws: 版面不適用、分頁未就緒或切換前後的水平範圍不符時丟出測試錯誤
+    /// - Throws: 版面不適用、分頁未就緒、轉向未完成或總覽範圍不符時丟出測試錯誤
     func testRegularColumns_切到總覽_訂單欄位消失且總覽佔滿() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         _ = try openSelectedOrder(in: app)
-        let root = RootNavigationScreen(app: app)
+        try rotateToPortrait(app)
 
         // When
         try requireCondition(root.goToDashboard(), in: app, "切到總覽後畫面未就緒")
@@ -284,13 +311,7 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
                 "切到總覽後訂單欄位仍存在：\(identifier)"
             )
         }
-        try assertHorizontalFill(
-            of: app.descendants(matching: .any)[BLAccessibilityID.Dashboard.root],
-            after: app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar],
-            to: app.windows.firstMatch,
-            in: app,
-            context: "切到總覽後的兩欄版面"
-        )
+        try assertDashboardFillsPortraitWindow(in: app)
     }
 
     /// 驗證 regular 版面從總覽切回訂單後，清單控制項仍在清單欄內，詳情欄保留選取的訂單
@@ -299,9 +320,10 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
     func testRegularColumns_切回訂單_清單控制項歸屬正確且詳情保留() throws {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
         let orders = try openSelectedOrder(in: app)
-        let root = RootNavigationScreen(app: app)
         try requireCondition(root.goToDashboard(), in: app, "切到總覽後畫面未就緒")
 
         // When
@@ -314,6 +336,12 @@ final class OrderRegularColumnScopeTests: BLUITestCase {
             detail.waitForExistence(timeout: 10),
             in: app,
             "找不到元素：切回訂單後詳情欄未保留選取訂單的詳情"
+        )
+        let projectedOrderID = orders.pathProjectedOrderID
+        try requireCondition(
+            projectedOrderID == "UITEST-MRG-001",
+            in: app,
+            "切回訂單後預期 path 投影 UITEST-MRG-001，實際為 \(String(describing: projectedOrderID))"
         )
     }
 }
@@ -368,29 +396,79 @@ private extension OrderRegularColumnScopeTests {
         }
         let hasListNavigationBar = app.navigationBars.allElementsBoundByIndex
             .filter(\.isHittableOnScreen)
-            .contains { $0.frame.maxX <= bounds.upperBound + 1 }
+            .contains {
+                $0.frame.minX >= bounds.lowerBound - 1
+                    && $0.frame.maxX <= bounds.upperBound + 1
+            }
         try requireCondition(hasListNavigationBar, in: app, "位置越界：清單欄沒有自己的導覽列")
     }
 
-    /// 以側邊欄或視窗左緣與清單根容器右緣取得清單欄的水平範圍
+    /// 依視窗方向及實際欄位邊界取得清單欄的水平範圍
     ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - context: 方向或分頁切換階段
     /// - Returns: 清單欄的左右界
-    /// - Throws: 左界錨點或清單根容器無法取得時丟出測試錯誤
+    /// - Throws: 橫向側邊欄欄界或清單根容器無法取得時丟出測試錯誤
     func listColumnBounds(
         in app: XCUIApplication,
         context: String
     ) throws -> (lowerBound: CGFloat, upperBound: CGFloat) {
-        let sidebar = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
-        let hasSidebar = sidebar.exists
-        let anchor = hasSidebar ? sidebar : app.windows.firstMatch
-        let anchorFrame = try requireValidFrame(of: anchor, in: app, context: "\(context)，清單欄左界錨點")
-        let lowerBound = hasSidebar ? anchorFrame.maxX : anchorFrame.minX
+        let windowFrame = try requireValidFrame(
+            of: app.windows.firstMatch,
+            in: app,
+            context: "\(context)，視窗左界"
+        )
+        let sidebarFrame = try sidebarColumnFrame(in: app, context: context)
         let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
         let listFrame = try requireValidFrame(of: list, in: app, context: "\(context)，訂單清單根容器")
+        let lowerBound: CGFloat
+        if windowFrame.width > windowFrame.height {
+            lowerBound = try requireValue(sidebarFrame?.maxX, in: app, "橫向找不到原生側邊欄欄位邊界")
+        } else {
+            lowerBound = sidebarFrame?.maxX ?? windowFrame.minX
+        }
+        try requireCondition(
+            lowerBound < listFrame.maxX,
+            in: app,
+            "清單欄水平範圍無效：左界 \(lowerBound)，清單根容器 \(listFrame)"
+        )
         return (lowerBound, listFrame.maxX)
+    }
+
+    /// 以原生側邊欄導覽列取得側邊欄欄界，不用品牌標記估算欄寬
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - context: 方向或側邊欄切換階段
+    /// - Returns: 側邊欄可見時的 NavigationBar 框線，否則為 `nil`
+    /// - Throws: 側邊欄標記存在但導覽列缺少，或框線超出視窗時丟出測試錯誤
+    func sidebarColumnFrame(in app: XCUIApplication, context: String) throws -> CGRect? {
+        let sidebarMarker = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
+            .firstMatch
+        let sidebarNavigationBar = app.navigationBars
+            .containing(.button, identifier: "ToggleSidebar")
+            .firstMatch
+        guard sidebarMarker.exists || sidebarNavigationBar.exists else {
+            return nil
+        }
+
+        let frame = try requireValidFrame(
+            of: sidebarNavigationBar,
+            in: app,
+            context: "\(context)，原生側邊欄導覽列"
+        )
+        let windowFrame = try requireValidFrame(
+            of: app.windows.firstMatch,
+            in: app,
+            context: "\(context)，側邊欄欄界視窗"
+        )
+        try requireCondition(
+            frame.minX >= windowFrame.minX - 1 && frame.maxX <= windowFrame.maxX + 1,
+            in: app,
+            "側邊欄導覽列欄界超出視窗：導覽列 \(frame)，視窗 \(windowFrame)"
+        )
+        return frame
     }
 
     /// 依方向檢查側邊欄可見性，並以訂單列確認可見欄位沒有重疊
@@ -405,13 +483,22 @@ private extension OrderRegularColumnScopeTests {
         context: String,
         isSidebarRequired: Bool
     ) throws {
-        let sidebar = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
         let row = OrdersScreen(app: app).orderRow(orderID: Self.orderID)
-        let detail = app.descendants(matching: .any)[BLAccessibilityID.Orders.detailRoot]
         let rowFrame = try requireHittableFrame(of: row, in: app, context: "\(context)，選取訂單列")
-        let detailFrame = try requireValidFrame(of: detail, in: app, context: "\(context)，詳情欄")
-        if isSidebarRequired || sidebar.exists {
-            let sidebarFrame = try requireValidFrame(of: sidebar, in: app, context: "\(context)側邊欄")
+        let detailEdge = try requireDetailColumnLeadingEdge(in: app, context: "\(context)，詳情欄")
+        let sidebarFrame = try sidebarColumnFrame(in: app, context: context)
+        if isSidebarRequired {
+            let requiredSidebarFrame = try requireValue(
+                sidebarFrame,
+                in: app,
+                "找不到\(context)原生側邊欄欄位邊界"
+            )
+            try requireCondition(
+                requiredSidebarFrame.maxX <= rowFrame.minX + 1,
+                in: app,
+                "位置越界：\(context)，側邊欄 frame = \(requiredSidebarFrame)，選取訂單列 frame = \(rowFrame)"
+            )
+        } else if let sidebarFrame {
             try requireCondition(
                 sidebarFrame.maxX <= rowFrame.minX + 1,
                 in: app,
@@ -419,47 +506,73 @@ private extension OrderRegularColumnScopeTests {
             )
         }
         try requireCondition(
-            rowFrame.maxX <= detailFrame.minX + 1,
+            rowFrame.maxX <= detailEdge + 1,
             in: app,
-            "位置越界：\(context)，選取訂單列 frame = \(rowFrame)，詳情欄 frame = \(detailFrame)"
+            "位置越界：\(context)，選取訂單列 frame = \(rowFrame)，詳情欄內容左緣 = \(detailEdge)"
         )
     }
 
-    /// 確認清單右側有客戶命名的導覽列，且詳情操作都位於其中
+    /// 取得詳情欄內容的左緣，取可互動的摘要格、詳情更多按鈕與空狀態提示中最小的左緣
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - context: 失敗訊息中的檢查情境
+    /// - Returns: 詳情欄內容的左緣 x 座標
+    /// - Throws: 所有錨點都不可互動時丟出測試錯誤
+    /// - Note: 詳情欄容器在 iPadOS 27 會延伸到清單欄底下，不能以容器框線代表欄位位置
+    func requireDetailColumnLeadingEdge(
+        in app: XCUIApplication,
+        context: String
+    ) throws -> CGFloat {
+        let anchors = [
+            app.descendants(matching: .any)[BLAccessibilityID.Orders.detailSummaryTile(.revenue)],
+            app.descendants(matching: .any)[BLAccessibilityID.Orders.detailSummaryTile(.cost)],
+            app.descendants(matching: .any)[BLAccessibilityID.Orders.detailSummaryTile(.profit)],
+            app.buttons[BLAccessibilityID.Orders.detailMoreButton],
+            app.descendants(matching: .any)[BLAccessibilityID.Orders.detailEmptyState]
+                .staticTexts.firstMatch,
+        ]
+        let edges = anchors.filter(\.isHittableOnScreen).map { $0.firstMatch.frame.minX }
+        return try requireValue(edges.min(), in: app, "找不到詳情欄內容錨點：\(context)，摘要格、詳情更多按鈕與空狀態提示都不可互動")
+    }
+
+    /// 確認詳情欄的系統導覽列標題為客戶名稱，狀態選單與更多選單位於清單欄右側且在該導覽列內
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 詳情導覽列缺少、標題不符或操作越界時丟出測試錯誤
+    /// - Throws: 清單根容器或詳情導覽列缺少，或選單位於清單欄內、越界時丟出測試錯誤
+    /// - Note: 導覽列框線在 iPadOS 27 會延伸到清單欄底下，歸屬改以導覽列內選單的位置判定
     func assertDetailNavigationBar(in app: XCUIApplication) throws {
-        var navigationBar: XCUIElement?
-        let deadline = Date.now.addingTimeInterval(10)
-        repeat {
-            navigationBar = try rightHandNavigationBars(in: app).first
-            if navigationBar != nil {
-                break
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
-        } while Date.now < deadline
-        let bar = try requireValue(navigationBar, in: app, "找不到詳情導覽列：清單欄右側應有獨立的系統導覽列")
-        try requireCondition(
-            bar.identifier == Self.customerName,
+        let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
+        let listFrame = try requireHittableFrame(of: list, in: app, context: "詳情導覽列定位的清單根容器")
+        let bar = app.navigationBars.matching(identifier: Self.customerName).firstMatch
+        let barFrame = try requireHittableFrame(
+            of: bar,
             in: app,
-            "詳情導覽列標題不符：預期「\(Self.customerName)」，實際為「\(bar.identifier)」"
+            context: "詳情導覽列「\(Self.customerName)」"
         )
-        let barFrame = try requireHittableFrame(of: bar, in: app, context: "詳情導覽列")
         for identifier in [
             BLAccessibilityID.Orders.detailStatusMenuButton,
             BLAccessibilityID.Orders.detailMoreButton,
         ] {
+            let menu = app.buttons[identifier]
             try assertHorizontalBounds(
-                of: app.buttons[identifier],
+                of: menu,
                 within: bar,
                 in: app,
                 context: "詳情導覽列選單 \(identifier)"
             )
             let menuFrame = try requireHittableFrame(
-                of: app.buttons[identifier],
+                of: menu,
                 in: app,
                 context: "詳情導覽列選單 \(identifier)"
+            )
+            try requireCondition(
+                menuFrame.minX >= listFrame.maxX - 1,
+                in: app,
+                """
+                位置越界：詳情選單位於清單欄內
+                選單 \(identifier) frame = \(menuFrame)，清單根容器 frame = \(listFrame)
+                """
             )
             try requireCondition(
                 menuFrame.minY >= barFrame.minY - 1 && menuFrame.maxY <= barFrame.maxY + 1,
@@ -472,25 +585,13 @@ private extension OrderRegularColumnScopeTests {
         }
     }
 
-    /// 取得左緣位於清單欄右側的可互動系統導覽列
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 與清單欄不重疊的導覽列
-    /// - Throws: 清單根容器無法取得時丟出測試錯誤
-    func rightHandNavigationBars(in app: XCUIApplication) throws -> [XCUIElement] {
-        let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
-        let listFrame = try requireHittableFrame(of: list, in: app, context: "詳情導覽列定位的清單根容器")
-        return app.navigationBars.allElementsBoundByIndex
-            .filter(\.isHittableOnScreen)
-            .filter { $0.frame.minX >= listFrame.maxX - 1 }
-    }
-
     /// 等清單欄頂部的已選筆數只反映一筆後回傳該元素
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 已選筆數元素
     /// - Throws: 已選筆數在逾時內未顯示恰為 1 的數字時丟出測試錯誤
-    /// - Note: 只比對數字 1 前後不接其他數字，文案模板不入斷言，「10」等多位數不會通過
+    /// - Note: 只接受獨立數字 1，不會將「10」等多位數視為 1
+    /// - Note: 不比對筆數標籤的文案模板
     func requireSingleSelectionSummary(in app: XCUIApplication) throws -> XCUIElement {
         let summary = app.staticTexts[BLAccessibilityID.Orders.selectionSummary]
         let singleCount = NSPredicate(format: "label MATCHES %@", "(.*[^0-9])?1([^0-9].*)?")
@@ -500,5 +601,27 @@ private extension OrderRegularColumnScopeTests {
             "已選筆數沒有反映勾選的一筆：實際為「\(summary.label)」"
         )
         return summary
+    }
+
+    /// 確認直向的總覽左右緣貼齊視窗，沒有左側空隙也沒有右側截斷
+    ///
+    /// - Parameter app: 受測 App
+    /// - Throws: 總覽或視窗範圍無法取得，或左右緣未貼齊時丟出測試錯誤
+    /// - Note: 直向沒有側邊欄，左界取視窗左緣
+    /// - Note: 品牌標記框線不能當欄位邊界
+    func assertDashboardFillsPortraitWindow(in app: XCUIApplication) throws {
+        let window = app.windows.firstMatch
+        let windowFrame = try requireValidFrame(of: window, in: app, context: "總覽佔滿的視窗")
+        let dashboard = app.descendants(matching: .any)[BLAccessibilityID.Dashboard.root]
+        let dashboardFrame = try requireValidFrame(of: dashboard, in: app, context: "切到總覽後的總覽內容")
+        try requireCondition(
+            abs(dashboardFrame.minX - windowFrame.minX) <= 1
+                && abs(dashboardFrame.maxX - windowFrame.maxX) <= 1,
+            in: app,
+            """
+            位置越界：切到總覽後總覽未貼齊直向視窗左右緣
+            總覽 frame = \(dashboardFrame)，視窗 frame = \(windowFrame)
+            """
+        )
     }
 }

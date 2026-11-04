@@ -13,7 +13,7 @@ import Testing
 /// `OrderListFeature` 的單元測試，涵蓋清除篩選的呈現與篩選觸發鈕的文案
 struct OrderListFeatureClearFilterPresentationTests {
 
-    /// 驗證清除篩選時，篩選面板的已套用值同步為清除後的值，暫存選擇、搜尋文字、焦點與展開都保留，並通知清單選取改為 restored
+    /// 驗證清除篩選時，面板基準更新，草稿、搜尋、焦點與展開都保留，不委派任何請求
     @Test
     @MainActor
     func clearFiltersTapped_整合篩選已開啟_同步基準並保留草稿() async {
@@ -41,7 +41,6 @@ struct OrderListFeatureClearFilterPresentationTests {
             $0.selectedDatePeriod = .all
             $0.selectedCategories = []
             $0.selectedPaymentMethod = nil
-            $0.selectedOrderID = "restored"
             $0.destination?.modify(\.filterSheet) {
                 $0.committedFilterSelection = OrderFilterSelection(
                     datePeriod: .all,
@@ -52,7 +51,6 @@ struct OrderListFeatureClearFilterPresentationTests {
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "restored")
         let pending = store.state.destination?.filterSheet?.pendingFilterSelection
         #expect(
             pending == OrderFilterSelection(
@@ -64,8 +62,7 @@ struct OrderListFeatureClearFilterPresentationTests {
         #expect(store.state.destination?.filterSheet?.filterSheetSearchText == "草稿")
         #expect(store.state.destination?.filterSheet?.isSearchFieldFocused == true)
         #expect(
-            store.state.destination?.filterSheet?.categoryGroupExpansion.expandedKinds
-                == [.closed]
+            store.state.destination?.filterSheet?.categoryGroupExpansion.expandedKinds == [.closed]
         )
     }
 
@@ -93,14 +90,12 @@ struct OrderListFeatureClearFilterPresentationTests {
             $0.selectedDatePeriod = .all
             $0.selectedCategories = []
             $0.selectedPaymentMethod = nil
-            $0.selectedOrderID = "restored"
             $0.destination?.modify(\.categoryPicker) {
                 $0.committedCategories = []
             }
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, "restored")
         #expect(store.state.destination?.categoryPicker?.pendingCategories == ["未套用"])
         #expect(store.state.destination?.categoryPicker?.searchText == "草稿")
         #expect(store.state.destination?.categoryPicker?.isSearchFieldFocused == true)

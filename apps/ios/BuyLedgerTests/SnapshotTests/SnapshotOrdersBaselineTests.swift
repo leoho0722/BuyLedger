@@ -12,7 +12,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersCompactView` 與 `OrderFilterSheet` 的快照測試，涵蓋推入詳情的成本明細與篩選條件
+/// Orders 正式 split 宿主與 `OrderFilterSheet` 的快照測試
 @MainActor
 struct SnapshotOrdersBaselineTests {
 
@@ -34,7 +34,7 @@ struct SnapshotOrdersBaselineTests {
                 state.detail.showDetail(orderID: order.id)
 
                 // When
-                let view = OrdersCompactView(
+                let view = OrdersView(
                     store: Store(initialState: state) {
                         OrdersFeature()
                     },

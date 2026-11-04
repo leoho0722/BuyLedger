@@ -11,20 +11,18 @@ import Testing
 
 @testable import BuyLedger
 
-/// `LookupManagementFeature` 的單元測試，以 TestStore 逐步驗證表單關閉前後，失敗與確認提示的呈現時機
+/// `LookupManagementFeature` 的單元測試，以 TestStore 逐步驗證表單關閉前後，寫入失敗通知與確認框的呈現時機
 @MainActor
 struct LookupManagementFeatureAlertTimingTests {
 
-    /// 驗證新增失敗先回覆、表單關閉後，才呈現先前暫存的新增失敗提示
+    /// 驗證新增失敗先回覆、表單關閉後，才把先前暫存的新增失敗通知放進通知狀態
     @Test
     func formSheetDismissed_新增失敗先回覆_關閉後呈現通知() async {
         await LookupCatalog.withIsolatedStorage {
             // Given
             var initialState = LookupManagementFeature.State(kind: .category)
             initialState.isFormSheetDismissing = true
-            initialState.pendingAlert = LookupManagementFeatureTestSupport.writeFailureAlert(
-                message: "orders.lookup.message.itemAddedTry"
-            )
+            initialState.pendingNotice = .add
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
@@ -32,8 +30,8 @@ struct LookupManagementFeatureAlertTimingTests {
             // When
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
-                $0.pendingAlert = nil
-                $0.destination = LookupManagementFeatureTestSupport.writeFailureAlert(
+                $0.pendingNotice = nil
+                $0.notice = LookupManagementFeatureTestSupport.writeFailureAlert(
                     message: "orders.lookup.message.itemAddedTry"
                 )
             }
@@ -41,17 +39,18 @@ struct LookupManagementFeatureAlertTimingTests {
             // Then
             #expect(store.state.isFormSheetDismissing == false)
             #expect(
-                store.state.destination
+                store.state.notice
                     == LookupManagementFeatureTestSupport.writeFailureAlert(
                         message: "orders.lookup.message.itemAddedTry"
                     )
             )
-            #expect(store.state.pendingAlert == nil)
+            #expect(store.state.destination == nil)
+            #expect(store.state.pendingNotice == nil)
             await store.finish()
         }
     }
 
-    /// 驗證表單已先關閉時收到新增失敗，立即呈現新增失敗提示，不暫存
+    /// 驗證表單已先關閉時收到新增失敗，立即放進通知狀態，不暫存也不佔用目的地
     @Test
     func addResponse_表單已先關閉_立即呈現新增失敗通知() async {
         await LookupCatalog.withIsolatedStorage {
@@ -66,24 +65,25 @@ struct LookupManagementFeatureAlertTimingTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.destination = LookupManagementFeatureTestSupport.writeFailureAlert(
+                $0.notice = LookupManagementFeatureTestSupport.writeFailureAlert(
                     message: "orders.lookup.message.itemAddedTry"
                 )
             }
 
             // Then
             #expect(
-                store.state.destination
+                store.state.notice
                     == LookupManagementFeatureTestSupport.writeFailureAlert(
                         message: "orders.lookup.message.itemAddedTry"
                     )
             )
-            #expect(store.state.pendingAlert == nil)
+            #expect(store.state.destination == nil)
+            #expect(store.state.pendingNotice == nil)
             await store.finish()
         }
     }
 
-    /// 驗證表單關閉中收到新增失敗時，先暫存提示到 `pendingAlert`，不立即呈現
+    /// 驗證表單關閉中收到新增失敗時，先暫存到 `pendingNotice`，不立即呈現
     @Test
     func addResponse_表單關閉中_暫存新增失敗通知() async {
         await LookupCatalog.withIsolatedStorage {
@@ -102,19 +102,13 @@ struct LookupManagementFeatureAlertTimingTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.pendingAlert = LookupManagementFeatureTestSupport.writeFailureAlert(
-                    message: "orders.lookup.message.itemAddedTry"
-                )
+                $0.pendingNotice = .add
             }
 
             // Then
             #expect(store.state.isFormSheetDismissing)
-            #expect(
-                store.state.pendingAlert
-                    == LookupManagementFeatureTestSupport.writeFailureAlert(
-                        message: "orders.lookup.message.itemAddedTry"
-                    )
-            )
+            #expect(store.state.pendingNotice == .add)
+            #expect(store.state.notice == nil)
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             await store.finish()
@@ -184,6 +178,83 @@ struct LookupManagementFeatureAlertTimingTests {
             // Then
             #expect(store.state.destination == nil)
             #expect(store.state.pendingAlert == nil)
+            #expect(store.state.pendingNotice == nil)
+            #expect(store.state.isFormSheetDismissing == false)
+            await store.finish()
+        }
+    }
+
+    /// 驗證刪除確認框仍開啟時收到刪除失敗，失敗通知先暫存，不設進通知狀態
+    @Test
+    func deleteResponse_確認框開啟中收到刪除失敗_暫存通知() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            var initialState = LookupManagementFeature.State(kind: .category)
+            initialState.$catalog.withLock {
+                $0.categories = ["服飾", "美妝"]
+            }
+            initialState.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                name: "美妝"
+            )
+            let error = PersistenceError.saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
+            let store = TestStore(initialState: initialState) {
+                LookupManagementFeature()
+            }
+
+            // When
+            await store.send(.deleteResponse(.failure(error))) {
+                $0.pendingNotice = .delete
+            }
+
+            // Then
+            #expect(store.state.notice == nil)
+            #expect(store.state.pendingNotice == .delete)
+            #expect(
+                store.state.destination
+                    == LookupManagementFeatureTestSupport.deleteConfirmationAlert(name: "美妝")
+            )
+            #expect(store.state.items == ["服飾", "美妝"])
+            await store.finish()
+        }
+    }
+
+    /// 驗證確認框關閉且已有暫存的刪除失敗通知時，清空目的地後把通知放進通知狀態
+    @Test
+    func destination_確認框關閉且有暫存_放進通知狀態() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            var initialState = LookupManagementFeature.State(kind: .category)
+            initialState.$catalog.withLock {
+                $0.categories = ["服飾", "美妝"]
+            }
+            initialState.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                name: "美妝"
+            )
+            initialState.pendingNotice = .delete
+            let store = TestStore(initialState: initialState) {
+                LookupManagementFeature()
+            }
+
+            // When
+            await store.send(.destination(.dismiss)) {
+                $0.destination = nil
+                $0.pendingNotice = nil
+                $0.notice = LookupManagementFeatureTestSupport.writeFailureAlert(
+                    message: "orders.lookup.message.itemDeletedTry"
+                )
+            }
+
+            // Then
+            #expect(store.state.destination == nil)
+            #expect(store.state.pendingNotice == nil)
+            #expect(
+                store.state.notice
+                    == LookupManagementFeatureTestSupport.writeFailureAlert(
+                        message: "orders.lookup.message.itemDeletedTry"
+                    )
+            )
             #expect(store.state.isFormSheetDismissing == false)
             await store.finish()
         }

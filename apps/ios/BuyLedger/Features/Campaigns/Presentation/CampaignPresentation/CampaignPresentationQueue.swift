@@ -5,10 +5,12 @@
 //  Created by Leo Ho on 2026/10/2.
 //
 
-/// 管理開團一次性通知與編輯表單的呈現次序：表單開啟或關閉中到達的通知先暫存，表單關好才顯示
+import ComposableArchitecture
+
+/// 管理開團通知與目的地的呈現次序：目的地開啟或表單關閉中到達的通知先暫存
 ///
-/// - Note: 三個狀態：表單開啟 (目的地是編輯表單)、關閉中 (`isFormClosing`)、已關閉 (兩者皆非)
-/// - Note: sheet 關閉動畫期間設進目的地的 alert 會被系統丟棄，但狀態仍宣稱正在顯示，所以要等關閉回呼
+/// - Note: 表單關閉中或任何目的地開啟時都不可呈現通知
+/// - Note: sheet 關閉動畫期間設進通知狀態仍可能被系統丟棄，所以要等關閉回呼
 struct CampaignPresentationQueue: Equatable {
 
     // MARK: - Properties
@@ -16,27 +18,29 @@ struct CampaignPresentationQueue: Equatable {
     /// 表單是否正在關閉：從父層接受儲存或收到關閉事件，到 sheet 關閉動畫結束為止
     var isFormClosing = false
 
-    /// 表單開啟或關閉中到達的最新一則通知；沒有時為 `nil`
-    var pendingNotice: CampaignPresentationFeature.Destination.State?
+    /// 目的地開啟或表單關閉中到達的最新一則通知；沒有時為 `nil`
+    var pendingNotice: AlertState<CampaignPresentationFeature.Destination.Alert>?
 }
 
 // MARK: - Internal Method
 
 extension CampaignPresentationQueue {
 
-    /// 呈現一則通知；表單開啟或關閉中先暫存 (只留最新一則)，否則直接設進目的地
+    /// 呈現一則通知；目的地開啟或表單關閉中先暫存 (只留最新一則)，否則直接設進通知狀態
     ///
     /// - Parameters:
     ///   - notice: 要呈現的通知
-    ///   - destination: 目前的目的地；表單已關閉時會被通知取代
+    ///   - destination: 目前的目的地；非 `nil` 時先暫存通知
+    ///   - presentedNotice: 目前呈現中的通知；沒有目的地時會被新通知取代
     mutating func present(
-        _ notice: CampaignPresentationFeature.Destination.State,
-        in destination: inout CampaignPresentationFeature.Destination.State?
+        _ notice: AlertState<CampaignPresentationFeature.Destination.Alert>,
+        while destination: CampaignPresentationFeature.Destination.State?,
+        into presentedNotice: inout AlertState<CampaignPresentationFeature.Destination.Alert>?
     ) {
-        if isFormClosing || isFormOpen(destination) {
+        if isFormClosing || destination != nil {
             pendingNotice = notice
         } else {
-            destination = notice
+            presentedNotice = notice
         }
     }
 
@@ -56,17 +60,32 @@ extension CampaignPresentationQueue {
         }
     }
 
-    /// 在 sheet 關閉動畫結束後清除關閉旗標，並把暫存的通知移進目的地
+    /// 在 sheet 關閉動畫結束後清除關閉旗標，並把暫存的通知移進通知狀態
     ///
-    /// - Parameter destination: 目前的目的地；若又開了新的表單，暫存的通知繼續等到它關閉
+    /// - Parameters:
+    ///   - presentedNotice: 目前呈現中的通知
+    ///   - destination: 目前的目的地；非 `nil` 時暫存通知繼續等待
     mutating func finishFormClosing(
-        into destination: inout CampaignPresentationFeature.Destination.State?
+        into presentedNotice: inout AlertState<CampaignPresentationFeature.Destination.Alert>?,
+        while destination: CampaignPresentationFeature.Destination.State?
     ) {
         isFormClosing = false
-        guard !isFormOpen(destination), let pendingNotice else {
+        presentPendingNotice(into: &presentedNotice, while: destination)
+    }
+
+    /// 目的地已關閉且表單不在關閉中時，將暫存通知移進通知狀態
+    ///
+    /// - Parameters:
+    ///   - presentedNotice: 目前呈現中的通知
+    ///   - destination: 目前的目的地；仍存在時保留暫存
+    mutating func presentPendingNotice(
+        into presentedNotice: inout AlertState<CampaignPresentationFeature.Destination.Alert>?,
+        while destination: CampaignPresentationFeature.Destination.State?
+    ) {
+        guard !isFormClosing, destination == nil, let pendingNotice else {
             return
         }
-        destination = pendingNotice
+        presentedNotice = pendingNotice
         self.pendingNotice = nil
     }
 }

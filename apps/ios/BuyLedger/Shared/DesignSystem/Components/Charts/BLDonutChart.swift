@@ -58,57 +58,76 @@ private extension BLDonutChart {
 
     /// 圈狀圖與中央文字的畫面內容
     var donutContent: some View {
-        ZStack {
-            Chart(segments) {
-                SectorMark(
-                    angle: .value("orders.detail.label.share", $0.value),
-                    innerRadius: .ratio(0.68),
-                    angularInset: 1
-                )
-                // 以類別維度驅動配色，讓 Swift Charts 將區段身分帶進無障礙樹
-                // 直接指定色值會讓區段名稱完全不進畫面也不進輔助技術
-                .foregroundStyle(by: .value("orders.list.label.category2", $0.label))
-                .accessibilityLabel($0.label)
-                .accessibilityValue($0.valueDescription)
-            }
-            .frame(width: diameter, height: diameter)
-            .chartForegroundStyleScale(domain: segments.map(\.label), range: segments.map(\.color))
-            .chartLegend(.hidden)
-            .accessibilityLabel(
-                Text(ChartAccessibilityDescriptor.summary(for: segments, locale: locale))
-            )
-            .accessibilityChartDescriptor(
-                ChartAccessibilityDescriptor(
-                    segments: segments,
-                    axisXTitle: axisXTitle,
-                    axisYTitle: axisYTitle,
-                    seriesName: seriesName
-                )
-            )
-
-            VStack(spacing: 2) {
-                Text(LocalizedStringKey(centerTitle))
-                    .blTextStyle(.caption2)
-                    .foregroundStyle(.blSecondaryLabel)
-
-                Text(centerValue)
-                    // 無障礙字級解除單行與縮放限制，不以縮放係數壓回字級
-                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.6)
-                    .blTextStyle(.headline)
-                    .foregroundStyle(.blLabel)
-                    .monospacedDigit()
-            }
+        let layout: AnyLayout
+        if dynamicTypeSize.isAccessibilitySize {
+            layout = AnyLayout(VStackLayout(spacing: BLSpacing.small))
+        } else {
+            layout = AnyLayout(ZStackLayout())
         }
+
+        return layout {
+            donutChart
+            centerContent
+        }
+    }
+
+    /// 依可用寬度與字級縮放上限呈現的圈狀圖
+    var donutChart: some View {
+        Chart(segments) {
+            SectorMark(
+                angle: .value("orders.detail.label.share", $0.value),
+                innerRadius: .ratio(0.68),
+                angularInset: 1
+            )
+            // 以類別維度驅動配色，讓 Swift Charts 將區段身分帶進無障礙樹
+            // 直接指定色值會讓區段名稱完全不進畫面也不進輔助技術
+            .foregroundStyle(by: .value("orders.list.label.category2", $0.label))
+            .accessibilityLabel($0.label)
+            .accessibilityValue($0.valueDescription)
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: diameter, maxHeight: diameter)
+        .chartForegroundStyleScale(domain: segments.map(\.label), range: segments.map(\.color))
+        .chartLegend(.hidden)
+        .accessibilityLabel(
+            Text(ChartAccessibilityDescriptor.summary(for: segments, locale: locale))
+        )
+        .accessibilityChartDescriptor(
+            ChartAccessibilityDescriptor(
+                segments: segments,
+                axisXTitle: axisXTitle,
+                axisYTitle: axisYTitle,
+                seriesName: seriesName
+            )
+        )
+    }
+
+    /// 圈狀圖標題與數值的置中內容與輔助字級堆疊內容
+    var centerContent: some View {
+        VStack(spacing: 2) {
+            Text(LocalizedStringKey(centerTitle))
+                .blTextStyle(.caption2)
+                .foregroundStyle(.blSecondaryLabel)
+
+            Text(centerValue)
+                // 無障礙字級解除單行與縮放限制，不以縮放係數壓回字級
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.6)
+                .blTextStyle(.headline)
+                .foregroundStyle(.blLabel)
+                .monospacedDigit()
+        }
+        // 輔助字級時中心文字移到圖下方並置中換行，標準字級維持預設對齊
+        .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .center : .leading)
     }
 }
 
 // MARK: - Nested Types
 
-private extension BLDonutChart {
+extension BLDonutChart {
 
     /// 圈狀圖的輔助技術描述
-    struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
+    private struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
 
         /// 對應圖表目前呈現的區段
         let segments: [BLDonutSegment]
@@ -128,10 +147,7 @@ private extension BLDonutChart {
         ///   - segments: 圈狀圖資料
         ///   - locale: 目前的 `Locale`
         /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(
-            for segments: [BLDonutSegment],
-            locale: Locale = .current
-        ) -> LocalizedStringKey {
+        static func summary(for segments: [BLDonutSegment], locale: Locale) -> LocalizedStringKey {
             guard let largest = segments.max(by: { left, right in left.value < right.value }) else {
                 return "common.ui.label.donutChartData"
             }

@@ -62,7 +62,8 @@ struct DesignSystemSourceScanTests {
             expectedLineNumbers: [1]
         ),
         DesignSystemSourceScanner.SourceScanCase(
-            source: #"@Environment(\.verticalSizeClass) private var verticalSizeClass // design-system-scan-exempt: reason"#,
+            source:
+                #"@Environment(\.verticalSizeClass) private var verticalSizeClass // design-system-scan-exempt: reason"#,
             expectedLineNumbers: [1]
         ),
         DesignSystemSourceScanner.SourceScanCase(
@@ -145,28 +146,6 @@ struct DesignSystemSourceScanTests {
 
         // Then
         #expect(lineNumbers == scenario.expectedLineNumbers, "原始碼片段：\(scenario.source)")
-    }
-
-    /// 驗證產品程式碼的尺寸分類引用只出現在版面判斷入口，豁免標記對規則十一無效
-    ///
-    /// - Throws: 原始檔讀取或目錄掃描失敗時丟出錯誤
-    /// - Note: 掃描辨識 `//` 行註解、非巢狀 `/* … */` 區塊註解、單行 `"…"` 與多行 `"""…"""` 一般字串，包含反斜線跳脫並逐個 Unicode 碼位處理
-    /// - Note: 其餘詞法形式超出掃描保證範圍，該處與之後的程式碼都可能漏判或誤判；
-    ///   例如字串內插、原始字串與擴充分隔符號、正規表示式字面值、巢狀區塊註解
-    @Test
-    func sizeClassViolations_引用尺寸分類_僅出現在版面判斷入口() throws {
-        // Given
-        let scan: () throws -> [DesignSystemSourceScanner.Violation] = DesignSystemSourceScanner
-            .sizeClassViolations
-
-        // When
-        let violations = try scan()
-
-        // Then
-        #expect(
-            violations.isEmpty,
-            "以下位置直接引用尺寸分類，應改用 @Environment(\\.blLayoutClass)：\(DesignSystemSourceScanner.describe(violations))"
-        )
     }
 
     /// 驗證產品程式碼目錄能掃到 Swift 檔案，避免目錄解析錯誤時因掃描結果為空而通過

@@ -43,6 +43,17 @@ extension FxScreen {
         }
         return element.combinedText
     }
+
+    /// 來源金額欄目前的文字值
+    ///
+    /// - Returns: 金額欄的文字值；元素不存在或值不是字串時為 `nil`
+    var amountFieldValue: String? {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        guard field.waitForExistence(timeout: 10) else {
+            return nil
+        }
+        return field.value as? String
+    }
 }
 
 // MARK: - Internal Method
@@ -110,6 +121,70 @@ extension FxScreen {
             line: line
         )
         field.dismissNumericKeyboard(in: app, file: file, line: line)
+    }
+
+    /// 點金額欄取得鍵盤焦點
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapAmountField(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後金額欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
+        field.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 清空金額欄後輸入文字並保留鍵盤焦點
+    ///
+    /// - Parameters:
+    ///   - amount: 要輸入的金額字串
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func replaceAmountKeepingKeyboard(
+        _ amount: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後金額欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
+        field.clearAndType(
+            amount,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 收起金額欄的數字鍵盤
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func dismissAmountKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
+    }
+
+    /// 判定金額欄是否取得鍵盤焦點
+    ///
+    /// - Returns: 金額欄是否為鍵盤焦點
+    func isAmountFieldFocused() -> Bool {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        return field.exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+    }
+
+    /// 續打金額欄文字，呼叫端需先確認焦點，續打時不點擊
+    ///
+    /// - Parameter text: 要續打的文字
+    func appendAmount(_ text: String) {
+        let field = app.textFields[BLAccessibilityID.Fx.amountField]
+        field.typeText(text)
     }
 }
 

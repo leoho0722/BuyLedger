@@ -88,21 +88,14 @@ struct OrdersFeatureMergeSaveTests {
         }
         await store.receive(\.presentation.delegate.saveRequested)
         await store.receive(\.writes.saveRequested)
-        await store.receive(\.writes.delegate, .merged(id: expectedMergedOrder.id)) {
-            $0.list.selectedOrderID = expectedMergedOrder.id
-        }
-        await store.receive(\.list.delegate.selectionChanged, expectedMergedOrder.id) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: expectedMergedOrder.id,
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate, .merged(id: expectedMergedOrder.id))
         await store.receive(\.presentation.destination.dismiss) {
             $0.presentation.destination = nil
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.mergeResponse)
         await store.finish()
+        #expect(store.state.detail.path.isEmpty)
         #expect(mergedOrders.value == [expectedMergedOrder])
         #expect(consumedIDCalls.value == [[primaryID, secondaryID]])
     }
@@ -179,21 +172,14 @@ struct OrdersFeatureMergeSaveTests {
         }
         await store.receive(\.presentation.delegate.saveRequested)
         await store.receive(\.writes.saveRequested)
-        await store.receive(\.writes.delegate, .merged(id: expectedMergedOrder.id)) {
-            $0.list.selectedOrderID = expectedMergedOrder.id
-        }
-        await store.receive(\.list.delegate.selectionChanged, expectedMergedOrder.id) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: expectedMergedOrder.id,
-                orders: SharedReader(state.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate, .merged(id: expectedMergedOrder.id))
         await store.receive(\.presentation.destination.dismiss) {
             $0.presentation.destination = nil
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.mergeResponse)
         await store.finish()
+        #expect(store.state.detail.path.isEmpty)
         #expect(mergedOrders.value == [expectedMergedOrder])
     }
 

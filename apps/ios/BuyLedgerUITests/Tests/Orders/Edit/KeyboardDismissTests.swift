@@ -30,23 +30,24 @@ final class KeyboardDismissTests: BLUITestCase {
         XCTAssertTrue(keyboard.waitForDisappearance(timeout: 5), "一般鍵盤的 return 應收起鍵盤")
     }
 
-    /// 驗證新增訂單輸入金額並顯示數字鍵盤時，點數字鍵盤工具列的完成鍵，鍵盤收起
+    /// 驗證新增訂單輸入金額並顯示數字鍵盤或數字 Popover 時，點完成鍵後鍵盤收起
     func testTapNumericKeyboardDone_數字鍵盤顯示中_收起鍵盤() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openNewOrderForm(in: app)
         edit.typeChargedAmount("123", in: app, shouldDismissKeyboard: false)
 
-        let keyboard = app.keyboards.firstMatch
-        if !keyboard.waitForExistence(timeout: 5) {
-            failWithDiagnostics(in: app, "聚焦實付金額後數字鍵盤未呈現")
+        if !app.waitForNumericKeyboardPresentation(timeout: 5) {
+            failWithDiagnostics(in: app, "聚焦實付金額後數字鍵盤或 Popover 未呈現")
         }
 
         // When
         edit.tapNumericKeyboardDone()
 
         // Then
-        XCTAssertTrue(keyboard.waitForDisappearance(timeout: 5), "數字鍵盤的工具列完成鍵應收起鍵盤")
+        XCTAssertTrue(app.waitForNumericKeyboardDismissal(timeout: 5), "數字鍵盤與 Popover 應收起")
+        let chargedAmountField = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
+        XCTAssertEqual(chargedAmountField.value as? String, "123", "收起鍵盤後實付金額應保留輸入值")
     }
 }
 
@@ -57,7 +58,7 @@ private extension KeyboardDismissTests {
     /// 切到訂單分頁並開啟新訂單表單
     ///
     /// - Parameter app: 受測 App
-    /// - Returns: 已就緒的訂單編輯表單 Page Object
+    /// - Returns: 已就緒的 `OrderEditScreen`
     func openNewOrderForm(in app: XCUIApplication) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {

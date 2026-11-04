@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersContainerPlan` 的單元測試，涵蓋請求的前置條件、詳情識別值與寫入請求的產生
+/// `OrdersContainerPlan` 的單元測試，涵蓋請求前置條件與寫入請求的產生
 struct OrdersContainerPlanRequestsTests {
 
     /// 驗證請求的訂單不存在時，`fulfill` 回傳 `.none`，不套用任何變更
@@ -116,42 +116,6 @@ struct OrdersContainerPlanRequestsTests {
         #expect(Self.isNone(outcome))
     }
 
-    /// 驗證查看詳情的訂單存在時，`fulfill` 回傳要推入詳情的訂單識別值
-    @Test
-    func fulfill_查看詳情訂單存在_回傳推入的識別值() {
-        // Given
-        let state = OrdersContainerPlanTestSupport.makeState(orders: [LedgerOrder.fixture(id: "A")])
-
-        // When
-        let outcome = OrdersContainerPlan.fulfill(
-            .showDetail("A"),
-            state: state,
-            context: nil,
-            formID: nil
-        )
-
-        // Then
-        #expect(Self.shownOrderID(outcome) == "A")
-    }
-
-    /// 驗證查看詳情的訂單不存在時，`fulfill` 回傳 `.none`，不推入詳情
-    @Test
-    func fulfill_查看詳情訂單不存在_回傳none() {
-        // Given
-        let state = OrdersContainerPlanTestSupport.makeState(orders: [LedgerOrder.fixture(id: "A")])
-
-        // When
-        let outcome = OrdersContainerPlan.fulfill(
-            .showDetail("missing"),
-            state: state,
-            context: nil,
-            formID: nil
-        )
-
-        // Then
-        #expect(Self.isNone(outcome))
-    }
-
     /// 驗證單筆狀態變更時，`fulfill` 回傳交給寫入功能、帶著訂單 A 與 `shipping` 的狀態變更請求
     @Test
     func fulfill_單筆狀態變更_轉送寫入子層的請求() {
@@ -203,17 +167,6 @@ private extension OrdersContainerPlanRequestsTests {
             return false
         }
         return true
-    }
-
-    /// 取出要推入詳情的訂單識別值，其他結果為 `nil`
-    ///
-    /// - Parameter outcome: `fulfill` 回傳的請求結果
-    /// - Returns: 要推入詳情的訂單識別值
-    static func shownOrderID(_ outcome: OrdersRequestOutcome) -> LedgerOrder.ID? {
-        guard case .showDetail(let id) = outcome else {
-            return nil
-        }
-        return id
     }
 
     /// 判斷結果是否為指定訂單與狀態的單筆狀態變更寫入請求

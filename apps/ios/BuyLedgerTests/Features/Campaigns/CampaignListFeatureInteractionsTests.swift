@@ -11,25 +11,9 @@ import Testing
 
 @testable import BuyLedger
 
-/// `CampaignListFeature` 的單元測試，以 TestStore 逐步驗證使用者操作、狀態篩選與日期分組
+/// `CampaignListFeature` 的單元測試，以 `TestStore` 逐步驗證使用者操作、狀態篩選與日期分組
 @MainActor
 struct CampaignListFeatureInteractionsTests {
-
-    /// 驗證點擊開團列時，列表只送出顯示該開團詳情的請求，自身狀態不變
-    @Test
-    func campaignTapped_點擊開團列_委派顯示指定開團詳情() async {
-        // Given
-        let store = TestStore(initialState: CampaignListFeatureTestSupport.makeState()) {
-            CampaignListFeature()
-        }
-
-        // When
-        await store.send(.view(.campaignTapped("C1")))
-
-        // Then
-        await store.receive(\.delegate, .requested(.showDetail("C1")))
-        await store.finish()
-    }
 
     /// 驗證點擊新增開團時，列表只送出新增請求，自身狀態不變
     @Test

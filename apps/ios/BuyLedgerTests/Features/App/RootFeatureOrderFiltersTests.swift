@@ -10,22 +10,44 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試，以 TestStore 驗證客戶頁與分析頁開啟訂單時，導覽堆疊的清空與篩選的重設
+/// `RootFeature` 的單元測試，以 `TestStore` 驗證客戶頁與分析頁開啟訂單時來源狀態與篩選的更新
 @MainActor
 struct RootFeatureOrderFiltersTests {
 
-    /// 驗證客戶頁點選客戶時，清空「更多」的堆疊並切到訂單分頁搜尋該客戶，殘留的類別篩選會被清除，避免舊條件讓訂單消失
+    /// 驗證客戶頁點選不同客戶時保留來源頁，沿用搜尋並清空不符的詳情路徑
+    ///
+    /// - Throws: 找不到來源路徑識別碼時由 `#require` 丟出
     @Test
-    func more_客戶頁點選客戶_清空堆疊並清除殘留類別篩選() async {
+    func more_客戶頁點選不同客戶_沿用搜尋並清空不命中路徑() async throws {
         // Given
-        var state = RootFeature.State()
-        state.orders.$orders.withLock {
-            $0 = LedgerOrder.sampleOrders
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-1",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-2",
+                categories: ["snacks"],
+                customerName: "Bob"
+            ),
+        ]
+        let state = RootFeatureTestSupport.makeIsolatedRootState {
+            var initial = RootFeature.State()
+            initial.orders.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.orders.list.selectedCategories = ["snacks", "books"]
+            initial.orders.detail.showDetail(orderID: "CUSTOMER-2")
+            initial.more.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            )
+            return initial
         }
-        state.orders.list.selectedCategories = ["snacks", "books"]
-        state.more.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
-        )
+        let sourcePathID = try #require(state.more.path.ids.first)
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -36,13 +58,164 @@ struct RootFeatureOrderFiltersTests {
 
         // When
         await store.send(
-            .more(.path(.element(id: 0, action: .customers(.view(.customerTapped("Alice"))))))
+            .more(
+                .path(
+                    .element(id: sourcePathID, action: .customers(.view(.customerTapped("Alice"))))
+                )
+            )
         )
 
         // Then
-        await store.receive(\.more.path[id: 0].customers.delegate.customerSelected, "Alice") {
-            $0.more.path.removeAll()
+        await store.receive(
+            \.more.path[id: sourcePathID].customers.delegate.customerSelected,
+            "Alice"
+        )
+        await store.receive(\.more.delegate.customerSelected, "Alice") {
+            $0.selectedTab = .orders
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = "Alice"
+            $0.orders.list.selectedCategories = []
+            $0.orders.detail.path.removeAll()
         }
+        #expect(store.state.selectedTab == .orders)
+        #expect(store.state.orders.list.searchText == "Alice")
+        #expect(store.state.orders.list.selectedCategories == [])
+        #expect(Array(store.state.more.path.ids) == [sourcePathID])
+        #expect(store.state.more.path[id: sourcePathID, case: \.customers]?.orders == sourceOrders)
+    }
+
+    /// 驗證客戶搜尋命中目前與更前面的訂單時，保留詳情路徑與其詳情
+    ///
+    /// - Throws: 找不到來源路徑識別碼時由 `#require` 丟出
+    @Test
+    func more_客戶搜尋仍命中非首筆_保留原詳情路徑() async throws {
+        // Given
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-0",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-1",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+        ]
+        let state = RootFeatureTestSupport.makeIsolatedRootState {
+            var initial = RootFeature.State()
+            initial.orders.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.orders.detail.showDetail(orderID: "CUSTOMER-1")
+            initial.more.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            )
+            return initial
+        }
+        let sourcePathID = try #require(state.more.path.ids.first)
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .more(
+                .path(
+                    .element(id: sourcePathID, action: .customers(.view(.customerTapped("Alice"))))
+                )
+            )
+        )
+
+        // Then
+        await store.receive(
+            \.more.path[id: sourcePathID].customers.delegate.customerSelected,
+            "Alice"
+        )
+        await store.receive(\.more.delegate.customerSelected, "Alice") {
+            $0.selectedTab = .orders
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = "Alice"
+        }
+        #expect(store.state.orders.detail.path.count == 1)
+        #expect(store.state.orders.detail.path.last?.detail?.orderID == "CUSTOMER-1")
+        #expect(Array(store.state.more.path.ids) == [sourcePathID])
+        #expect(store.state.more.path[id: sourcePathID, case: \.customers]?.orders == sourceOrders)
+    }
+
+    /// 驗證客戶搜尋仍命中目前推入的詳情時，保留詳情路徑元素識別值
+    ///
+    /// - Throws: 找不到來源或訂單路徑識別碼時由 `#require` 丟出
+    @Test
+    func more_客戶導覽命中目前詳情_保留path識別值() async throws {
+        // Given
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-0",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-1",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+        ]
+        let state = RootFeatureTestSupport.makeIsolatedRootState {
+            var initial = RootFeature.State()
+            initial.selectedTab = .more
+            initial.orders.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.orders.list.selectedCategories = ["snacks"]
+            initial.orders.detail.showDetail(orderID: "CUSTOMER-1")
+            initial.more.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            )
+            return initial
+        }
+        let sourcePathID = try #require(state.more.path.ids.first)
+        let initialOrderPathIDs = Array(state.orders.detail.path.ids)
+        try #require(initialOrderPathIDs.count == 1)
+        try #require(state.orders.detail.path.first?.detail?.orderID == "CUSTOMER-1")
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .more(
+                .path(
+                    .element(id: sourcePathID, action: .customers(.view(.customerTapped("Alice"))))
+                )
+            )
+        )
+
+        // Then
+        await store.receive(
+            \.more.path[id: sourcePathID].customers.delegate.customerSelected,
+            "Alice"
+        )
         await store.receive(\.more.delegate.customerSelected, "Alice") {
             $0.selectedTab = .orders
             $0.orders.list.dateContext = OrderDateContext(
@@ -52,14 +225,94 @@ struct RootFeatureOrderFiltersTests {
             $0.orders.list.searchText = "Alice"
             $0.orders.list.selectedCategories = []
         }
-        #expect(store.state.selectedTab == .orders)
-        #expect(store.state.orders.list.searchText == "Alice")
-        #expect(store.state.orders.list.selectedCategories == [])
+
+        #expect(store.state.orders.detail.path.last?.detail?.orderID == "CUSTOMER-1")
+        #expect(store.state.orders.list.filteredOrders.map(\.id) == ["CUSTOMER-0", "CUSTOMER-1"])
+        #expect(Array(store.state.orders.detail.path.ids) == initialOrderPathIDs)
+        #expect(store.state.orders.detail.path.first?.detail?.orderID == "CUSTOMER-1")
+        #expect(Array(store.state.more.path.ids) == [sourcePathID])
     }
 
-    /// 驗證分析頁點選類別時，若訂單頁殘留其他篩選，切到訂單頁後狀態與日期區間回到全部、搜尋文字清空，只套用該類別
+    /// 驗證客戶搜尋排除仍存在的推入詳情時，清空詳情路徑
+    ///
+    /// - Throws: 找不到來源或訂單路徑識別碼時由 `#require` 丟出
     @Test
-    func insights_點選分類且有殘留其他篩選_重設篩選並套用分類() async {
+    func more_客戶導覽排除仍存在詳情_清空path() async throws {
+        // Given
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-1",
+                categories: ["snacks"],
+                customerName: "Alice"
+            ),
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-2",
+                categories: ["snacks"],
+                customerName: "Bob"
+            ),
+        ]
+        let state = RootFeatureTestSupport.makeIsolatedRootState {
+            var initial = RootFeature.State()
+            initial.selectedTab = .more
+            initial.orders.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.orders.list.selectedCategories = ["snacks"]
+            initial.orders.detail.showDetail(orderID: "CUSTOMER-2")
+            initial.more.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            )
+            return initial
+        }
+        let sourcePathID = try #require(state.more.path.ids.first)
+        let initialOrderPathIDs = Array(state.orders.detail.path.ids)
+        try #require(initialOrderPathIDs.count == 1)
+        try #require(state.orders.detail.path.first?.detail?.orderID == "CUSTOMER-2")
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .more(
+                .path(
+                    .element(id: sourcePathID, action: .customers(.view(.customerTapped("Alice"))))
+                )
+            )
+        )
+
+        // Then
+        await store.receive(
+            \.more.path[id: sourcePathID].customers.delegate.customerSelected,
+            "Alice"
+        )
+        await store.receive(\.more.delegate.customerSelected, "Alice") {
+            $0.selectedTab = .orders
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = "Alice"
+            $0.orders.list.selectedCategories = []
+            $0.orders.detail.path.removeAll()
+        }
+
+        #expect(store.state.orders.list.searchText == "Alice")
+        #expect(store.state.orders.list.filteredOrders.map(\.id) == ["CUSTOMER-1"])
+        #expect(store.state.orders.detail.path.isEmpty)
+        #expect(Array(store.state.more.path.ids) == [sourcePathID])
+    }
+
+    /// 驗證分析頁點選類別時，重設其他篩選並保留仍符合類別的詳情路徑
+    @Test
+    func insights_點選分類且有殘留其他篩選_重設篩選並保留符合路徑() async {
         // Given
         var state = RootFeature.State()
         state.orders.$orders.withLock {
@@ -69,7 +322,7 @@ struct RootFeatureOrderFiltersTests {
         state.orders.list.selectedDatePeriod = .thisMonth
         state.orders.list.selectedCategories = ["snacks", "books"]
         state.orders.list.searchText = "stale query"
-        state.orders.list.selectedOrderID = "BL-2604-016"
+        state.orders.detail.showDetail(orderID: "BL-2604-016")
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -89,11 +342,6 @@ struct RootFeatureOrderFiltersTests {
             )
             $0.orders.list.searchText = ""
             $0.orders.list.selectedCategories = ["美妝"]
-            $0.orders.list.selectedOrderID = "BL-2604-018"
-            $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-2604-018",
-                orders: SharedReader(state.orders.$orders)
-            )
         }
 
         // Then
@@ -102,13 +350,12 @@ struct RootFeatureOrderFiltersTests {
         #expect(store.state.orders.list.selectedDatePeriod == .all)
         #expect(store.state.orders.list.searchText == "")
         #expect(store.state.orders.list.selectedCategories == ["美妝"])
-        #expect(store.state.orders.list.selectedOrderID == "BL-2604-018")
-        #expect(store.state.orders.detail.regularDetail?.orderID == "BL-2604-018")
+        #expect(store.state.orders.detail.path.last?.detail?.orderID == "BL-2604-016")
     }
 
-    /// 驗證分析頁點選類別時只比對訂單的類別欄位，客戶名稱含同樣字樣的訂單不會被篩進來
+    /// 驗證分析頁點選類別時只比對訂單類別，只列出符合的訂單，不自動開啟詳情
     @Test
-    func insights_點選分類_依分類欄位而非搜尋文字篩選() async {
+    func insights_點選分類_只篩分類且不自動開啟詳情() async {
         // Given
         let realBeauty1 = RootFeatureTestSupport.makeTestOrder(
             id: "O1",
@@ -145,17 +392,12 @@ struct RootFeatureOrderFiltersTests {
                 calendar: TestDependencies.fixedCalendar
             )
             $0.orders.list.selectedCategories = ["beauty"]
-            $0.orders.list.selectedOrderID = "O1"
-            $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "O1",
-                orders: SharedReader(state.orders.$orders)
-            )
         }
 
         // Then
         let filteredIDs = store.state.orders.list.filteredOrders.map(\.id)
         #expect(filteredIDs == ["O1", "O3"])
-        #expect(store.state.orders.detail.regularDetail?.orderID == "O1")
+        #expect(store.state.orders.detail.path.isEmpty)
     }
 
     /// 驗證客戶頁開始載入時，送出訂單載入請求，由訂單判斷是否需要重新讀取資料
@@ -194,15 +436,37 @@ struct RootFeatureOrderFiltersTests {
         await store.receive(\.orders.load.loadRequested)
     }
 
-    /// 驗證在「更多」的客戶頁點選客戶時，先清空「更多」的頁面，再切到訂單分頁並以客戶名稱搜尋
+    /// 驗證在「更多」的客戶頁點選客戶時，來源頁保留、訂單搜尋條件更新，且不自動開啟訂單詳情
+    ///
+    /// - Throws: 找不到來源路徑識別碼時由 `#require` 丟出
     @Test
-    func more_客戶頁點選客戶_切換分頁前清空堆疊() async {
+    func more_客戶頁點選客戶_無詳情路徑且不自動開啟詳情() async throws {
         // Given
-        var state = RootFeature.State()
-        state.selectedTab = .more
-        state.more.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
-        )
+        let sourceOrders = [
+            RootFeatureTestSupport.makeTestOrder(
+                id: "CUSTOMER-2",
+                categories: [],
+                customerName: "Alice"
+            ),
+        ]
+        let state = RootFeatureTestSupport.makeIsolatedRootState {
+            var initial = RootFeature.State()
+            initial.selectedTab = .more
+            initial.orders.list.selectedStatus = .status(.delivered)
+            initial.orders.list.selectedDatePeriod = .thisMonth
+            initial.orders.list.searchText = "stale query"
+            initial.orders.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.$orders.withLock {
+                $0 = sourceOrders
+            }
+            initial.more.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            )
+            return initial
+        }
+        let sourcePathID = try #require(state.more.path.ids.first)
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -213,13 +477,18 @@ struct RootFeatureOrderFiltersTests {
 
         // When
         await store.send(
-            .more(.path(.element(id: 0, action: .customers(.view(.customerTapped("Alice"))))))
+            .more(
+                .path(
+                    .element(id: sourcePathID, action: .customers(.view(.customerTapped("Alice"))))
+                )
+            )
         )
 
         // Then
-        await store.receive(\.more.path[id: 0].customers.delegate.customerSelected, "Alice") {
-            $0.more.path.removeAll()
-        }
+        await store.receive(
+            \.more.path[id: sourcePathID].customers.delegate.customerSelected,
+            "Alice"
+        )
         await store.receive(\.more.delegate.customerSelected, "Alice") {
             $0.selectedTab = .orders
             $0.orders.list.dateContext = OrderDateContext(
@@ -230,7 +499,9 @@ struct RootFeatureOrderFiltersTests {
             $0.orders.list.selectedStatus = .all
             $0.orders.list.selectedDatePeriod = .all
         }
-        #expect(store.state.more.path.isEmpty)
         #expect(store.state.selectedTab == .orders)
+        #expect(store.state.orders.detail.path.isEmpty)
+        #expect(Array(store.state.more.path.ids) == [sourcePathID])
+        #expect(store.state.more.path[id: sourcePathID, case: \.customers]?.orders == sourceOrders)
     }
 }

@@ -11,11 +11,6 @@ enum CampaignRequestPlan {
     /// 請求目前不適用
     case none
 
-    /// 顯示開團詳情
-    ///
-    /// - Parameter id: 開團識別值
-    case showDetail(Campaign.ID)
-
     /// 建立新增或編輯表單
     ///
     /// - Parameters:
@@ -51,9 +46,6 @@ extension CampaignRequestPlan {
         reminderLinks: [Campaign.ID: CampaignReminderLink]
     ) -> Self {
         switch request {
-        case .showDetail(let id):
-            return .showDetail(id)
-
         case .create:
             return .edit(original: nil, link: nil)
 

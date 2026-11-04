@@ -1312,6 +1312,38 @@
         }
       }
     },
+    "common.navigation.detailEmptyState" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Selection"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未選取項目"
+          }
+        }
+      }
+    },
+    "common.navigation.selectItemPrompt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an item from the list"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請從清單中選取項目"
+          }
+        }
+      }
+    },
     "common.date.today" : {
       "localizations" : {
         "en" : {

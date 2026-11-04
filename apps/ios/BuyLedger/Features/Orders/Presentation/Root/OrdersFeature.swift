@@ -14,14 +14,14 @@ struct OrdersFeature {
 
     // MARK: - State
 
-    /// 管理訂單列表載入、篩選、選取與呈現所需的狀態
+    /// 管理訂單清單載入、篩選、批次勾選與呈現所需的狀態
     @ObservableState
     struct State: Equatable {
 
         /// 目前載入的訂單
         @Shared var orders: [LedgerOrder]
 
-        /// 訂單清單的篩選、搜尋、多選與選取
+        /// 訂單清單的篩選、搜尋與批次勾選
         var list: OrderListFeature.State
 
         /// 主檔端維護的四種主檔目錄，訂單容器只讀取
@@ -51,8 +51,21 @@ struct OrdersFeature {
         /// 表單、alert 與一次性通知的呈現子 Feature
         var presentation = OrdersPresentationFeature.State()
 
-        /// iPhone 詳情堆疊與 iPad 右欄詳情的導覽子 Feature
+        /// iPhone 與 iPad 共用詳情路徑的導覽子 Feature
         var detail: OrdersDetailNavigationFeature.State
+
+        /// 由詳情 `path` 投影出的目前訂單識別值
+        var selectedOrderID: LedgerOrder.ID? {
+            detail.path.last?.detail?.orderID
+        }
+
+        /// 目前詳情是否已被清單篩選排除
+        var isDetailExcludedByFilter: Bool {
+            guard let selectedOrderID else {
+                return false
+            }
+            return !list.filteredOrders.contains { $0.id == selectedOrderID }
+        }
 
         /// 供 Root 與容器畫面讀取的載入投影
         var loadState: OrdersLoadState {
@@ -78,7 +91,7 @@ struct OrdersFeature {
             self.detail = OrdersDetailNavigationFeature.State(orders: SharedReader(sharedOrders))
         }
 
-        /// 經清單套用跨功能篩選並重選第一筆，右欄詳情同步到新選取
+        /// 套用跨功能篩選後保留命中詳情或清空失配路徑
         ///
         /// - Parameters:
         ///   - searchText: 客戶名稱搜尋；類別導覽時為空
@@ -91,18 +104,33 @@ struct OrdersFeature {
             now: Date,
             calendar: Calendar
         ) {
-            refreshDateContext(now: now, calendar: calendar)
+            // 日期脈絡與新篩選都套用後才檢查，避免以舊篩選清掉新篩選仍命中的詳情
+            list.refreshDateContext(OrderDateContext(now: now, calendar: calendar))
             list.applyFilterNavigation(searchText: searchText, category: category)
-            detail.syncRegularDetail(selectedOrderID: list.selectedOrderID)
+            reconcileDetailPathWithFilteredOrders()
         }
 
-        /// 刷新清單的日期脈絡，供 Root 的前景與重大時間變更共用
+        /// 刷新清單的日期脈絡，並清除因這次刷新才被日期篩選排除的詳情，供 Root 的前景與重大時間變更共用
         ///
         /// - Parameters:
         ///   - now: 新的現在時間
         ///   - calendar: 新的行事曆與時區
+        /// - Note: 刷新前已被排除的詳情 (如狀態改成篩選外) 維持原樣，回到前景不清空
         mutating func refreshDateContext(now: Date, calendar: Calendar) {
+            let isDetailAlreadyExcluded = isDetailExcludedByFilter
             list.refreshDateContext(OrderDateContext(now: now, calendar: calendar))
+            guard !isDetailAlreadyExcluded else {
+                return
+            }
+            reconcileDetailPathWithFilteredOrders()
+        }
+
+        /// 清除目前清單篩選排除的詳情，保留仍符合條件的路徑元素
+        mutating func reconcileDetailPathWithFilteredOrders() {
+            guard isDetailExcludedByFilter else {
+                return
+            }
+            detail.clearDetail()
         }
 
         /// 建立並呈現新訂單表單，供訂單分頁與首頁共用
@@ -135,17 +163,16 @@ struct OrdersFeature {
     // MARK: - Action
 
     /// 訂單功能可處理的事件
-    @CasePathable
     enum Action: BindableAction {
 
-        /// `SwiftUI` 雙向繫結事件
+        /// SwiftUI 雙向繫結事件
         ///
         /// - Parameter action: 由 `State` 的雙向繫結產生的事件
         case binding(BindingAction<State>)
 
-        /// 容器畫面的使用者事件
+        /// 轉發容器畫面發生的使用者事件
         ///
-        /// - Parameter action: sheet 關閉動畫完成的事件
+        /// - Parameter action: 分欄選取或 sheet 關閉完成事件
         case view(View)
 
         /// 交由父層處理的跨功能意圖
@@ -153,10 +180,13 @@ struct OrdersFeature {
         /// - Parameter action: 訂單功能送出的委派
         case delegate(Delegate)
 
-        /// 詳情導覽子 Feature 的堆疊與右欄事件
+        /// 詳情導覽子 Feature 的路徑事件
         ///
-        /// - Parameter action: iPhone 堆疊與 iPad 右欄的事件
+        /// - Parameter action: 共用詳情 `path` 的導覽事件
         case detail(OrdersDetailNavigationFeature.Action)
+
+        /// 清單篩選條件變更後延後檢查目前詳情
+        case filterConditionsChanged
 
         /// 清單子 Feature 的互動與委派
         ///
@@ -186,6 +216,11 @@ struct OrdersFeature {
         /// 容器畫面的使用者事件
         @CasePathable
         enum View {
+
+            /// 原生分欄清單的選取變更；選取值只投影到詳情 `path`
+            ///
+            /// - Parameter orderID: 目前選取訂單；`nil` 表示原生返回根清單
+            case detailSelectionChanged(LedgerOrder.ID?)
 
             /// 任一表單 sheet 的關閉動畫已完成
             case formSheetDismissed
@@ -221,12 +256,21 @@ struct OrdersFeature {
 
     // MARK: - Body
 
-    /// 組合雙向繫結、清單與載入子層、寫入與呈現子層，最後由 `core(state:action:)` 分派請求
+    /// reducer 的骨架，只負責組合子層，容器自己的邏輯在 `core(state:action:)`
     var body: some ReducerOf<Self> {
         BindingReducer()
 
         Scope(state: \.list, action: \.list) {
             OrderListFeature()
+        }
+        .onChange(of: \.list.filterConditions) { _, state in
+            // 搜尋欄可能在畫面更新中送出變更，延後清空 `path` 避免畫面讀到舊訂單
+            guard state.isDetailExcludedByFilter else {
+                return .none
+            }
+            return .run {
+                await $0(.filterConditionsChanged)
+            }
         }
 
         Scope(state: \.load, action: \.load) {
@@ -267,6 +311,14 @@ private extension OrdersFeature {
         case .binding:
             return .none
 
+        case .view(.detailSelectionChanged(let orderID)):
+            if let orderID {
+                state.detail.showDetail(orderID: orderID)
+            } else {
+                state.detail.clearDetail()
+            }
+            return .none
+
         case .view(.formSheetDismissed):
             state.presentation.finishFormClosing()
             return .none
@@ -274,11 +326,14 @@ private extension OrdersFeature {
         case .delegate:
             return .none
 
-        case .detail(.path(.element(_, .detail(.delegate(.requested(let request)))))),
-                .detail(.regularDetail(.delegate(.requested(let request)))):
+        case .detail(.path(.element(_, .detail(.delegate(.requested(let request)))))):
             return fulfill(request, state: &state)
 
         case .detail:
+            return .none
+
+        case .filterConditionsChanged:
+            state.reconcileDetailPathWithFilteredOrders()
             return .none
 
         case .list(.delegate(.loadRequested)):
@@ -286,10 +341,6 @@ private extension OrdersFeature {
 
         case .list(.delegate(.requested(let request))):
             return fulfill(request, state: &state)
-
-        case .list(.delegate(.selectionChanged)):
-            state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
-            return .none
 
         case .list:
             return .none
@@ -321,7 +372,7 @@ private extension OrdersFeature {
         }
     }
 
-    /// 首次載入完成後預設選取第一筆，並移除已不存在訂單的詳情、同步右欄詳情
+    /// 載入完成後移除已不存在訂單的詳情
     ///
     /// - Parameter state: 容器目前的狀態，直接就地修改
     /// - Returns: 沒有後續效果，回傳 `.none`
@@ -329,8 +380,7 @@ private extension OrdersFeature {
         guard state.load.hasLoaded else {
             return .none
         }
-        state.list.selectedOrderID = state.list.selectedOrderID ?? state.orders.first?.id
-        state.detail.applyLoadedOrders(selectedOrderID: state.list.selectedOrderID)
+        state.detail.applyLoadedOrders()
         return .none
     }
 
@@ -356,10 +406,6 @@ private extension OrdersFeature {
 
         case .present(let destination):
             state.presentation.present(destination)
-            return .none
-
-        case .showDetail(let id):
-            state.detail.showDetail(orderID: id)
             return .none
 
         case .write(let action):
@@ -415,12 +461,12 @@ private extension OrdersFeature {
         }
     }
 
-    /// 寫入子層完成後套用結果到各子層，並回傳清單選取或一次性通知的 Effect
+    /// 寫入子層完成後套用結果到各子層，並回傳一次性通知的 Effect
     ///
     /// - Parameters:
     ///   - action: 寫入子層的事件，只有委派會被套用
     ///   - state: 容器目前的狀態，直接就地修改
-    /// - Returns: 選取變更或通知的 Effect，沒有就回傳 `.none`
+    /// - Returns: 通知的 Effect，沒有就回傳 `.none`
     func applyWriteResult(
         _ action: OrderWritesFeature.Action,
         state: inout State
@@ -431,12 +477,6 @@ private extension OrdersFeature {
         let outcome = OrdersContainerPlan.writeResult(result, state: state)
         state.detail.apply(outcome)
         state.presentation.apply(outcome)
-        if let selection = outcome.selection {
-            state.list.selectedOrderID = selection.orderID
-            if selection.shouldNotify {
-                return .send(.list(.delegate(.selectionChanged(selection.orderID))))
-            }
-        }
         if let notice = outcome.notice {
             return .send(.presentation(.noticeRequested(notice)))
         }

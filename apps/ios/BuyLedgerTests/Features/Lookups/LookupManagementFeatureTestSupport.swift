@@ -43,24 +43,22 @@ extension LookupManagementFeatureTestSupport {
         )
     }
 
-    /// 依正式畫面的標題、按鈕與文案組出操作失敗 alert，不借用被測程式的產生結果當預期值
+    /// 依正式畫面的標題、按鈕與文案組出操作失敗通知，不借用被測程式的產生結果當預期值
     ///
     /// - Parameter message: 主檔操作失敗文案
-    /// - Returns: 含操作失敗 alert 的 `Destination.State`
+    /// - Returns: 含操作失敗通知的 `AlertState`
     static func writeFailureAlert(
         message: LocalizedStringResource
-    ) -> LookupManagementFeature.Destination.State {
-        .alert(
-            AlertState<LookupManagementFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState(message)
+    ) -> AlertState<LookupManagementFeature.Destination.Alert> {
+        AlertState<LookupManagementFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState(message)
+        }
     }
 
     /// 依正式畫面的標題、按鈕與文案組出付款方式更正確認 alert，不借用被測程式的產生結果當預期值

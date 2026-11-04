@@ -8,13 +8,13 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 窄版訂單清單的篩選列、載入訊息與日期卡片
+/// 窄版訂單清單的篩選列、載入訊息與日期分組
 struct OrdersCompactListView: View {
 
     // MARK: - Properties
 
-    /// 篩選摘要使用的顯示語系
-    @Environment(\.locale) private var locale
+    /// 分隔線的高度，列內距保留此高度給卡片內分隔線
+    @Environment(\.pixelLength) private var pixelLength
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderListFeature>
@@ -22,23 +22,22 @@ struct OrdersCompactListView: View {
     /// 已由父層整理好的日期區段
     let sections: [OrderDateSection]
 
+    /// 導覽 `path` 投影出的目前訂單選取；多選模式由父層傳入 `nil`
+    let selection: Binding<LedgerOrder.ID?>?
+
     // MARK: - Body
 
-    /// 可捲動的清單骨架，由上而下顯示篩選、載入訊息與訂單區段
+    /// 原生清單列承載選取；每筆訂單保留卡片外觀
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                chipStrip
+        List(selection: selection) {
+            controls
 
-                unifiedFilterTrigger
-
-                loadFailureMessage
-
-                listSection
-            }
-            .padding(.top, BLSpacing.small)
-            .padding(.bottom, BLSpacing.section)
+            orderSections
         }
+        .listStyle(.plain)
+        .environment(\.defaultMinListRowHeight, 0)
+        .scrollContentBackground(.hidden)
+        .contentMargins(.bottom, BLSpacing.section - BLCardRowMetrics.edgeRoom, for: .scrollContent)
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         .scrollDismissesKeyboard(.interactively)
@@ -49,59 +48,24 @@ struct OrdersCompactListView: View {
 
 private extension OrdersCompactListView {
 
-    /// 可橫向捲動的訂單狀態篩選列
-    @ViewBuilder
-    var chipStrip: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: BLSpacing.small) {
-                ForEach(OrderStatusFilter.orderBrowsingCases) {
-                    chipButton($0)
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-        }
-        .scrollIndicators(.hidden)
-    }
+    /// 篩選列與失敗訊息沿用原本的垂直間距
+    var controls: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.medium) {
+            OrdersFilterControlsView(
+                store: store,
+                isUnifiedFilterTriggerShown: true,
+                statusChipHorizontalInset: BLSpacing.large,
+                statusChipSize: .large,
+                unifiedFilterHorizontalInset: BLSpacing.large
+            )
 
-    /// 顯示並切換單一訂單狀態篩選
-    ///
-    /// - Parameter filter: 要顯示的狀態篩選
-    /// - Returns: 可切換訂單狀態的篩選按鈕
-    @ViewBuilder
-    func chipButton(_ filter: OrderStatusFilter) -> some View {
-        BLFilterChip(
-            isSelected: store.selectedStatus == filter,
-            size: .large,
-            title: LocalizedStringKey(filter.title)
-        ) {
-            store.send(.view(.statusFilterSelected(filter)))
+            loadFailureMessage
         }
-        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
-    }
-
-    /// 顯示日期、類別與付款方式的整合篩選按鈕
-    @ViewBuilder
-    var unifiedFilterTrigger: some View {
-        let language = AppLanguage(locale: locale)
-        let summaryText = store.state.filterSummary(language: language)
-        let formattedTitle = language.localizedString(
-            forKey: "orders.filter.label.filterSummary",
-            summaryText
-        )
-
-        BLFilterChip(
-            icon: "line.3.horizontal.decrease",
-            isExpanded: true,
-            isSelected: store.committedFilterSelection.isActive,
-            size: .large,
-            style: .purple,
-            title: LocalizedStringKey(formattedTitle),
-            trailingIcon: "chevron.down"
-        ) {
-            store.send(.view(.filterSheetTapped))
-        }
-        .padding(.horizontal, BLSpacing.large)
-        .accessibilityIdentifier(BLAccessibilityID.Orders.filterButton)
+        .padding(.top, BLSpacing.small)
+        .padding(.bottom, BLSpacing.medium)
+        .listRowInsets(EdgeInsets())
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
     /// 載入失敗時持續顯示的訊息，一次性操作失敗由容器的對話框呈現
@@ -115,92 +79,116 @@ private extension OrdersCompactListView {
         }
     }
 
-    /// 沒有符合條件的訂單時顯示的空狀態
+    /// 顯示載入狀態、空狀態或依日期分組的訂單列
     @ViewBuilder
+    var orderSections: some View {
+        if store.isLoading {
+            ProgressView("orders.list.label.loadOrders")
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, BLSpacing.large)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+        } else if sections.isEmpty {
+            emptyState
+        } else {
+            ForEach(Array(sections.enumerated()), id: \.element.id) { sectionIndex, section in
+                dateHeader(section, isFirst: sectionIndex == 0)
+
+                ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
+                    let position = BLCardRowPosition(index: index, count: section.orders.count)
+
+                    if store.isSelecting {
+                        selectableRow(order: order, position: position)
+                    } else {
+                        navigableRow(order: order, position: position)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 沒有符合條件的訂單時顯示的空狀態
     var emptyState: some View {
         ContentUnavailableView(
             "orders.list.label.matchingOrders",
             systemImage: "tray",
             description: Text("orders.list.message.tryChangingSearch")
         )
-        // 容器相對高度撐開後置中；垂直 `ScrollView` 內單設 `maxHeight` 不生效
-        // 空狀態會黏在頂端而非可視區域中央
         .frame(maxWidth: .infinity)
-        .containerRelativeFrame(.vertical)
-        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
+        .listRowInsets(EdgeInsets())
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 
-    /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段
-    @ViewBuilder
-    var listSection: some View {
-        if store.isLoading {
-            ProgressView("orders.list.label.loadOrders")
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, BLSpacing.large)
-        } else {
-            if sections.isEmpty {
-                emptyState
-            } else {
-                // 惰性只施加於外層日期區段，卡片內的訂單列容器維持非惰性
-                // 否則卡片背景會因高度漸進確定而包不住當日所有列
-                LazyVStack(alignment: .leading, spacing: BLSpacing.medium) {
-                    ForEach(sections) {
-                        orderDateSection($0)
-                    }
-                }
-            }
-        }
-    }
-
-    /// 單一日期區段，包含日期標題與訂單卡片
+    /// 顯示日期區段標題，背景與分隔線隱藏並由列內距維持卡片間距
     ///
-    /// - Parameter section: 要呈現的日期區段
-    /// - Returns: 含日期標題與訂單卡片的區段
-    @ViewBuilder
-    func orderDateSection(_ section: OrderDateSection) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(LocalizedStringKey(section.title))
-                .padding(.horizontal, BLSpacing.large)
-                .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                .foregroundStyle(.blSecondaryLabel)
-
-            BLCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
-                        if store.isSelecting {
-                            OrderSelectableRow(store: store, isShowingDate: false, order: order)
-                        } else {
-                            navigableRow(order: order)
-                        }
-
-                        if index < section.orders.count - 1 {
-                            Divider()
-                                .padding(.leading, BLListMetrics.dividerInset)
-                        }
-                    }
-                }
-            }
+    /// - Parameters:
+    ///   - section: 要呈現的日期區段
+    ///   - isFirst: 是否為清單的第一個日期區段
+    /// - Returns: 日期標題列
+    func dateHeader(_ section: OrderDateSection, isFirst: Bool) -> some View {
+        Text(LocalizedStringKey(section.title))
             .padding(.horizontal, BLSpacing.large)
-        }
+            .font(BLTypographyStyle.footnote.font.weight(.semibold))
+            .foregroundStyle(.blSecondaryLabel)
+            .accessibilityAddTraits(.isHeader)
+            .listRowInsets(
+                EdgeInsets(
+                    top: isFirst ? 0 : BLSpacing.medium - BLCardRowMetrics.edgeRoom,
+                    leading: 0,
+                    bottom: BLSpacing.small - BLCardRowMetrics.edgeRoom,
+                    trailing: 0
+                )
+            )
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 
-    /// 一般模式的訂單列；點擊開啟詳情，長按顯示操作選單
+    /// 在多選模式中以日期共用卡片呈現可勾選列
     ///
-    /// - Parameter order: 要呈現的訂單
-    /// - Returns: 可開啟詳情的訂單列
+    /// - Parameters:
+    ///   - order: 要呈現的訂單
+    ///   - position: 訂單在日期卡片中的位置
+    /// - Returns: 帶卡片樣式的多選清單列
+    func selectableRow(order: LedgerOrder, position: BLCardRowPosition) -> some View {
+        OrderSelectableRow(store: store, isShowingDate: false, order: order)
+            .listRowInsets(position.cardRowInsets(dividerHeight: pixelLength))
+            .listRowSeparator(.hidden)
+            .listRowBackground(cardRowBackground(position: position))
+    }
+
+    /// 為日期卡片內的列提供共用表面，列間分隔線對齊訂單列文字起點
+    ///
+    /// - Parameter position: 訂單在日期卡片中的位置
+    /// - Returns: 與 `BLCard` 相同填色、圓角、描邊與陰影的列背景
+    func cardRowBackground(position: BLCardRowPosition) -> some View {
+        BLCardRowBackground(
+            dividerLeadingInset: BLListMetrics.dividerInset,
+            dividerTrailingInset: 0,
+            horizontalInset: BLCardRowMetrics.horizontalInset,
+            position: position
+        )
+    }
+
+    /// 顯示一般訂單列，點擊更新原生選取，長按顯示列選單
+    ///
+    /// - Parameters:
+    ///   - order: 要呈現的訂單
+    ///   - position: 訂單在日期卡片中的位置
+    /// - Returns: 連結至 split 詳情選取的訂單列
     @ViewBuilder
-    func navigableRow(order: LedgerOrder) -> some View {
-        Button {
-            store.send(.view(.orderTapped(order.id)))
-        } label: {
+    func navigableRow(order: LedgerOrder, position: BLCardRowPosition) -> some View {
+        NavigationLink(value: order.id) {
             OrderRowView(isShowingDate: false, order: order)
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)
                 .contentShape(Rectangle())
-                .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
         }
         .buttonStyle(.plain)
+        .navigationLinkIndicatorVisibility(.hidden)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
         .contextMenu {
             OrderDetailRowMenu(
                 detail: OrderDetailFeature.State(orderID: order.id, orders: store.$orders)
@@ -210,6 +198,9 @@ private extension OrdersCompactListView {
                 store.send(.view(.deleteOrderTapped(order.id)))
             }
         }
+        .listRowInsets(position.cardRowInsets(dividerHeight: pixelLength))
+        .listRowSeparator(.hidden)
+        .listRowBackground(cardRowBackground(position: position))
     }
 }
 
@@ -220,6 +211,7 @@ private extension OrdersCompactListView {
         store: Store(initialState: OrderListFeature.State(orders: SharedReader(value: []))) {
             OrderListFeature()
         },
-        sections: []
+        sections: [],
+        selection: nil
     )
 }

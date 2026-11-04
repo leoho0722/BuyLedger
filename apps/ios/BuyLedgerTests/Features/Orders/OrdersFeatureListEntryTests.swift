@@ -113,9 +113,9 @@ struct OrdersFeatureListEntryTests {
         #expect(store.state.presentation.destination?.edit?.draft.categories.isEmpty == true)
     }
 
-    /// 驗證編輯既有訂單並儲存後，清單選取仍維持在原本的 order-2
+    /// 驗證編輯既有訂單並儲存後，目前詳情仍維持在 order-2
     @Test
-    func presentation_編輯既有訂單_保留目前選取() async {
+    func presentation_編輯既有訂單_保留目前詳情path() async {
         // Given
         let original = LedgerOrder.fixture(id: "order-1", categories: ["美妝"])
         let otherOrder = LedgerOrder.fixture(id: "order-2")
@@ -133,8 +133,8 @@ struct OrdersFeatureListEntryTests {
             calendar: TestDependencies.fixedCalendar
         )
         state.presentation.destination = .edit(draft)
-        state.list.selectedOrderID = "order-2"
-        state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
+        state.detail.showDetail(orderID: "order-2")
+        let pathIDsBefore = Array(state.detail.path.ids)
 
         let savedOrders = LockIsolated<[LedgerOrder]>([])
         let store = TestStore(initialState: state) {
@@ -169,7 +169,8 @@ struct OrdersFeatureListEntryTests {
         }
         await store.receive(\.writes.saveResponse)
         await store.receive(\.writes.delegate.saved)
-        #expect(store.state.list.selectedOrderID == "order-2")
+        #expect(Array(store.state.detail.path.ids) == pathIDsBefore)
+        #expect(store.state.detail.path.last?.detail?.orderID == "order-2")
         #expect(savedOrders.value == [expectedOrder])
     }
 

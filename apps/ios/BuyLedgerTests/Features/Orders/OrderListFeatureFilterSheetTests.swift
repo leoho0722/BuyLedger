@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證篩選面板的開啟、套用、取消與捨棄確認
+/// `OrderListFeature` 的單元測試，以 `TestStore` 逐步驗證篩選面板的開啟、套用、取消與捨棄確認
 @MainActor
 struct OrderListFeatureFilterSheetTests {
 
@@ -108,34 +108,117 @@ struct OrderListFeatureFilterSheetTests {
         #expect(store.state.destination != nil)
     }
 
-    /// 驗證篩選面板的暫存有變更時按下套用，類別改為 beauty 並關閉面板，選取從 N1 改為符合的第一筆 N2
+    /// 驗證篩選面板三項暫存同時變更時，僅依最終結果列出 N2，不委派任何請求
     @Test
-    func destination_待確認篩選已變更_提交並關閉面板() async {
+    func destination_待確認篩選三項都變更_提交完整條件並只列出命中訂單() async {
         // Given
         var state = OrdersFeature.State()
         state.refreshDateContext(
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        // 只有 N2 屬於 beauty，套用後選取改為 N2
+        // 僅 N2 同時符合最終日期、類別與付款條件
         state.$orders.withLock {
             $0 = [
-                OrdersFeatureTestSupport.makeOrder(id: "N1", category: "electronics"),
-                OrdersFeatureTestSupport.makeOrder(id: "N2", category: "beauty"),
-                OrdersFeatureTestSupport.makeOrder(id: "N3", category: "electronics"),
+                OrdersFeatureTestSupport.makeOrder(
+                    id: "N1",
+                    category: "electronics",
+                    paymentMethod: "轉帳"
+                ),
+                OrdersFeatureTestSupport.makeOrder(
+                    id: "N2",
+                    category: "beauty",
+                    paymentMethod: "轉帳"
+                ),
+                OrdersFeatureTestSupport.makeOrder(
+                    id: "N3",
+                    category: "beauty",
+                    paymentMethod: "現金"
+                ),
+                OrdersFilterOperationsTestSupport.makeOrder(
+                    id: "N4",
+                    date: TestDependencies.fixedNow.addingTimeInterval(-3_456_000),
+                    category: "beauty",
+                    paymentMethod: "轉帳"
+                ),
             ]
         }
         state.list.selectedDatePeriod = .all
         state.list.selectedCategories = []
         state.list.selectedPaymentMethod = nil
-        state.list.selectedOrderID = "N1"
         state.list.destination = .filterSheet(
             OrderFilterFeatureTestSupport.makeState(for: state.list)
         )
         state.list.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection = OrderFilterSelection(
-                datePeriod: .all,
+                datePeriod: .thisMonth,
                 categories: ["beauty"],
+                paymentMethod: "轉帳"
+            )
+        }
+        let store = TestStore(initialState: state.list) {
+            OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.destination(.presented(.filterSheet(.view(.filterApplyTapped)))))
+
+        // Then
+        await store.receive(
+            \.destination.presented.filterSheet.delegate.applied,
+            OrderFilterSelection(
+                datePeriod: .thisMonth,
+                categories: ["beauty"],
+                paymentMethod: "轉帳"
+            )
+        ) {
+            $0.selectedDatePeriod = .thisMonth
+            $0.selectedCategories = ["beauty"]
+            $0.selectedPaymentMethod = "轉帳"
+            $0.destination = nil
+        }
+        #expect(store.state.filteredOrders.map(\.id) == ["N2"])
+        #expect(store.state.selectedDatePeriod == .thisMonth)
+        #expect(store.state.selectedPaymentMethod == "轉帳")
+        #expect(store.state.selectedCategories == ["beauty"])
+        #expect(store.state.destination == nil)
+    }
+
+    /// 驗證待確認篩選只改類別時，套用只提交類別，日期與付款方式維持原值，面板關閉且觸發鈕摘要顯示類別數量
+    @Test
+    func destination_待確認篩選只改類別_只提交類別並關閉面板() async {
+        // Given
+        var state = OrdersFeature.State()
+        state.refreshDateContext(
+            now: TestDependencies.fixedNow,
+            calendar: TestDependencies.fixedCalendar
+        )
+        state.$orders.withLock {
+            $0 = [
+                OrdersFeatureTestSupport.makeOrder(
+                    id: "N1",
+                    category: "beauty",
+                    paymentMethod: "現金"
+                ),
+                OrdersFeatureTestSupport.makeOrder(
+                    id: "N2",
+                    category: "snacks",
+                    paymentMethod: "現金"
+                ),
+            ]
+        }
+        state.list.selectedDatePeriod = .thisMonth
+        state.list.selectedCategories = []
+        state.list.destination = .filterSheet(
+            OrderFilterFeatureTestSupport.makeState(for: state.list)
+        )
+        state.list.destination?.modify(\.filterSheet) {
+            $0.pendingFilterSelection = OrderFilterSelection(
+                datePeriod: .thisMonth,
+                categories: ["beauty", "snacks"],
                 paymentMethod: nil
             )
         }
@@ -152,19 +235,29 @@ struct OrderListFeatureFilterSheetTests {
         // Then
         await store.receive(
             \.destination.presented.filterSheet.delegate.applied,
-            OrderFilterSelection(datePeriod: .all, categories: ["beauty"], paymentMethod: nil)
+            OrderFilterSelection(
+                datePeriod: .thisMonth,
+                categories: ["beauty", "snacks"],
+                paymentMethod: nil
+            )
         ) {
-            $0.selectedCategories = ["beauty"]
-            $0.selectedOrderID = "N2"
+            $0.selectedCategories = ["beauty", "snacks"]
             $0.destination = nil
         }
-        await store.receive(\.delegate.selectionChanged)
-        #expect(store.state.selectedCategories == ["beauty"])
-        #expect(store.state.selectedOrderID == "N2")
+        #expect(store.state.selectedDatePeriod == .thisMonth)
+        #expect(store.state.selectedPaymentMethod == nil)
         #expect(store.state.destination == nil)
+        let summary = store.state.filterSummary(language: .traditionalChinese)
+        #expect(summary == "本月 · 2 項類別")
+        #expect(
+            AppLanguage.traditionalChinese.localizedString(
+                forKey: "orders.filter.label.filterSummary",
+                summary
+            ) == "篩選：本月 · 2 項類別"
+        )
     }
 
-    /// 驗證提交的集合與已套用值相同時，清單接收套用結果並關閉篩選面板，保留選取的訂單 N2，不再回報選取變更
+    /// 驗證提交的集合與已套用值相同時，清單接收套用結果並關閉篩選面板，已套用值保持不變，不委派任何請求
     @Test
     func destination_待確認篩選沒有變更_關閉面板且保留原值() async {
         // Given
@@ -173,7 +266,7 @@ struct OrderListFeatureFilterSheetTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        // 兩筆都命中篩選，選取 N2 用來確認套用時不重算
+        // 兩筆都命中篩選，確認套用相同值時清單結果不變
         state.$orders.withLock {
             $0 = [
                 OrdersFeatureTestSupport.makeOrder(id: "N1", category: "beauty"),
@@ -183,7 +276,6 @@ struct OrderListFeatureFilterSheetTests {
         state.list.selectedDatePeriod = .all
         state.list.selectedCategories = ["beauty"]
         state.list.selectedPaymentMethod = nil
-        state.list.selectedOrderID = "N2"
         state.list.destination = .filterSheet(
             OrderFilterFeatureTestSupport.makeState(for: state.list)
         )
@@ -211,7 +303,6 @@ struct OrderListFeatureFilterSheetTests {
         }
         #expect(store.state.destination == nil)
         #expect(store.state.selectedCategories == ["beauty"])
-        #expect(store.state.selectedOrderID == "N2")
     }
 
     /// 驗證篩選面板有未套用變更時按下取消，不關閉面板，改呈現捨棄確認框

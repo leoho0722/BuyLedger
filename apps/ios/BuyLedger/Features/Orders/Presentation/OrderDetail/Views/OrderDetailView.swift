@@ -13,6 +13,9 @@ struct OrderDetailView: View {
 
     // MARK: - Properties
 
+    /// 訂單詳情目前可用的水平尺寸分類
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderDetailFeature>
 
@@ -21,6 +24,9 @@ struct OrderDetailView: View {
     /// 呈現選取訂單的資料、成本拆解與操作入口
     var body: some View {
         content
+            .background {
+                toolbarCarrier
+            }
     }
 }
 
@@ -28,7 +34,7 @@ struct OrderDetailView: View {
 
 private extension OrderDetailView {
 
-    /// 有訂單時顯示詳情內容、客戶名稱標題與操作工具列
+    /// 有訂單時顯示詳情內容與客戶名稱標題
     @ViewBuilder
     var content: some View {
         if let order = store.order {
@@ -44,10 +50,18 @@ private extension OrderDetailView {
             )
             .navigationTitle(Text(verbatim: order.customer.name))
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                OrderDetailToolbarContent(store: store)
-            }
         }
+    }
+
+    /// 水平尺寸分類改變時重建工具列貢獻者，繞過 SwiftUI 缺陷 FB15300614 並保留詳情內容
+    var toolbarCarrier: some View {
+        Color.clear
+            .toolbar {
+                if store.order != nil {
+                    OrderDetailToolbarContent(store: store)
+                }
+            }
+            .id(horizontalSizeClass)
     }
 }
 

@@ -47,6 +47,7 @@ struct LookupItemList: View {
 
             itemSection
         }
+        .blReadableScrollContent(.text)
     }
 }
 
@@ -89,11 +90,13 @@ private extension LookupItemList {
                             )
                         }
                         .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
+                            // 不用 destructive 角色，系統會先移除列，確認後再刪除會因列數不符而閃退
+                            Button {
                                 onDelete(item)
                             } label: {
                                 Label("common.action.button.delete", systemImage: "trash")
                             }
+                            .tint(.blRed)
                             .accessibilityIdentifier(
                                 BLAccessibilityID.LookupManagement.deleteButton(item)
                             )
@@ -107,6 +110,7 @@ private extension LookupItemList {
             Text(
                 AppLanguage.format("orders.lookup.label.itemsCreated", items.count, locale: locale)
             )
+            .accessibilityIdentifier(BLAccessibilityID.LookupManagement.itemCountHeader)
         } footer: {
             if kind == .paymentMethod {
                 Text("orders.lookup.message.paymentMethodGuide")

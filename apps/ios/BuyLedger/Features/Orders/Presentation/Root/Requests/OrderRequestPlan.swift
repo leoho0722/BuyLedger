@@ -26,11 +26,6 @@ enum OrderRequestPlan {
     /// - Parameter destination: 容器要呈現的目的地
     case present(OrdersPresentationFeature.Destination.State)
 
-    /// 推入訂單詳情
-    ///
-    /// - Parameter id: 訂單識別值
-    case showDetail(LedgerOrder.ID)
-
     /// 轉送寫入請求
     ///
     /// - Parameter action: 寫入子層的請求
@@ -73,12 +68,6 @@ extension OrderRequestPlan {
                 return .none
             }
             return .present(.deleteConfirmation(for: order))
-
-        case .showDetail(let id):
-            guard orders.contains(where: { $0.id == id }) else {
-                return .none
-            }
-            return .showDetail(id)
 
         case .batchStatusChange(let changed):
             return .write(.batchStatusChangeRequested(changed))

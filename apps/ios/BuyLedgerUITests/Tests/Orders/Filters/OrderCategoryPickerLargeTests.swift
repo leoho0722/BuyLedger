@@ -34,6 +34,8 @@ final class OrderCategoryPickerLargeTests: BLUITestCase {
     func testCategoryPickerLargeApply_捲到末格並選開團中類別_觸發鈕顯示兩項() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilterLarge))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
         let picker = OrderCategoryPickerScreen(app: app)

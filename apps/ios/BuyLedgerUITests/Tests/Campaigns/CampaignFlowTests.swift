@@ -13,15 +13,6 @@ final class CampaignFlowTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// 四月韓國團的唯一識別碼，該團在 `campaignsWithOrders` 種子中應收 $16,780、已收 $11,800
-    private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
-
-    /// 四月韓國團內已收款客戶的名稱
-    private static let paidCustomerNames = ["林書宇", "Joyce 黃"]
-
-    /// 四月韓國團內未收款客戶的名稱
-    private static let unpaidCustomerName = "Mika 周"
-
     /// 未收款客戶在四月韓國團的訂單唯一識別碼
     private static let unpaidOrderID = "BL-2604-017"
 
@@ -100,7 +91,11 @@ final class CampaignFlowTests: BLUITestCase {
         let alertTexts = app.alerts.firstMatch.staticTexts.allElementsBoundByIndex.map(\.label)
         XCTAssertTrue(alertTexts.contains("操作失敗"))
         XCTAssertTrue(alertTexts.contains { $0.contains("開團儲存失敗") })
+
+        // When
         app.tapAlertButton(label: "知道了")
+
+        // Then
         try requireCondition(app.alertDismissed(), in: app, "操作失敗提示未關閉")
         let emptyState = app.descendants(matching: .any)[BLAccessibilityID.Campaigns.listEmptyState]
         XCTAssertTrue(emptyState.waitForExistence(timeout: 10), "失敗後未返回空開團列表")
@@ -108,6 +103,37 @@ final class CampaignFlowTests: BLUITestCase {
             .matching(NSPredicate(format: "label CONTAINS %@", campaignName))
             .firstMatch
         XCTAssertFalse(failedCampaignRow.exists, "儲存失敗的「\(campaignName)」不應留在列表")
+    }
+
+    /// 驗證刪除寫入失敗提示關閉後，再次要求刪除仍會顯示確認框
+    ///
+    /// - Throws: 開團詳情、刪除確認或失敗提示未就緒時丟出測試錯誤
+    func testConfirmDelete_失敗提示關閉後再次刪除_確認框仍可開啟() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders, shouldFailCampaignWrites: true))
+        let detail = try openCampaignDetail(app)
+        detail.openMoreMenu()
+        try requireCondition(detail.tapDelete(), in: app, "詳情更多選單沒有刪除項目")
+        try requireCondition(detail.isDeleteConfirmationPresented(), in: app, "刪除確認提示未呈現")
+
+        // When
+        detail.confirmDelete()
+
+        // Then
+        try requireCondition(app.alertPresented(timeout: 10), in: app, "刪除失敗後沒有出現操作失敗提示")
+        let alertTexts = app.alerts.firstMatch.staticTexts.allElementsBoundByIndex.map(\.label)
+        XCTAssertTrue(alertTexts.contains("操作失敗"))
+
+        // When
+        app.tapAlertButton(label: "知道了")
+        try requireCondition(app.alertDismissed(), in: app, "操作失敗提示未關閉")
+        detail.openMoreMenu()
+        try requireCondition(detail.tapDelete(), in: app, "失敗提示關閉後無法再次選擇刪除開團")
+
+        // Then
+        try requireCondition(detail.isDeleteConfirmationPresented(), in: app, "失敗提示關閉後再次刪除沒有出現確認框")
+        detail.cancelDelete()
+        try requireCondition(app.alertDismissed(), in: app, "取消刪除後確認框未關閉")
     }
 
     /// 驗證在詳情確認刪除後，畫面返回開團列表，四月韓國團的列隨之移除且詳情不再顯示
@@ -128,7 +154,9 @@ final class CampaignFlowTests: BLUITestCase {
         // Then
         try requireCondition(campaigns.waitUntilReady(), in: app, "刪除後未返回開團列表")
         XCTAssertTrue(
-            campaigns.campaignRow(campaignID: Self.koreaCampaignID).waitForDisappearance()
+            campaigns
+                .campaignRow(campaignID: CampaignSeedFixture.koreaCampaignID)
+                .waitForDisappearance()
         )
         XCTAssertFalse(detail.isDisplayed)
     }
@@ -189,8 +217,10 @@ final class CampaignFlowTests: BLUITestCase {
 
         // Then
         XCTAssertTrue(detail.waitForUnpaidOnlyEnabled(), "未收款開關值未變成開啟")
-        XCTAssertTrue(detail.hasDistributionRow(customerName: Self.unpaidCustomerName))
-        for customerName in Self.paidCustomerNames {
+        XCTAssertTrue(
+            detail.hasDistributionRow(customerName: CampaignSeedFixture.unpaidCustomerName)
+        )
+        for customerName in CampaignSeedFixture.paidCustomerNames {
             XCTAssertTrue(
                 detail.distributionRow(customerName: customerName).waitForDisappearance(),
                 "篩選後已收款客戶「\(customerName)」的分貨列仍存在"
@@ -201,11 +231,12 @@ final class CampaignFlowTests: BLUITestCase {
     /// 驗證只看未收款的篩選在返回列表後仍保留，再進入詳情時開關仍開啟且已收款客戶列仍隱藏
     ///
     /// - Throws: 詳情、分貨列、篩選結果或返回後的畫面未就緒時丟出測試錯誤
-    /// - Note: 情境流程：返回開團列表再進入同一開團詳情，確認篩選狀態跨導覽保留
+    /// - Note: 並排版面沒有原生返回鍵，本案例只在收合版面執行
     func testTapCampaign_返回後再進入_保留未收款篩選() throws {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let detail = try openCampaignDetail(app)
+        try XCTSkipUnless(isCampaignCompactLayout(app), "返回後再進入的案例只適用收合版面")
         let campaigns = CampaignsScreen(app: app)
         try requireDistributionRowsBeforeFilter(detail, in: app)
         detail.toggleUnpaidOnly()
@@ -215,45 +246,111 @@ final class CampaignFlowTests: BLUITestCase {
         try requireCondition(campaigns.waitUntilReady(), in: app, "返回後開團列表未就緒")
 
         // When
-        campaigns.tapCampaign(campaignID: Self.koreaCampaignID)
+        campaigns.tapCampaign(campaignID: CampaignSeedFixture.koreaCampaignID)
 
         // Then
         try requireCondition(detail.waitUntilReady(), in: app, "再次進入開團詳情未就緒")
         XCTAssertTrue(detail.isUnpaidOnlyEnabled())
         XCTAssertTrue(
-            detail.hasDistributionRow(customerName: Self.unpaidCustomerName),
+            detail.hasDistributionRow(customerName: CampaignSeedFixture.unpaidCustomerName),
             "再次進入詳情後未收款客戶列消失"
         )
-        for customerName in Self.paidCustomerNames {
+        for customerName in CampaignSeedFixture.paidCustomerNames {
             XCTAssertTrue(detail.distributionRow(customerName: customerName).waitForDisappearance())
         }
+    }
+
+    /// 驗證收合版面選取開團進入詳情後，原生返回清空選取，展開為並排版面時詳情欄顯示未選取提示
+    ///
+    /// - Throws: 開團分頁、列表或詳情未就緒時丟出測試錯誤；版面無法依案例前提建立時略過
+    /// - Note: 對應驗收矩陣 N3
+    /// - Note: 原生返回鍵只存在於收合版面，並排版面不適用返回案例
+    func testBackTapped_收合版面返回後清空選取_展開顯示空詳情提示() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+        defer {
+            try? rotateToPortrait(app) // 失敗可忽略，因為下一個測試的 launch 會再次轉為直向
+        }
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToCampaigns(), in: app, "開團分頁未就緒")
+        let campaigns = CampaignsScreen(app: app)
+        try requireCondition(campaigns.waitUntilReady(), in: app, "開團列表未就緒")
+        // 原生返回鍵只存在於收合版面，並排時先以直向建立收合版面
+        if !isCampaignCompactLayout(app) {
+            try rotateToPortrait(app)
+        }
+        try XCTSkipUnless(isCampaignCompactLayout(app), "原生返回鍵只存在於收合版面，此裝置無法建立收合版面")
+        try requireCondition(campaigns.selectedCampaignID() != nil, in: app, "初次載入沒有選取標記")
+        // 初次載入未選取任何開團，標記存在且值為空
+        try requireCondition(campaigns.selectedCampaignID() == "", in: app, "初次載入不應已選取開團")
+
+        // When
+        campaigns.tapCampaign(campaignID: CampaignSeedFixture.koreaCampaignID)
+
+        // Then
+        let detail = CampaignDetailScreen(app: app)
+        try requireCondition(detail.waitUntilReady(), in: app, "四月韓國團詳情未就緒")
+        try requireCondition(
+            campaigns.selectedCampaignID() == "CMP-SAMPLE-KR-APR",
+            in: app,
+            "收合版面的選取標記未指向四月韓國團"
+        )
+
+        // When
+        detail.tapBack()
+
+        // Then
+        try requireCondition(campaigns.waitUntilReady(), in: app, "返回後開團列表未就緒")
+        XCTAssertEqual(campaigns.selectedCampaignID(), "", "原生返回後選取標記應清空")
+
+        // When
+        try rotateToLandscape(app)
+        try XCTSkipUnless(isCampaignRegularLayout(app), "此裝置無法展開為並排版面，略過展開後的未選取提示驗證")
+
+        // Then
+        XCTAssertTrue(campaigns.isDetailEmptyStateShown, "展開後詳情欄未顯示未選取提示")
+        XCTAssertEqual(campaigns.selectedCampaignID(), "", "展開後選取標記應維持為空")
+    }
+
+    /// 驗證新增開團表單輸入草稿後旋轉裝置，名稱欄的文字與鍵盤焦點保留，轉回直向後可續打並讀回完整文字
+    ///
+    /// - Throws: 開團表單或旋轉後的版面未就緒時丟出測試錯誤
+    /// - Note: 對應驗收矩陣 N6
+    func testRotated_輸入草稿後_名稱與焦點保留且可續打() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToCampaigns(), in: app, "開團分頁未就緒")
+        let campaigns = CampaignsScreen(app: app)
+        try requireCondition(campaigns.waitUntilReady(), in: app, "開團列表未就緒")
+        campaigns.tapAdd()
+        let edit = CampaignEditScreen(app: app)
+        try requireCondition(edit.waitUntilReady(), in: app, "開團新增表單未就緒")
+        let draftName = "測試旋轉草稿團"
+        edit.typeName(draftName)
+
+        // When
+        try rotateToLandscape(app)
+
+        // Then
+        try requireCondition(edit.waitUntilReady(), in: app, "橫向後編輯表單未就緒")
+        XCTAssertEqual(edit.nameFieldValue(), "測試旋轉草稿團", "橫向後名稱欄文字不符")
+        XCTAssertTrue(edit.isNameFieldFocused(), "橫向後名稱欄失去鍵盤焦點")
+
+        // When
+        try rotateToPortrait(app)
+        try requireCondition(edit.waitUntilReady(), in: app, "轉回直向後編輯表單未就緒")
+        edit.appendName("續")
+
+        // Then
+        XCTAssertEqual(edit.nameFieldValue(), "測試旋轉草稿團續", "續打後未讀回完整名稱")
+        XCTAssertTrue(edit.isSaveEnabled())
     }
 }
 
 // MARK: - Private Method
 
 private extension CampaignFlowTests {
-
-    /// 從開團分頁開啟四月韓國團，確認資料列與詳情已就緒
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 已就緒的四月韓國團詳情
-    /// - Throws: 分頁、開團列或詳情未就緒時丟出測試錯誤
-    func openCampaignDetail(_ app: XCUIApplication) throws -> CampaignDetailScreen {
-        let root = RootNavigationScreen(app: app)
-        try requireCondition(root.goToCampaigns(), in: app, "開團分頁未就緒")
-        let campaigns = CampaignsScreen(app: app)
-        try requireCondition(campaigns.waitUntilReady(), in: app, "開團列表未就緒")
-        try requireCondition(
-            campaigns.hasCampaign(campaignID: Self.koreaCampaignID),
-            in: app,
-            "四月韓國團資料列不存在"
-        )
-        campaigns.tapCampaign(campaignID: Self.koreaCampaignID)
-        let detail = CampaignDetailScreen(app: app)
-        try requireCondition(detail.waitUntilReady(), in: app, "四月韓國團詳情未就緒")
-        return detail
-    }
 
     /// 捲到未收款客戶的分貨列並展開，確認其訂單的收款鍵已出現
     ///
@@ -263,41 +360,17 @@ private extension CampaignFlowTests {
     /// - Throws: 分貨列未捲入畫面或展開後沒有收款鍵時丟出測試錯誤
     func expandUnpaidOrderRow(_ detail: CampaignDetailScreen, in app: XCUIApplication) throws {
         try requireCondition(
-            detail.hasDistributionRow(customerName: Self.unpaidCustomerName),
+            detail.hasDistributionRow(customerName: CampaignSeedFixture.unpaidCustomerName),
             in: app,
             "未收款客戶的分貨列未捲入畫面"
         )
         try requireCondition(
             detail.expandDistributionRow(
-                customerName: Self.unpaidCustomerName,
+                customerName: CampaignSeedFixture.unpaidCustomerName,
                 orderID: Self.unpaidOrderID
             ),
             in: app,
             "展開客戶分貨列後未出現收款鍵"
-        )
-    }
-
-    /// 確認篩選前已收款與未收款客戶的分貨列都存在，讓之後的消失斷言有正向對照
-    ///
-    /// - Parameters:
-    ///   - detail: 已就緒的四月韓國團詳情
-    ///   - app: 受測 App
-    /// - Throws: 任一客戶的分貨列不存在時丟出測試錯誤
-    func requireDistributionRowsBeforeFilter(
-        _ detail: CampaignDetailScreen,
-        in app: XCUIApplication
-    ) throws {
-        for customerName in Self.paidCustomerNames {
-            try requireCondition(
-                detail.hasDistributionRow(customerName: customerName),
-                in: app,
-                "篩選前已收款客戶「\(customerName)」的分貨列不存在"
-            )
-        }
-        try requireCondition(
-            detail.hasDistributionRow(customerName: Self.unpaidCustomerName),
-            in: app,
-            "篩選前未收款客戶列不存在"
         )
     }
 }

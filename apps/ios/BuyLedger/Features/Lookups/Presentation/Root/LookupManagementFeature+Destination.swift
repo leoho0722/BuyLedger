@@ -22,6 +22,8 @@ extension LookupManagementFeature {
         case add(LookupAddFormFeature)
 
         /// 主檔管理畫面的 alert
+        ///
+        /// - Parameter alert: 要呈現的 alert 內容
         @ReducerCaseIgnored case alert(AlertState<Alert>)
 
         /// 編輯付款方式表單
@@ -106,10 +108,7 @@ extension LookupManagementFeature.Destination.State {
             AlertState<LookupManagementFeature.Destination.Alert> {
                 TextState("orders.detail.label.deleteItem")
             } actions: {
-                ButtonState(
-                    role: .destructive,
-                    action: .confirmDelete(name: name)
-                ) {
+                ButtonState(role: .destructive, action: .confirmDelete(name: name)) {
                     TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
@@ -151,35 +150,40 @@ extension LookupManagementFeature.Destination.State {
             }
         )
     }
+}
 
-    /// 建立主檔寫入失敗的一次性 alert
+// MARK: - Internal Method
+
+extension AlertState where Action == LookupManagementFeature.Destination.Alert {
+
+    /// 建立主檔寫入失敗的一次性通知
     ///
     /// - Parameter failure: 失敗的主檔操作
-    /// - Returns: 包含主檔寫入失敗 alert 的 Destination state
-    static func writeFailure(_ failure: LookupManagementFeature.Destination.WriteFailure) -> Self {
-        .alert(
-            AlertState<LookupManagementFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                switch failure {
-                case .add:
-                    TextState("orders.lookup.message.itemAddedTry")
-
-                case .delete:
-                    TextState("orders.lookup.message.itemDeletedTry")
-
-                case .rename:
-                    TextState("orders.lookup.message.itemRenamedTry")
-
-                case .paymentMethodEdit:
-                    TextState("orders.lookup.message.paymentMethodEdit")
-                }
+    /// - Returns: 主檔寫入失敗通知
+    static func lookupWriteFailure(
+        _ failure: LookupManagementFeature.Destination.WriteFailure
+    ) -> Self {
+        AlertState<LookupManagementFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            switch failure {
+            case .add:
+                TextState("orders.lookup.message.itemAddedTry")
+
+            case .delete:
+                TextState("orders.lookup.message.itemDeletedTry")
+
+            case .rename:
+                TextState("orders.lookup.message.itemRenamedTry")
+
+            case .paymentMethodEdit:
+                TextState("orders.lookup.message.paymentMethodEdit")
+            }
+        }
     }
 }
 

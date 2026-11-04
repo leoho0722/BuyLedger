@@ -186,21 +186,19 @@ extension CampaignFeatureTestSupport {
 extension CampaignFeatureTestSupport {
 
     /// 使用者拒絕行事曆權限時可前往系統設定的提示
-    static var accessDeniedAlert: CampaignPresentationFeature.Destination.State {
-        .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("campaigns.general.label.calendarAccessRequired")
-            } actions: {
-                ButtonState(action: .openSettings) {
-                    TextState("orders.general.label.openSettings")
-                }
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.allowCalendarAccess")
+    static var accessDeniedAlert: AlertState<CampaignPresentationFeature.Destination.Alert> {
+        AlertState {
+            TextState("campaigns.general.label.calendarAccessRequired")
+        } actions: {
+            ButtonState(action: .openSettings) {
+                TextState("orders.general.label.openSettings")
             }
-        )
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
+            }
+        } message: {
+            TextState("campaigns.general.message.allowCalendarAccess")
+        }
     }
 
     /// 表單有未儲存變更時，按下取消會呈現的捨棄確認
@@ -320,37 +318,35 @@ extension CampaignFeatureTestSupport {
         )
     }
 
-    /// 建立標題為「操作失敗」的寫入失敗提示
+    /// 建立標題為「操作失敗」的寫入失敗通知
     ///
     /// - Parameter message: 要顯示的錯誤訊息
-    /// - Returns: 錯誤提示狀態
+    /// - Returns: 錯誤提示 alert
     static func failureAlert(
         _ message: LocalizedStringKey
-    ) -> CampaignPresentationFeature.Destination.State {
+    ) -> AlertState<CampaignPresentationFeature.Destination.Alert> {
         titledAlert("orders.list.label.operationFailed", message: message)
     }
 
-    /// 建立只有「知道了」按鈕、標題自訂的提示
+    /// 建立只有「知道了」按鈕、標題自訂的提示 alert
     ///
     /// - Parameters:
     ///   - title: 提示標題
     ///   - message: 提示訊息
-    /// - Returns: 提示狀態
+    /// - Returns: 提示 alert 狀態
     static func titledAlert(
         _ title: LocalizedStringKey,
         message: LocalizedStringKey
-    ) -> CampaignPresentationFeature.Destination.State {
-        .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState(title)
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState(message)
+    ) -> AlertState<CampaignPresentationFeature.Destination.Alert> {
+        AlertState {
+            TextState(title)
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState(message)
+        }
     }
 
     /// 建立含初始開團的 V17 唯讀資料庫

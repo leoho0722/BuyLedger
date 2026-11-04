@@ -41,7 +41,9 @@ struct OrderSaveGuardTests {
         #expect(store.state.presentation.destination?.edit?.focusedField == .customerName)
     }
 
-    /// 驗證必填完整時存檔，只經 `orderService.createOrder` 寫入一次，編號在送出存檔請求通知之後才產生，寫入後關閉表單並選取新訂單
+    /// 驗證必填完整時存檔，只經 `orderService.createOrder` 寫入一次
+    ///
+    /// - Note: 編號在存檔請求通知後產生，表單關閉且不自動開啟詳情
     @Test
     func presentation_必填完整時存檔_寫入一次並關閉表單() async {
         // Given
@@ -106,27 +108,13 @@ struct OrderSaveGuardTests {
             $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveResponse)
-        await store.receive(\.writes.delegate.saved) {
-            $0.list.selectedOrderID = "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        }
-        await store.receive(
-            \.list.delegate.selectionChanged,
-            "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        ) {
-            $0.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "BL-DRAFT-00000000-0000-0000-0000-000000000000",
-                orders: SharedReader(initial.$orders)
-            )
-        }
+        await store.receive(\.writes.delegate.saved)
         await store.finish()
         #expect(writeCount.value == 1)
         #expect(writtenOrders.value == [expectedOrder])
         #expect(idGeneratedAfterSaveRequest.value == [true])
         #expect(store.state.presentation.destination?.edit == nil)
-        #expect(
-            store.state.detail.regularDetail?.order?.id
-                == "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        )
+        #expect(store.state.detail.path.isEmpty)
     }
 
     /// 驗證任一必填欄位缺漏 (含只有空白字元) 時按下存檔，`OrderEditFeature` 的狀態不變、不送存檔請求通知，也不呼叫 `dismiss`

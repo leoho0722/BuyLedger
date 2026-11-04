@@ -14,12 +14,12 @@ enum OrderListInteraction {
 
 extension OrderListInteraction {
 
-    /// 更新清單篩選或選取，回傳容器需要處理的事件
+    /// 更新清單篩選或回傳容器需要處理的請求
     ///
     /// - Parameters:
     ///   - action: 使用者的清單互動
     ///   - state: 清單狀態
-    /// - Returns: 操作請求或選取變更；純清單變更回傳 `nil`
+    /// - Returns: 操作請求；純清單變更回傳 `nil`
     static func apply(
         _ action: OrderListFeature.Action.View,
         state: inout OrderListFeature.State
@@ -30,29 +30,23 @@ extension OrderListInteraction {
 
         case .statusFilterSelected(let filter):
             OrdersFilterOperations.statusFilterSelected(filter, state: &state)
-            return .selectionChanged(state.selectedOrderID)
+            return nil
 
         case .datePeriodSelected(let period):
             OrdersFilterOperations.datePeriodSelected(period, state: &state)
-            return .selectionChanged(state.selectedOrderID)
+            return nil
 
         case .paymentMethodFilterSelected(let paymentMethod):
             OrdersFilterOperations.paymentMethodFilterSelected(paymentMethod, state: &state)
-            return .selectionChanged(state.selectedOrderID)
+            return nil
 
         case .clearFiltersTapped:
-            guard OrdersFilterOperations.clearFilters(state: &state) else {
-                return nil
-            }
-            return .selectionChanged(state.selectedOrderID)
+            OrdersFilterOperations.clearFilters(state: &state)
+            return nil
 
         case .searchTextChanged(let searchText):
             OrdersFilterOperations.searchTextChanged(searchText, state: &state)
-            return .selectionChanged(state.selectedOrderID)
-
-        case .orderSelected(let id):
-            OrdersFilterOperations.orderSelected(id, state: &state)
-            return .selectionChanged(id)
+            return nil
 
         case .editOrderTapped(let id):
             return .requested(.edit(id))
@@ -91,9 +85,6 @@ extension OrderListInteraction {
 
         case .aiSummaryTapped:
             return .requested(.aiSummary)
-
-        case .orderTapped(let id):
-            return .requested(.showDetail(id))
         }
     }
 }

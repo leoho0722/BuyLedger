@@ -95,15 +95,19 @@ paths:
 
 ## Snapshot 測試
 
+- **`ViewLayoutMeasurementSupport` 渲染 host 以 `additionalSafeAreaInsets` 注入安全區時，`List`／`Form` 會自行避開，與真實裝置及分欄欄位語意相反**：不以 rendered 測試驗證 `List`／`Form` 安全區置中；單元測試只驗純邊距計算，實際列位置以 live UI 幾何量測。
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotOrdersTests.swift` 對應 `SnapshotOrdersTests/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
     - 新增 `Snapshot<X>Tests` 時在 `.github/workflows/ci.yml` 補一條 `-skip-testing:BuyLedgerTests/Snapshot<X>Tests`：CI 逐一列名略過快照，漏加的類別會在 CI 執行。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
-    - 訂單三欄只拍清單欄 320×768，包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。
+    - 輔助字級的元件快照以頁面實際內容寬度渲染 (393 扣左右頁面邊距為 361)：元件以整個 393 寬渲染會比實機寬，抓不到金額斷字 (參考 `SnapshotOrderDetailTests` 的 361 寬案例)；長頁快照的高度要確認待驗的列真的入鏡。
+    - 離屏 snapshot 在 956×440 這類矮尺寸不會套上 `blReadableScrollContent` 的邊距 (同畫面 956×768 會套；等待後再拍也不變)，實機與 rendered 量測測試會套：閱讀寬度以 `BLReadableScrollContentLayoutTests` 與 UI 量測驗，不以矮尺寸 snapshot 判斷。
+    - 完整 `OrdersView` 在 393 寬會收合 `NavigationSplitView`，`.image`、`drawHierarchyInKeyWindow` 與 `.wait` 都錄成整張白圖：收合版拍 `OrdersCompactView` 包 `NavigationStack`；錄製後要目視內容，檔案大小看不出是否空白。
+    - 訂單寬版清單欄拍 `OrdersRegularListContent` 320×768，包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。大尺寸 iPhone 橫向 (956×440) 例外，拍完整 `OrdersView`，守分欄與精簡篩選。
         - 詳情欄不拍：內容與 iPhone 推入詳情是同一份程式碼 (`OrderDetailView`)，由 iPhone 詳情截圖守；多拍一張只會讓每次調整詳情內容多重錄一張。
     - 以 sheet 內容 View 為拍攝對象時 (如 `OrderFilterSheet`、`OrderCategoryPickerSheet`) 用 `.image(drawHierarchyInKeyWindow: true)`：離屏渲染的 `.image` 會錄成整張白圖；錄製後逐張目視確認不是空白 (參考 `SnapshotOrderFilterEmptyStatesTests`)。
-    - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
+    - 依尺寸分類分流的畫面 (`OrdersView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
 - **編輯表單 (訂單、開團) 逐區段拍攝，含系統 `DatePicker` 的區段不拍**：compact `DatePicker` 的日期膠囊會隨真實時間在數字、年月日與折成兩行之間切換，注入時間控制不到，整張表單的基準圖只在部分時段成立。
     - 區段以 `SnapshotSectionView` 放進分組 `Form` 單獨渲染 (它持有 `@FocusState`，供需要焦點綁定的區段建立)，以 `.image(drawHierarchyInKeyWindow: true)` 拍攝：離屏渲染畫不出系統分段控制的選取狀態。

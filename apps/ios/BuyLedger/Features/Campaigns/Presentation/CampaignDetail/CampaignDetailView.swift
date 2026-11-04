@@ -38,12 +38,7 @@ struct CampaignDetailView: View {
 
 private extension CampaignDetailView {
 
-    /// 開團已不存在時的空狀態
-    var missingCampaign: some View {
-        ContentUnavailableView("campaigns.detail.label.campaignFound", systemImage: "shippingbox")
-    }
-
-    /// 開團詳情清單，依序組合資訊、結算與分貨三區段
+    /// 組合開團詳情清單，依序排列資訊、結算與分貨三區段
     ///
     /// - Parameter content: 由詳情 Feature 組好的開團、彙總、可見分貨列與提醒連結
     /// - Returns: 詳情清單與工具列
@@ -68,13 +63,14 @@ private extension CampaignDetailView {
                 rows: content.distribution
             )
         }
+        .blReadableScrollContent(.text)
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailRoot)
         .toolbar {
             actionsToolbar(for: content)
         }
     }
 
-    /// 工具列的更多選單：編輯、改狀態、結團與刪除
+    /// 建立工具列的更多選單，包含編輯、改狀態、結團與刪除
     ///
     /// - Parameter content: 目前的詳情內容
     /// - Returns: 工具列內容
@@ -89,7 +85,10 @@ private extension CampaignDetailView {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
 
-                Picker("orders.list.label.status", selection: statusBinding(for: content.campaign)) {
+                Picker(
+                    "orders.list.label.status",
+                    selection: statusBinding(for: content.campaign)
+                ) {
                     ForEach(CampaignStatus.allCases) {
                         Text(LocalizedStringKey($0.title))
                             .tag($0)
@@ -123,13 +122,18 @@ private extension CampaignDetailView {
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailMoreButton)
         }
     }
+
+    /// 開團已不存在時的空狀態
+    var missingCampaign: some View {
+        ContentUnavailableView("campaigns.detail.label.campaignFound", systemImage: "shippingbox")
+    }
 }
 
 // MARK: - Private Method
 
 private extension CampaignDetailView {
 
-    /// 狀態選擇器的 binding，選取後送出 `statusChanged`
+    /// 建立狀態選擇器的 binding，選取後送出 `statusChanged`
     ///
     /// - Parameter campaign: 目前的開團
     /// - Returns: 對應的狀態 binding

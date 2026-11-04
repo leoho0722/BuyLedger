@@ -19,11 +19,25 @@ struct OrdersRegularListColumn: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
+    /// 分隔線的高度，列內距保留此高度給卡片內分隔線
+    @Environment(\.pixelLength) private var pixelLength
+
+    /// 清單欄可用的垂直尺寸分類
+    ///
+    /// - Note: 高度不足 (compact) 時收合日期、付款方式、類別與清除篩選，改由統一篩選鈕呈現
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderListFeature>
 
     /// 已套用篩選的訂單，由父層單次求值後傳入
     let orders: [LedgerOrder]
+
+    /// 由 Orders 詳情 `path` 投影出的目前選取訂單
+    let selectedOrderID: LedgerOrder.ID?
+
+    /// 原生清單選取的讀寫轉接，由 Orders 容器依 `path` 建立
+    let selection: Binding<LedgerOrder.ID?>?
 
     // MARK: - Body
 
@@ -34,18 +48,29 @@ struct OrdersRegularListColumn: View {
                 listHeader
             }
 
-            ScrollView {
-                VStack(spacing: 0) {
-                    if dynamicTypeSize.isAccessibilitySize {
-                        listHeader
-                    }
-
-                    listContent
+            List(selection: selection) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    listHeader
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                 }
+
+                listContent
             }
+            .environment(\.defaultMinListRowHeight, 0)
+            .contentMargins(
+                .bottom,
+                BLSpacing.medium - BLCardRowMetrics.edgeRoom,
+                for: .scrollContent
+            )
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
             .background(.blBackground)
             .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
+            .scrollDismissesKeyboard(.interactively)
         }
+        .background(.blBackground)
     }
 }
 
@@ -53,16 +78,51 @@ struct OrdersRegularListColumn: View {
 
 private extension OrdersRegularListColumn {
 
-    /// 可橫向捲動的訂單狀態篩選列
-    var statusChipStrip: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: BLSpacing.small) {
-                ForEach(OrderStatusFilter.orderBrowsingCases) {
-                    statusChip($0)
-                }
+    /// 清單上方的多選筆數、篩選、清除入口與持續性載入失敗訊息
+    var listHeader: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.medium) {
+            if store.isSelecting {
+                selectionSummary
             }
+
+            OrdersFilterControlsView(
+                store: store,
+                isUnifiedFilterTriggerShown: verticalSizeClass == .compact,
+                statusChipHorizontalInset: 0,
+                statusChipSize: .standard,
+                unifiedFilterHorizontalInset: 0
+            )
+
+            if verticalSizeClass != .compact {
+                let paymentMethodNames = store.availablePaymentMethodNames
+                dateChipStrip
+
+                if !paymentMethodNames.isEmpty {
+                    paymentMethodFilterTrigger(names: paymentMethodNames)
+                }
+
+                if store.hasAvailableCategories {
+                    categoryFilterTrigger
+                }
+
+                clearFiltersButton
+            }
+
+            loadFailureMessage
         }
-        .scrollIndicators(.hidden)
+        .padding(.top, BLSpacing.small)
+        .padding(.horizontal, verticalSizeClass == .compact ? BLSpacing.large : BLSpacing.medium)
+        .padding(.bottom, BLSpacing.medium - BLCardRowMetrics.edgeRoom)
+    }
+
+    /// 多選模式的已選筆數，與 iPhone 多選標題同一份文字
+    ///
+    /// - Note: 直向清單欄放不下 inline 標題與多選工具列，筆數改顯示在這裡
+    var selectionSummary: some View {
+        Text(verbatim: AppLanguage(locale: locale).localized(store.navigationTitleKey))
+            .blTextStyle(.headline)
+            .foregroundStyle(.blLabel)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.selectionSummary)
     }
 
     /// 可橫向捲動的日期區間篩選列
@@ -75,6 +135,22 @@ private extension OrdersRegularListColumn {
             }
         }
         .scrollIndicators(.hidden)
+    }
+
+    /// 顯示並切換單一日期區間篩選
+    ///
+    /// - Parameter period: 要呈現的日期區間
+    /// - Returns: 日期區間篩選按鈕
+    func dateChip(_ period: OrderDatePeriod) -> some View {
+        BLFilterChip(
+            icon: "calendar",
+            isSelected: store.selectedDatePeriod == period,
+            style: .accent,
+            title: LocalizedStringKey(period.title)
+        ) {
+            store.send(.view(.datePeriodSelected(period)))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.dateChip(period.id))
     }
 
     /// 顯示付款方式單選選單，選取後立即套用，前置勾號由系統選擇器提供
@@ -148,7 +224,7 @@ private extension OrdersRegularListColumn {
         .accessibilityIdentifier(BLAccessibilityID.Orders.categoryFilterButton)
     }
 
-    /// 立即清除三項篩選，原本皆為預設時由系統停用
+    /// 立即清除三項篩選的按鈕，原本皆為預設時由系統停用
     var clearFiltersButton: some View {
         Button {
             store.send(.view(.clearFiltersTapped))
@@ -160,72 +236,18 @@ private extension OrdersRegularListColumn {
                 .blTextStyle(.subhead)
                 .contentShape(Rectangle())
         }
+        .buttonStyle(.borderless)
         .disabled(!store.committedFilterSelection.isActive)
         .accessibilityIdentifier(BLAccessibilityID.Orders.clearFiltersButton)
     }
 
-    /// 多選模式的已選筆數，與 iPhone 多選標題同一份文字
-    ///
-    /// - Note: 直向清單欄放不下 inline 標題與多選工具列，筆數改顯示在這裡
-    var selectionSummary: some View {
-        Text(verbatim: AppLanguage(locale: locale).localized(store.navigationTitleKey))
-            .blTextStyle(.headline)
-            .foregroundStyle(.blLabel)
-            .accessibilityIdentifier(BLAccessibilityID.Orders.selectionSummary)
-    }
-
-    /// 清單上方的多選筆數、篩選、清除入口與持續性載入失敗訊息
-    var listHeader: some View {
-        let paymentMethodNames = store.availablePaymentMethodNames
-        return VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            if store.isSelecting {
-                selectionSummary
-            }
-
-            statusChipStrip
-
-            dateChipStrip
-
-            if !paymentMethodNames.isEmpty {
-                paymentMethodFilterTrigger(names: paymentMethodNames)
-            }
-
-            if store.hasAvailableCategories {
-                categoryFilterTrigger
-            }
-
-            clearFiltersButton
-
-            // 持續性載入失敗才走這裡
-            // 一次性操作失敗由容器的對話框呈現，兩者不共用欄位
-            if case .failed(let message) = store.loadState {
-                Text(LocalizedStringKey(message))
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(.blRed)
-            }
-        }
-        .padding(.top, BLSpacing.small)
-        .padding(.horizontal, BLSpacing.medium)
-        .padding(.bottom, BLSpacing.medium)
-    }
-
-    /// 卡片化的訂單列表，逐列呈現訂單並以分隔線隔開
-    var orderListCard: some View {
-        BLCard(padding: 0) {
-            VStack(spacing: 0) {
-                ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
-                    if store.isSelecting {
-                        OrderSelectableRow(store: store, order: order)
-                    } else {
-                        detailRow(order: order)
-                    }
-
-                    if index < orders.count - 1 {
-                        Divider()
-                            .padding(.leading, BLListMetrics.dividerInset)
-                    }
-                }
-            }
+    /// 載入失敗時持續顯示的訊息，一次性操作失敗由容器的對話框呈現
+    @ViewBuilder
+    var loadFailureMessage: some View {
+        if case .failed(let message) = store.loadState {
+            Text(LocalizedStringKey(message))
+                .blTextStyle(.footnote)
+                .foregroundStyle(.blRed)
         }
     }
 
@@ -236,62 +258,82 @@ private extension OrdersRegularListColumn {
             ProgressView("orders.list.label.loadOrders")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         } else if orders.isEmpty {
             ContentUnavailableView("orders.list.label.matchingOrders", systemImage: "tray")
                 .padding(.top, BLSpacing.extraLarge)
                 .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         } else {
-            orderListCard
-                .padding(.horizontal, BLSpacing.medium)
-                .padding(.bottom, BLSpacing.medium)
+            ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
+                let position = BLCardRowPosition(index: index, count: orders.count)
+
+                if store.isSelecting {
+                    selectableRow(order: order, position: position)
+                } else {
+                    navigableRow(order: order, position: position)
+                }
+            }
         }
     }
 
-    /// 顯示並切換單一訂單狀態篩選
+    /// 顯示多選模式的可勾選訂單列
     ///
-    /// - Parameter filter: 要呈現的狀態篩選
-    /// - Returns: 狀態篩選按鈕
-    func statusChip(_ filter: OrderStatusFilter) -> some View {
-        BLFilterChip(
-            isSelected: store.selectedStatus == filter,
-            title: LocalizedStringKey(filter.title)
-        ) {
-            store.send(.view(.statusFilterSelected(filter)))
-        }
-        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
+    /// - Parameters:
+    ///   - order: 要呈現的訂單
+    ///   - position: 訂單在卡片中的位置
+    /// - Returns: 帶卡片樣式的多選清單列
+    func selectableRow(order: LedgerOrder, position: BLCardRowPosition) -> some View {
+        OrderSelectableRow(store: store, order: order)
+            .listRowInsets(cardRowInsets(position: position))
+            .listRowSeparator(.hidden)
+            .listRowBackground(cardRowBackground(position: position))
     }
 
-    /// 顯示並切換單一日期區間篩選
+    /// 為清單中的訂單列提供共用卡片表面與分隔線
     ///
-    /// - Parameter period: 要呈現的日期區間
-    /// - Returns: 日期區間篩選按鈕
-    func dateChip(_ period: OrderDatePeriod) -> some View {
-        BLFilterChip(
-            icon: "calendar",
-            isSelected: store.selectedDatePeriod == period,
-            style: .accent,
-            title: LocalizedStringKey(period.title)
-        ) {
-            store.send(.view(.datePeriodSelected(period)))
-        }
-        .accessibilityIdentifier(BLAccessibilityID.Orders.dateChip(period.id))
+    /// - Parameter position: 訂單在卡片中的位置
+    /// - Returns: 與設計系統卡片一致的列背景，水平內距與列內距相同
+    func cardRowBackground(position: BLCardRowPosition) -> some View {
+        BLCardRowBackground(
+            dividerLeadingInset: BLListMetrics.dividerInset,
+            dividerTrailingInset: 0,
+            horizontalInset: BLSpacing.medium,
+            position: position
+        )
     }
 
-    /// 顯示一般模式的訂單列，點擊開啟詳情，長按顯示合併與刪除選單
+    /// 顯示一般訂單列，點擊更新原生選取，長按顯示合併與刪除選單
     ///
-    /// - Parameter order: 要呈現的訂單
-    /// - Returns: 可開啟詳情的訂單列
-    func detailRow(order: LedgerOrder) -> some View {
-        Button {
-            store.send(.view(.orderSelected(order.id)))
-        } label: {
+    /// - Parameters:
+    ///   - order: 要呈現的訂單
+    ///   - position: 訂單在卡片中的位置
+    /// - Returns: 連結至 split 詳情選取的訂單列
+    func navigableRow(order: LedgerOrder, position: BLCardRowPosition) -> some View {
+        let isSelected = selectedOrderID == order.id
+
+        return NavigationLink(value: order.id) {
             OrderRowView(order: order)
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)
+                // 選取時系統會把預設前景改為單色，固定色盤色避免白字疊在淺色底上
+                .foregroundStyle(.blLabel)
+                .background {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous)
+                            .fill(.blAccent.opacity(0.12))
+                    }
+                }
                 .contentShape(Rectangle())
-                .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
         }
         .buttonStyle(.plain)
+        .navigationLinkIndicatorVisibility(.hidden)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .contextMenu {
             OrderDetailRowMenu(
                 detail: OrderDetailFeature.State(orderID: order.id, orders: store.$orders)
@@ -301,6 +343,22 @@ private extension OrdersRegularListColumn {
                 store.send(.view(.deleteOrderTapped(order.id)))
             }
         }
+        .listRowInsets(cardRowInsets(position: position))
+        .listRowSeparator(.hidden)
+        .listRowBackground(cardRowBackground(position: position))
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrdersRegularListColumn {
+
+    /// 計算寬版清單的列內距，卡片水平內距為 `BLSpacing.medium`，與窄版的設計系統預設不同
+    ///
+    /// - Parameter position: 訂單在卡片中的位置
+    /// - Returns: 列內距
+    func cardRowInsets(position: BLCardRowPosition) -> EdgeInsets {
+        position.cardRowInsets(dividerHeight: pixelLength, horizontalInset: BLSpacing.medium)
     }
 }
 
@@ -317,6 +375,8 @@ private extension OrdersRegularListColumn {
         store: Store(initialState: previewState) {
             OrderListFeature()
         },
-        orders: LedgerOrder.sampleOrders
+        orders: LedgerOrder.sampleOrders,
+        selectedOrderID: nil,
+        selection: nil
     )
 }

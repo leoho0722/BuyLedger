@@ -16,36 +16,28 @@ enum OrderListDestinationOperations {
 
 extension OrderListDestinationOperations {
 
-    /// 處理目的地委派並在選取改變時通知容器
+    /// 處理目的地委派並套用篩選
     ///
     /// - Parameters:
     ///   - action: 目的地內部事件或關閉事件
     ///   - state: 清單目前的狀態
-    /// - Returns: 選取變更委派，或不需後續處理的效果
+    /// - Returns: 不需後續處理的效果
     static func apply(
         _ action: PresentationAction<OrderListFeature.Destination.Action>,
         state: inout OrderListFeature.State
     ) -> Effect<OrderListFeature.Action> {
         switch action {
         case .presented(.filterSheet(.delegate(.applied(let selection)))):
-            let previousID = state.selectedOrderID
             OrdersFilterOperations.filterApplied(selection, state: &state)
-            guard previousID != state.selectedOrderID else {
-                return .none
-            }
-            return .send(.delegate(.selectionChanged(state.selectedOrderID)))
+            return .none
 
         case .presented(.filterSheet(.delegate(.cancelled))):
             state.destination = nil
             return .none
 
         case .presented(.categoryPicker(.delegate(.applied(let categories)))):
-            let previousID = state.selectedOrderID
             OrdersFilterOperations.categoryApplied(categories, state: &state)
-            guard previousID != state.selectedOrderID else {
-                return .none
-            }
-            return .send(.delegate(.selectionChanged(state.selectedOrderID)))
+            return .none
 
         case .presented(.categoryPicker(.delegate(.cancelled))):
             state.destination = nil

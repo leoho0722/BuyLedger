@@ -13,14 +13,17 @@ struct CampaignPresentationFeature {
 
     // MARK: - State
 
-    /// 呈現狀態：同一時間只會有一個表單或 alert，通知在表單開啟或關閉期間先暫存
+    /// 呈現狀態：編輯表單與確認 alert 留在目的地，通知使用獨立狀態
     @ObservableState
     struct State: Equatable {
 
         /// 目前呈現中的編輯表單或 alert；`nil` 表示沒有呈現
         @Presents var destination: Destination.State?
 
-        /// 表單開啟與關閉期間到達的一次性通知暫存，表單關好後才呈現
+        /// 與目的地分開呈現的一次性通知
+        @Presents var notice: AlertState<Destination.Alert>?
+
+        /// 目的地開啟或表單關閉期間到達的一次性通知暫存
         var queue = CampaignPresentationQueue()
 
         /// 直接呈現使用者觸發的表單或 alert，不經暫存佇列
@@ -30,17 +33,33 @@ struct CampaignPresentationFeature {
             self.destination = destination
         }
 
-        /// sheet 關閉動畫結束後清除關閉旗標，並把暫存的通知移進目的地
+        /// sheet 關閉動畫結束後清除關閉旗標，並把暫存的通知移進通知狀態
         mutating func finishFormClosing() {
-            var current = destination
-            queue.finishFormClosing(into: &current)
-            destination = current
+            var currentNotice = notice
+            queue.finishFormClosing(into: &currentNotice, while: destination)
+            notice = currentNotice
+        }
+
+        /// 目的地 reducer 清空目的地後，呈現可顯示的暫存通知
+        mutating func presentPendingNoticeIfPossible() {
+            var currentNotice = notice
+            queue.presentPendingNotice(into: &currentNotice, while: destination)
+            notice = currentNotice
         }
 
         /// 容器接受儲存後關閉表單，並標記表單開始關閉
         mutating func closeFormForSave() {
             destination = nil
             queue.beginFormClosing()
+        }
+
+        /// 直接呈現通知，或依目的地與表單關閉狀態交給佇列暫存
+        ///
+        /// - Parameter notice: 要呈現的通知
+        mutating func presentNotice(_ notice: AlertState<Destination.Alert>) {
+            var currentNotice = self.notice
+            queue.present(notice, while: destination, into: &currentNotice)
+            self.notice = currentNotice
         }
 
         /// 容器判定名稱重名時，把原因寫回表單並維持開啟
@@ -66,10 +85,15 @@ struct CampaignPresentationFeature {
         /// - Parameter action: 目的地的呈現、關閉或內部事件
         case destination(PresentationAction<Destination.Action>)
 
-        /// 一次性通知，表單開啟或關閉中先暫存
+        /// 獨立通知的呈現、關閉或按鈕事件
         ///
-        /// - Parameter notice: 要呈現的通知
-        case noticeRequested(Destination.State)
+        /// - Parameter action: 通知的呈現、關閉或內部事件
+        case notice(PresentationAction<Destination.Alert>)
+
+        /// 一次性通知，目的地開啟或表單關閉中先暫存
+        ///
+        /// - Parameter notice: 要呈現的 alert
+        case noticeRequested(AlertState<Destination.Alert>)
 
         /// 交給容器的使用者意圖
         @CasePathable
@@ -99,10 +123,12 @@ struct CampaignPresentationFeature {
 
     // MARK: - Body
 
-    /// 組合目的地，呈現與關閉的邏輯在 `core(state:action:)`
+    /// 組合目的地與通知，並在目的地 reducer 清空後呈現暫存通知
     var body: some ReducerOf<Self> {
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
+            .ifLet(\.$notice, action: \.notice)
+        Reduce(releasePendingNotice)
     }
 }
 
@@ -134,7 +160,7 @@ private extension CampaignPresentationFeature {
         case .destination(.presented(.alert(.confirmSettle(let id)))):
             return .send(.delegate(.settleConfirmed(id)))
 
-        case .destination(.presented(.alert(.openSettings))):
+        case .notice(.presented(.openSettings)):
             return .run { [openSettingsService] _ in
                 await openSettingsService.open()
             }
@@ -142,11 +168,23 @@ private extension CampaignPresentationFeature {
         case .destination:
             return .none
 
+        case .notice:
+            return .none
+
         case .noticeRequested(let notice):
-            var current = state.destination
-            state.queue.present(notice, in: &current)
-            state.destination = current
+            state.presentNotice(notice)
             return .none
         }
+    }
+
+    /// 在前一段呈現 reducer 清空目的地後，釋出暫存通知
+    ///
+    /// - Parameters:
+    ///   - state: 要更新的開團呈現狀態
+    ///   - action: 這次收到的呈現事件，此處只檢查目的地處理後的狀態
+    /// - Returns: 沒有後續操作，固定回 `.none`
+    func releasePendingNotice(state: inout State, action: Action) -> Effect<Action> {
+        state.presentPendingNoticeIfPossible()
+        return .none
     }
 }

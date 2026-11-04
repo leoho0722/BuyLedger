@@ -53,6 +53,30 @@ private extension InsightsHeatmapCard {
             .foregroundStyle(.blLabel)
     }
 
+    /// 格狀熱力圖：第一列為週次標籤，其後每個星期一列，並附整圖的無障礙摘要
+    var grid: some View {
+        LazyVGrid(columns: columns, spacing: 6) {
+            cornerSpacer
+
+            weekLabels
+
+            gridCells
+        }
+        // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(
+            Text(
+                AppLanguage.format(
+                    "insights.chart.accessibility.heatmapSummary",
+                    weekCount,
+                    maxCount,
+                    locale: locale
+                )
+            )
+        )
+        .accessibilityIdentifier(BLAccessibilityID.Insights.heatmap)
+    }
+
     /// 週次標籤列最左側的空格，與星期欄對齊
     var cornerSpacer: some View {
         Text(verbatim: " ")
@@ -75,29 +99,6 @@ private extension InsightsHeatmapCard {
         ForEach(0..<(7 * (weekCount + 1)), id: \.self) {
             cell(at: $0)
         }
-    }
-
-    /// 格狀熱力圖：第一列為週次標籤，其後每個星期一列，並附整圖的無障礙摘要
-    var grid: some View {
-        LazyVGrid(columns: columns, spacing: 6) {
-            cornerSpacer
-
-            weekLabels
-
-            gridCells
-        }
-        // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(
-            Text(
-                AppLanguage.format(
-                    "insights.chart.accessibility.heatmapSummary",
-                    weekCount,
-                    maxCount,
-                    locale: locale
-                )
-            )
-        )
     }
 
     /// 組出攤平後第 N 格的內容：每列第一格是星期標籤，其餘是熱力格

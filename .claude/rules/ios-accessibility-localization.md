@@ -15,7 +15,11 @@ paths:
 
 - **無障礙字級改版面結構，不用縮放係數把字壓回去**：以 `dynamicTypeSize.isAccessibilitySize` 判斷 (不逐級列舉 case)，解除單行限制並降維 (多欄變單欄、橫排變堆疊)。
     - 不用 `minimumScaleFactor`／`lineLimit(1)` 抵銷使用者的字級設定。
-    - `NavigationSplitView` 的欄寬由版面分配決定 (如訂單三欄平分)，不套 `@ScaledMetric`，是下一條的例外：隨字級加寬會擠壓相鄰欄。欄寬因此不隨字級變大，欄內固定在捲動區外的區塊 (如 iPad 訂單清單欄的篩選區) 在輔助字級會被壓縮而重疊，要在 `isAccessibilitySize` 時併入捲動區 (參考 `OrdersRegularListColumn`)。
+    - `NavigationSplitView` 的欄寬由版面分配決定 (如訂單清單欄維持系統預設)，不套 `@ScaledMetric`，是下一條的例外：隨字級加寬會擠壓相鄰欄。欄寬因此不隨字級變大，欄內固定在捲動區外的區塊 (如 iPad 訂單清單欄的篩選區) 在輔助字級會被壓縮而重疊，要在 `isAccessibilitySize` 時併入捲動區 (參考 `OrdersRegularListColumn`)。
+- **「名稱 + `Spacer` + 金額」橫列在輔助字級改為上下排列**：以 `AnyLayout` 在 `HStackLayout` 與 `VStackLayout(alignment: .leading, spacing: 0)` 間切換 (參考 `OrderDetailCostView.legendRow`、`InsightsCategoryCard.categoryRow`)。
+    - 不以 `fixedSize` 讓金額單行：金額本身寬於卡片時會超出並被 `BLCard` 的 `clipShape` 裁切。
+    - `VStackLayout` 內的 `Spacer` 會撐出多餘高度：排列容器加 `.fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)`，`Spacer` 本身不加修飾 (包 `.frame(height:)` 會在 `HStack` 中搶空間)。
+    - 只在輔助字級才需要的對齊 (如 `.multilineTextAlignment(.center)`) 以字級條件設定，標準字級維持預設 `.leading`：即使是單行文字，置中也會改變逗號字距，讓標準字級基準不符。
 - **固定點數的尺寸一律 `@ScaledMetric`** (圖示、格高、欄寬、圖表直徑)：它需要 view 實例，`static let` 尺寸常數要改成實例屬性。
     - 元件參數本身已是 `@ScaledMetric` 時 (`BLSparkline.height`、`BLBarChart.height`)，呼叫端傳基準點數，不再包一層 `@ScaledMetric`：合成 `init` 會把傳入值當成基準再縮放一次，尺寸被乘上兩次縮放倍率。
     - 由 `DesignSystemSourceScanTests` 的規則十二守門，只辨識以單一識別字傳入的引數；傳入運算式或成員存取時人工確認。

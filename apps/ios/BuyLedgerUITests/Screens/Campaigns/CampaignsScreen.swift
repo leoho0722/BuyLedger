@@ -24,12 +24,29 @@ extension CampaignsScreen {
     var isEmptyStateShown: Bool {
         app.descendants(matching: .any)[BLAccessibilityID.Campaigns.listEmptyState].exists
     }
+
+    /// 是否正顯示詳情欄未選取提示
+    var isDetailEmptyStateShown: Bool {
+        app.descendants(matching: .any)[BLAccessibilityID.Common.detailEmptyState].exists
+    }
 }
 
 // MARK: - Internal Method
 
 @MainActor
 extension CampaignsScreen {
+
+    /// 從開團 canonical path marker 讀取選取值；空字串代表未選取，nil 代表 marker 缺失或值不是字串
+    ///
+    /// - Returns: 目前已選取的開團識別碼，未選取時為空字串；marker 缺失或值不是字串時為 `nil`
+    func selectedCampaignID() -> String? {
+        let markerID = BLAccessibilityID.Common.selectedItem(.campaigns)
+        let marker = app.descendants(matching: .any)[markerID].firstMatch
+        guard marker.waitForExistence(timeout: 5) else {
+            return nil
+        }
+        return marker.value as? String
+    }
 
     /// 點工具列的新增開團
     ///

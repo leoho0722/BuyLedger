@@ -176,11 +176,8 @@ struct LookupManagementFeaturePaymentMethodCorrectionTests {
             initialState.destination = LookupManagementFeatureTestSupport
                 .paymentMethodConfirmationAlert(count: 1)
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
-            let expectedWrite = PaymentMethodCorrectionFeatureTestSupport.PaymentMethodEditArguments(
-                oldName: "現金",
-                newName: "新名稱",
-                flags: newFlags
-            )
+            let expectedWrite = PaymentMethodCorrectionFeatureTestSupport
+                .PaymentMethodEditArguments(oldName: "現金", newName: "新名稱", flags: newFlags)
             let expectedPaymentMethod = PaymentMethodInfo(name: "新名稱", flags: newFlags)
             let writes = LockIsolated(
                 [PaymentMethodCorrectionFeatureTestSupport.PaymentMethodEditArguments]()
@@ -224,7 +221,7 @@ struct LookupManagementFeaturePaymentMethodCorrectionTests {
         }
     }
 
-    /// 驗證查詢受影響訂單筆數失敗時，主檔維持原狀且不標記為載入失敗，寫入失敗提示暫存為 `pendingAlert`，表單關閉前不呈現
+    /// 驗證查詢受影響訂單筆數失敗時，主檔維持原狀且不標記為載入失敗，寫入失敗通知暫存為 `pendingNotice`，表單關閉前不呈現
     @Test
     func correction_取得相關訂單失敗_暫存通知並保留主檔() async {
         await LookupCatalog.withIsolatedStorage {
@@ -260,24 +257,18 @@ struct LookupManagementFeaturePaymentMethodCorrectionTests {
             // Then
             await store.receive(\.correction.countResponse)
             await store.receive(\.correction.delegate.failed) {
-                $0.pendingAlert = LookupManagementFeatureTestSupport.writeFailureAlert(
-                    message: "orders.lookup.message.paymentMethodEdit"
-                )
+                $0.pendingNotice = .paymentMethodEdit
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(
-                store.state.pendingAlert
-                    == LookupManagementFeatureTestSupport.writeFailureAlert(
-                        message: "orders.lookup.message.paymentMethodEdit"
-                    )
-            )
+            #expect(store.state.pendingNotice == .paymentMethodEdit)
             #expect(store.state.destination == nil)
+            #expect(store.state.notice == nil)
             await store.finish()
         }
     }
 
-    /// 驗證確認更正寫入失敗時，主檔維持原狀且不標記為載入失敗，寫入失敗提示直接呈現在 `destination`
+    /// 驗證確認更正寫入失敗時，主檔維持原狀且不標記為載入失敗，寫入失敗通知直接放進 `notice`
     @Test
     func correction_更正寫入失敗_顯示通知並保留主檔() async {
         await LookupCatalog.withIsolatedStorage {
@@ -318,18 +309,19 @@ struct LookupManagementFeaturePaymentMethodCorrectionTests {
             // Then
             await store.receive(\.correction.editResponse.failure)
             await store.receive(\.correction.delegate.failed) {
-                $0.destination = LookupManagementFeatureTestSupport.writeFailureAlert(
+                $0.notice = LookupManagementFeatureTestSupport.writeFailureAlert(
                     message: "orders.lookup.message.paymentMethodEdit"
                 )
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
             #expect(
-                store.state.destination
+                store.state.notice
                     == LookupManagementFeatureTestSupport.writeFailureAlert(
                         message: "orders.lookup.message.paymentMethodEdit"
                     )
             )
+            #expect(store.state.destination == nil)
             await store.finish()
         }
     }

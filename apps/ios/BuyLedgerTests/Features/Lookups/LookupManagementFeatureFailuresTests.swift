@@ -59,15 +59,15 @@ struct LookupManagementFeatureFailuresTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.addResponse.failure) {
-                $0.pendingAlert = expectedAlert
+                $0.pendingNotice = .add
             }
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
-                $0.pendingAlert = nil
-                $0.destination = expectedAlert
+                $0.pendingNotice = nil
+                $0.notice = expectedAlert
             }
-            await store.send(.destination(.dismiss)) {
-                $0.destination = nil
+            await store.send(.notice(.dismiss)) {
+                $0.notice = nil
             }
             await store.send(.view(.addButtonTapped)) {
                 $0.destination = .add(LookupAddFormFeature.State(hasClassification: false))
@@ -139,8 +139,9 @@ struct LookupManagementFeatureFailuresTests {
 
             // Then
             await store.receive(\.deleteResponse.failure) {
-                $0.destination = expectedAlert
+                $0.notice = expectedAlert
             }
+            #expect(store.state.destination == nil)
             #expect(observedKinds.value == [.category])
             #expect(removeCalls.value == ["服飾"])
             #expect(store.state.items == ["服飾"])
@@ -149,7 +150,54 @@ struct LookupManagementFeatureFailuresTests {
         }
     }
 
-    /// 驗證改名寫入失敗時，清單保留原名稱且不標記為載入失敗，失敗提示先暫存在 `pendingAlert`，表單關閉前不呈現
+    /// 驗證刪除寫入失敗的通知關閉後，再點另一項刪除時仍會呈現該項的確認框
+    @Test
+    func deleteButtonTapped_通知關閉後再點另一項刪除_重新呈現確認框() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            var state = LookupManagementFeature.State(kind: .category)
+            state.$catalog.withLock {
+                $0.categories = ["服飾", "美妝"]
+            }
+            state.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                name: "服飾"
+            )
+            let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
+            let failingRemove: LookupService.RemoveItem = { _, _ throws(PersistenceError) in
+                throw .saveFailed(underlying: underlyingError)
+            }
+            let store = TestStore(initialState: state) {
+                LookupManagementFeature()
+            } withDependencies: {
+                $0.lookupService.removeItem = failingRemove
+            }
+            await store.send(.destination(.presented(.alert(.confirmDelete(name: "服飾"))))) {
+                $0.destination = nil
+            }
+            await store.receive(\.deleteResponse.failure) {
+                $0.notice = LookupManagementFeatureTestSupport.writeFailureAlert(
+                    message: "orders.lookup.message.itemDeletedTry"
+                )
+            }
+            await store.send(.notice(.dismiss)) {
+                $0.notice = nil
+            }
+
+            // When
+            await store.send(.view(.deleteButtonTapped(name: "美妝"))) {
+                $0.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                    name: "美妝"
+                )
+            }
+
+            // Then
+            #expect(store.state.items == ["服飾", "美妝"])
+            #expect(store.state.hasLoadFailed == false)
+            await store.finish()
+        }
+    }
+
+    /// 驗證改名寫入失敗時，清單保留原名稱且不標記為載入失敗，失敗提示先暫存在 `pendingNotice`，表單關閉前不呈現
     @Test
     func destination_重新命名寫入失敗_保留項目並暫存通知() async {
         await LookupCatalog.withIsolatedStorage {
@@ -163,9 +211,6 @@ struct LookupManagementFeatureFailuresTests {
             let observedKinds = LockIsolated<[LookupKind]>([])
             let renameCalls = LockIsolated<[LookupItemRename]>([])
             let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
-            let expectedAlert = LookupManagementFeatureTestSupport.writeFailureAlert(
-                message: "orders.lookup.message.itemRenamedTry"
-            )
             let failingRename: LookupService.RenameItem = { kind, itemRename throws(PersistenceError) in
                 observedKinds.withValue {
                     $0.append(kind)
@@ -192,9 +237,9 @@ struct LookupManagementFeatureFailuresTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.renameResponse.failure) {
-                $0.pendingAlert = expectedAlert
+                $0.pendingNotice = .rename
             }
-            #expect(store.state.pendingAlert == expectedAlert)
+            #expect(store.state.pendingNotice == .rename)
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             #expect(store.state.hasLoadFailed == false)

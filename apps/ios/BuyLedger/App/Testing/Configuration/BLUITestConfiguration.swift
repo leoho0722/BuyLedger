@@ -116,7 +116,7 @@ private extension BLUITestConfiguration {
     /// - Parameters:
     ///   - flag: 要解析的旗標名 (如 `-BLUITestSeed`)
     ///   - arguments: App 啟動參數
-    /// - Returns: 解析出的列舉值；缺值或對不到 case 時回 `nil`
+    /// - Returns: 解析出的列舉值；缺值或對不到 `case` 時回 `nil`
     static func option<Option: RawRepresentable>(
         for flag: String,
         in arguments: [String]
@@ -158,13 +158,6 @@ private extension BLUITestConfiguration {
         return value
     }
 
-    /// 印出統一前綴的警告，方便從測試 log 撈出參數問題
-    ///
-    /// - Parameter message: 警告內容 (不含前綴)
-    static func warn(_ message: String) {
-        print("[BuyLedger][UITest] \(message)")
-    }
-
     /// 判斷字串是否為旗標：以 `-` 開頭且不是數值 (負數要當成合法的值放行)
     ///
     /// - Parameter value: 待判斷的字串
@@ -174,6 +167,13 @@ private extension BLUITestConfiguration {
             return false
         }
         return Double(value) == nil
+    }
+
+    /// 印出統一前綴的警告，方便從測試 log 撈出參數問題
+    ///
+    /// - Parameter message: 警告內容 (不含前綴)
+    static func warn(_ message: String) {
+        print("[BuyLedger][UITest] \(message)")
     }
 
     /// 解析 `-BLUITestNow`，失敗時退回 ``defaultReferenceDate``

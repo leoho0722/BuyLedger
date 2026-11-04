@@ -110,12 +110,12 @@ struct CampaignFeaturePresentationTests {
         #expect(store.state.presentation.queue.pendingNotice == pendingNotice)
     }
 
-    /// 驗證關閉已顯示的通知後，目的地清空，且不進入表單關閉中、暫存通知也為空
+    /// 驗證關閉已顯示的通知後，通知狀態清空且不進入表單關閉中
     @Test
-    func presentation_提示關閉後_目的地為空() async {
+    func presentation_提示關閉後_通知狀態為空() async {
         // Given
         var initial = CampaignFeature.State()
-        initial.presentation.destination = CampaignFeatureTestSupport.failureAlert(
+        initial.presentation.notice = CampaignFeatureTestSupport.failureAlert(
             "campaigns.general.message.campaignDeletedTry"
         )
         let store = TestStore(initialState: initial) {
@@ -123,14 +123,55 @@ struct CampaignFeaturePresentationTests {
         }
 
         // When
-        await store.send(.presentation(.destination(.dismiss))) {
-            $0.presentation.destination = nil
+        await store.send(.presentation(.notice(.dismiss))) {
+            $0.presentation.notice = nil
         }
 
         // Then
         #expect(store.state.presentation.destination == nil)
+        #expect(store.state.presentation.notice == nil)
         #expect(store.state.presentation.queue.isFormClosing == false)
         #expect(store.state.presentation.queue.pendingNotice == nil)
+    }
+
+    /// 驗證通知關閉後再次要求刪除時，刪除確認仍會進入目的地
+    @Test
+    func list_提示關閉後再次要求刪除_呈現刪除確認() async {
+        // Given
+        let campaign = Campaign.fixture(
+            id: "C1",
+            name: "團",
+            closeDate: nil,
+            status: .ongoing
+        )
+        var initial = CampaignFeature.State()
+        initial.$campaigns.withLock {
+            $0 = [campaign]
+        }
+        initial.presentation.notice = CampaignFeatureTestSupport.failureAlert(
+            "campaigns.general.message.campaignDeletedTry"
+        )
+        let store = TestStore(initialState: initial) {
+            CampaignFeature()
+        }
+        await store.send(.presentation(.notice(.dismiss))) {
+            $0.presentation.notice = nil
+        }
+
+        // When
+        await store.send(.list(.view(.deleteCampaignTapped("C1"))))
+
+        // Then
+        await store.receive(\.list.delegate.requested) {
+            $0.presentation.destination = CampaignFeatureTestSupport.deletionAlert(
+                id: "C1",
+                name: "團"
+            )
+        }
+        #expect(
+            store.state.presentation.destination
+                == CampaignFeatureTestSupport.deletionAlert(id: "C1", name: "團")
+        )
     }
 
     /// 驗證提醒流程在沒有表單開啟時回報失敗，直接呈現對應標題、訊息與按鈕的通知
@@ -159,9 +200,10 @@ struct CampaignFeaturePresentationTests {
             \.presentation.noticeRequested,
             Self.reminderFailureAlert(for: failure)
         ) {
-            $0.presentation.destination = Self.reminderFailureAlert(for: failure)
+            $0.presentation.notice = Self.reminderFailureAlert(for: failure)
         }
-        #expect(store.state.presentation.destination == Self.reminderFailureAlert(for: failure))
+        #expect(store.state.presentation.destination == nil)
+        #expect(store.state.presentation.notice == Self.reminderFailureAlert(for: failure))
         #expect(store.state.presentation.queue.pendingNotice == nil)
     }
 
@@ -200,7 +242,7 @@ struct CampaignFeaturePresentationTests {
         // Given
         let hasOpenedSettings = LockIsolated(false)
         var initial = CampaignFeature.State()
-        initial.presentation.destination = CampaignFeatureTestSupport.accessDeniedAlert
+        initial.presentation.notice = CampaignFeatureTestSupport.accessDeniedAlert
         let store = TestStore(initialState: initial) {
             CampaignFeature()
         } withDependencies: {
@@ -210,14 +252,14 @@ struct CampaignFeaturePresentationTests {
         }
 
         // When
-        await store.send(.presentation(.destination(.presented(.alert(.openSettings))))) {
-            $0.presentation.destination = nil
+        await store.send(.presentation(.notice(.presented(.openSettings)))) {
+            $0.presentation.notice = nil
         }
 
         // Then
         await store.finish()
         #expect(hasOpenedSettings.value)
-        #expect(store.state.presentation.destination == nil)
+        #expect(store.state.presentation.notice == nil)
     }
 }
 
@@ -231,7 +273,7 @@ private extension CampaignFeaturePresentationTests {
     /// - Returns: 對應文案的通知狀態
     static func reminderFailureAlert(
         for failure: CampaignReminderFeature.Failure
-    ) -> CampaignPresentationFeature.Destination.State {
+    ) -> AlertState<CampaignPresentationFeature.Destination.Alert> {
         switch failure {
         case .accessDenied:
             return CampaignFeatureTestSupport.accessDeniedAlert

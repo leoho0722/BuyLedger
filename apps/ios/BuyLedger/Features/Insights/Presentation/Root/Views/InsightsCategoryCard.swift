@@ -12,6 +12,9 @@ struct InsightsCategoryCard: View {
 
     // MARK: - Properties
 
+    /// 目前的動態字級，無障礙字級時類別名稱與金額上下排列
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
@@ -94,23 +97,26 @@ private extension InsightsCategoryCard {
     @ViewBuilder
     func categoryRow(rank: Int, category: InsightsCategory, tint: Color) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
+            categoryRowLayout {
                 Text(verbatim: InsightsFormatters.rankTitle(rank: rank, name: category.name))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(.blLabel)
 
                 Spacer()
 
-                Text(BLFormatters.twd(category.profit, locale: locale))
-                    .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.blLabel)
+                HStack {
+                    Text(BLFormatters.twd(category.profit, locale: locale))
+                        .font(BLTypographyStyle.subhead.font.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(.blLabel)
 
-                Image(systemName: "chevron.right")
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(.blTertiaryLabel)
-                    .accessibilityHidden(true)
+                    Image(systemName: "chevron.right")
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(.blTertiaryLabel)
+                        .accessibilityHidden(true)
+                }
             }
+            .fixedSize(horizontal: false, vertical: dynamicTypeSize.isAccessibilitySize)
 
             ProgressView(value: category.ratio)
                 .progressViewStyle(BLProgressViewStyle(tint: tint))
@@ -131,6 +137,13 @@ private extension InsightsCategoryCard {
             .blTeal,
             .blPink,
         ]
+    }
+
+    /// 類別列的排列版面，標準字級橫排，無障礙字級時金額與箭頭另起一列
+    var categoryRowLayout: AnyLayout {
+        dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout())
     }
 
     /// 依排行順位取用循環色彩中的進度條顏色

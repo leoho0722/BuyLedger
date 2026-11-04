@@ -15,7 +15,7 @@ struct RootNavigationScreen {
     /// 受測 App
     let app: XCUIApplication
 
-    /// 吸收兩種版面差異的導覽分流器
+    /// 提供原生根分頁語意操作的導覽器
     private let navigator: AppNavigator
 
     // MARK: - Init
@@ -31,6 +31,7 @@ struct RootNavigationScreen {
 
 // MARK: - Internal Method
 
+@MainActor
 extension RootNavigationScreen {
 
     /// 切到總覽頁，待其就緒才回傳
@@ -151,78 +152,174 @@ extension RootNavigationScreen: Screen {
 
 // MARK: - Private Method
 
+@MainActor
 private extension RootNavigationScreen {
 
-    /// 切頁後優先等待目的地根容器，未指定根容器的分頁才依版面等待選取態
+    /// More 的根入口、目前保留的工具頁或寬版未選取提示是否有可互動前景內容
+    var isMoreDestinationForegroundReady: Bool {
+        hasForegroundElements([
+            BLAccessibilityID.Common.detailEmptyState,
+            BLAccessibilityID.More.row(.fx),
+            BLAccessibilityID.More.row(.customers),
+            BLAccessibilityID.More.row(.quote),
+            BLAccessibilityID.More.row(.orderSources),
+            BLAccessibilityID.More.row(.categories),
+            BLAccessibilityID.More.row(.paymentMethods),
+            BLAccessibilityID.More.row(.reconciliationStatuses),
+            BLAccessibilityID.More.row(.settings),
+            BLAccessibilityID.Settings.languagePicker,
+            BLAccessibilityID.Settings.defaultCurrencyRow,
+            BLAccessibilityID.Settings.monthlyGoalField,
+            BLAccessibilityID.Settings.aiSummaryToggle,
+            BLAccessibilityID.Settings.appLockToggle,
+            BLAccessibilityID.Fx.amountField,
+            BLAccessibilityID.Fx.currencyPickerButton,
+            BLAccessibilityID.Quote.principalField,
+            BLAccessibilityID.Quote.currencyPickerButton,
+            BLAccessibilityID.Quote.retryButton,
+            BLAccessibilityID.LookupManagement.addButton,
+            BLAccessibilityID.LookupManagement.nameField,
+            BLAccessibilityID.LookupManagement.paymentMethodNameField,
+            BLAccessibilityID.LookupManagement.paymentMethodSaveButton,
+            BLAccessibilityID.OptionPicker.addButton,
+            BLAccessibilityID.OptionPicker.doneButton,
+        ])
+            || hasHittableRow(
+                withIdentifierPrefix: BLAccessibilityID.Customers.row(customerName: "")
+            )
+            || hasHittableRow(
+                withIdentifierPrefix: BLAccessibilityID.Customers.topCard(customerName: "")
+            )
+            || hasHittableRow(withIdentifierPrefix: BLAccessibilityID.LookupManagement.row(""))
+            || hasHittableRow(withIdentifierPrefix: BLAccessibilityID.OptionPicker.optionRow(""))
+            || hasForegroundElements([
+                BLAccessibilityID.Customers.listEmptyState,
+                BLAccessibilityID.Fx.convertedValue,
+                BLAccessibilityID.Fx.statusBanner,
+                BLAccessibilityID.Quote.suggestedPriceValue,
+                BLAccessibilityID.Quote.statusBanner,
+                BLAccessibilityID.LookupManagement.loadFailureMessage,
+                BLAccessibilityID.LookupManagement.paymentMethodEditorRoot,
+            ])
+    }
+
+    /// 切換根目的地後等待該分頁目前的前景內容
     ///
     /// - Parameters:
-    ///   - tab: 目標分頁
-    ///   - timeout: 等待目標分頁就緒的秒數
+    ///   - tab: 目標根分頁
+    ///   - timeout: 等待前景內容就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 目標分頁是否在逾時前就緒
+    /// - Returns: 根控制項與目的地前景是否都已就緒
     func go(
         to tab: AppNavigator.Tab,
         timeout: TimeInterval,
         file: StaticString,
         line: UInt
     ) -> Bool {
-        let isSidebarLayout = navigator.isSidebarLayout
-        let identifier = destinationRootIdentifier(for: tab)
-        navigator.selectTab(tab, file: file, line: line)
+        if !isForegroundDestinationReady(for: tab) {
+            guard navigator.tapRootTab(tab, timeout: timeout) else {
+                app.failWithDiagnostics(
+                    "找不到或無法點擊根分頁 \(BLAccessibilityID.Root.tab(tab.identifierKey))",
+                    file: file,
+                    line: line
+                )
+                return false
+            }
+        }
+
         let deadline = Date.now.addingTimeInterval(timeout)
-        repeat {
-            if let identifier {
-                if app.descendants(matching: .any)[identifier].exists {
-                    return true
-                }
-            } else {
-                let selection = isSidebarLayout
-                    ? sidebarTabElement(for: tab)
-                    : tabBarButtonElement(for: tab)
-                if selection.exists && selection.isSelected {
-                    return true
-                }
+        while true {
+            if isForegroundDestinationReady(for: tab) {
+                return true
+            }
+            guard Date.now < deadline else {
+                break
             }
             _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
-        } while Date.now < deadline
+        }
+
+        app.failWithDiagnostics(
+            "切換至根分頁 \(BLAccessibilityID.Root.tab(tab.identifierKey)) 後前景內容未就緒",
+            file: file,
+            line: line
+        )
         return false
     }
 
-    /// 取目標分頁的根 identifier，供判定切頁就緒
+    /// 判斷指定根分頁的實際前景內容是否已就緒
     ///
-    /// - Parameter tab: 目標分頁
-    /// - Returns: 目的地根 identifier；未指定根容器的分頁回傳 `nil` 並沿用選取態判斷
-    func destinationRootIdentifier(for tab: AppNavigator.Tab) -> String? {
+    /// - Parameter tab: 目標根分頁
+    /// - Returns: 前景控制項或資料列是否可見且可互動
+    func isForegroundDestinationReady(for tab: AppNavigator.Tab) -> Bool {
         switch tab {
         case .dashboard:
-            BLAccessibilityID.Dashboard.root
+            return hasForegroundElements([
+                BLAccessibilityID.Dashboard.currentDateSubtitle,
+                BLAccessibilityID.Dashboard.kpiTile(.revenue),
+                BLAccessibilityID.Dashboard.kpiTile(.netProfit),
+                BLAccessibilityID.Dashboard.emptyStateActionButton,
+                BLAccessibilityID.Dashboard.loadFailureRetryButton,
+            ])
 
         case .orders:
-            BLAccessibilityID.Orders.listRoot
+            return hasHittableRow(withIdentifierPrefix: BLAccessibilityID.Orders.row(orderID: ""))
+                || hasForegroundElements([
+                    BLAccessibilityID.Orders.addButton,
+                    BLAccessibilityID.Orders.listEmptyState,
+                    BLAccessibilityID.Orders.detailMoreButton,
+                    BLAccessibilityID.Orders.detailSummaryTile(.revenue),
+                    BLAccessibilityID.Orders.detailSummaryTile(.cost),
+                    BLAccessibilityID.Orders.detailSummaryTile(.profit),
+                ])
+
+        case .campaigns:
+            return hasHittableRow(
+                withIdentifierPrefix: BLAccessibilityID.Campaigns.row(campaignID: "")
+            )
+                || hasForegroundElements([
+                    BLAccessibilityID.Campaigns.addButton,
+                    BLAccessibilityID.Campaigns.filterMenuButton,
+                    BLAccessibilityID.Campaigns.listLoadFailureRetryButton,
+                    BLAccessibilityID.Campaigns.detailMoreButton,
+                    BLAccessibilityID.Campaigns.detailEditButton,
+                    BLAccessibilityID.Campaigns.detailSettleButton,
+                ])
+
+        case .insights:
+            return hasForegroundElements([
+                BLAccessibilityID.Insights.rangePicker,
+                BLAccessibilityID.Insights.trendTotalProfit,
+                BLAccessibilityID.Insights.emptyState,
+            ])
 
         case .more:
-            BLAccessibilityID.More.root
-
-        case .campaigns, .insights:
-            nil
+            return isMoreDestinationForegroundReady
         }
     }
 
-    /// 取側邊欄中指定分頁的元素
+    /// 查詢一組 accessibility ID 中是否有可見且可互動的前景元素
     ///
-    /// - Parameter tab: 要查詢的分頁
-    /// - Returns: 側邊欄中的分頁元素
-    func sidebarTabElement(for tab: AppNavigator.Tab) -> XCUIElement {
-        // 分頁列是合併朗讀的 `staticText`，因此以 `.any` 查詢
-        app.descendants(matching: .any)[BLAccessibilityID.Root.tab(tab.identifierKey)]
+    /// - Parameter identifiers: 要查詢的語意識別值
+    /// - Returns: 至少一個元素是否位於前景且可互動
+    func hasForegroundElements(_ identifiers: [String]) -> Bool {
+        identifiers.contains { identifier in
+            let elements = app.descendants(matching: .any).matching(identifier: identifier)
+                .allElementsBoundByIndex
+            return elements.contains {
+                $0.isHittableOnScreen
+            }
+        }
     }
 
-    /// 取底部分頁列中指定分頁的按鈕
+    /// 查詢前綴相符的資料列中是否有可見且可互動的前景元素
     ///
-    /// - Parameter tab: 要查詢的分頁
-    /// - Returns: 底部分頁列中的按鈕
-    func tabBarButtonElement(for tab: AppNavigator.Tab) -> XCUIElement {
-        app.tabBars.buttons.element(boundBy: tab.rawValue)
+    /// - Parameter prefix: 資料列 identifier 的固定前綴
+    /// - Returns: 至少一筆相符資料列是否位於前景且可互動
+    func hasHittableRow(withIdentifierPrefix prefix: String) -> Bool {
+        let rows = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", prefix)
+        )
+        return rows.allElementsBoundByIndex.contains { $0.isHittableOnScreen }
     }
 }

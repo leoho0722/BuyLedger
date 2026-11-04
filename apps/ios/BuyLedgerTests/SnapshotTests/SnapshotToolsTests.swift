@@ -53,6 +53,44 @@ struct SnapshotToolsTests {
         }
     }
 
+    /// 驗證報價試算在最大輔助字級時輸入列改為堆疊排列，畫面符合基準圖
+    @Test
+    func quoteView_最大輔助字級_輸入列堆疊排列() {
+        TestDependencies.withFixedNow {
+            // Given
+            let state = QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(
+                    fromCurrency: .krw,
+                    snapshot: FxRateSnapshot.fallback
+                ),
+                itemPrice: 100_000,
+                domesticShipping: 5_000,
+                internationalShippingTWD: 180,
+                cardFeePercent: 2.5,
+                paymentFeePercent: 1,
+                platformFeePercent: 1,
+                targetMarginPercent: 25
+            )
+
+            let store = Store(initialState: state) {
+                QuoteFeature()
+            } withDependencies: {
+                $0.currencyMetadataService.fetchCodes = {
+                    []
+                }
+            }
+
+            // When
+            let view = QuoteView(store: store)
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.dynamicTypeSize, .accessibility5)
+                .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
     /// 驗證匯率資料裡沒有所選幣別 (韓圓) 的匯率時，報價頁顯示錯誤狀態，畫面符合基準圖
     @Test
     func quoteView_沒有可用匯率_顯示錯誤狀態() {

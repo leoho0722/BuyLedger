@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試，以 TestStore 驗證啟動與首次載入失敗後重試時，訂單載入請求如何送出，以及各頁如何同步
+/// `RootFeature` 的單元測試，以 `TestStore` 驗證啟動與首次載入失敗後重試時，訂單載入請求如何送出，以及各頁如何同步
 @MainActor
 struct RootFeatureLoadRequestsTests {
 
@@ -351,11 +351,6 @@ private extension RootFeatureLoadRequestsTests {
             $0.more.$orders.withLock {
                 $0 = [loaded]
             }
-            $0.orders.list.selectedOrderID = "RETRY-ORDER"
-            $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "RETRY-ORDER",
-                orders: SharedReader(value: [loaded])
-            )
             $0.dashboard.orders = [loaded]
             $0.dashboard.loadState = .loaded
             $0.insights.orders = [loaded]

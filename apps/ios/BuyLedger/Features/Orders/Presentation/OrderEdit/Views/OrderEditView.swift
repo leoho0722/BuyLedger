@@ -27,6 +27,7 @@ struct OrderEditView: View {
             Form {
                 formSections
             }
+            .blReadableScrollContent(.form)
             .formStyle(.grouped)
             .accessibilityIdentifier(BLAccessibilityID.OrderEdit.root)
             .scrollDismissesKeyboard(.interactively)

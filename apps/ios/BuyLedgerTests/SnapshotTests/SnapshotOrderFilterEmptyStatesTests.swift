@@ -21,7 +21,7 @@ struct SnapshotOrderFilterEmptyStatesTests {
     /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
     /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
     @Test
-    func ordersView_寬版清單欄無付款方式與類別_符合基準圖() async {
+    func ordersRegularListContent_寬版清單欄無付款方式與類別_符合基準圖() async {
         await LookupCatalog.withIsolatedStorage {
             TestDependencies.withFixedNow {
                 // Given
@@ -37,7 +37,7 @@ struct SnapshotOrderFilterEmptyStatesTests {
 
                 // When
                 let view = NavigationStack {
-                    OrdersView(
+                    OrdersRegularListContent(
                         store: Store(initialState: state) {
                             OrdersFeature()
                         },

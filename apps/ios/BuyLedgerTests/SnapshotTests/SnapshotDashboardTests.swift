@@ -49,6 +49,40 @@ struct SnapshotDashboardTests {
         }
     }
 
+    /// 驗證儀表板在最大輔助字級時，hero 卡的目標進度改為垂直堆疊排列，進度文字不截斷數字，畫面符合基準圖
+    ///
+    /// - Note: 水平 `.compact`、垂直 `.regular` 模擬 iPhone 直向
+    /// - Note: 輔助字級下 hero 卡進度條與文字垂直堆疊，文字不截斷數字
+    @Test
+    func dashboardView_最大輔助字級_目標進度堆疊排列() {
+        TestDependencies.withFixedNow {
+            // Given
+            var state = DashboardFeature.State()
+            state.orders = LedgerOrder.sampleOrders
+            state.loadState = .loaded
+            state.dateContext = DashboardDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+
+            // When
+            let view = DashboardView(
+                store: Store(initialState: state) {
+                    DashboardFeature()
+                },
+                language: .traditionalChinese
+            )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
+                .environment(\.dynamicTypeSize, .accessibility5)
+                .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
     /// 驗證儀表板帶進行中的開團時，在 KPI 與近期訂單之間顯示「進行中的開團」區段，畫面符合基準圖
     ///
     /// - Note: 範例開團只有「四月韓國團」為進行中，「三月日本團」已結束不列出
@@ -85,12 +119,12 @@ struct SnapshotDashboardTests {
         }
     }
 
-    /// 驗證寬版 (iPad 的 `regular` 寬度) 儀表板的 hero 卡與 KPI 卡左右並排，畫面符合基準圖
+    /// 驗證寬版 (iPad 的 `regular` 寬度) 儀表板的摘要在上、含成本的四項 KPI 兩欄在下，內容限寬置中，畫面符合基準圖
     ///
     /// - Note: State 與一般儀表板資料相同且不帶開團
     /// - Note: 使用離屏快照，避免 key window 尺寸造成不穩定
     @Test
-    func dashboardView_寬版_並排顯示hero與KPI() {
+    func dashboardView_寬版_摘要在上四項KPI兩欄() {
         TestDependencies.withFixedNow {
             // Given
             var state = DashboardFeature.State()
@@ -120,7 +154,7 @@ struct SnapshotDashboardTests {
 
     /// 驗證大尺寸 iPhone 橫向 (水平 `regular`、垂直 `compact`，956 × 440) 的儀表板，KPI 卡維持在 hero 卡下方，畫面符合基準圖
     ///
-    /// - Note: 水平 `.regular` 但垂直 `.compact` 時版面分類仍是 `compact`，不採用 hero 並排 KPI 的寬版
+    /// - Note: 所有寬度都依同一順序垂直排列，寬度超過閱讀上限時內容置中
     /// - Note: 使用離屏快照，避免 key window 是直向 iPhone 而裁切
     @Test
     func dashboardView_大尺寸iPhone橫向_KPI維持在hero下方() {

@@ -38,10 +38,20 @@ extension StackState where Element == CampaignFeature.Path.State {
         }
         pop(from: shownID)
     }
+
+    /// 移除已不存在的開團詳情並保留仍存在元素的識別值
+    ///
+    /// - Parameter campaigns: 目前可用的開團快照
+    mutating func popUnavailable(campaigns: [Campaign]) {
+        let availableIDs = Set(campaigns.map(\.id))
+        let removedIDs = compactMap { $0.detail?.campaignID }
+            .filter { !availableIDs.contains($0) }
+        for id in removedIDs {
+            popDetail(campaignID: id)
+        }
+    }
 }
 
 // MARK: - Equatable
 
-extension CampaignFeature.Path.State: Equatable {
-
-}
+extension CampaignFeature.Path.State: Equatable {}

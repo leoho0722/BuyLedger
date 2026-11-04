@@ -79,6 +79,38 @@ extension CampaignEditScreen {
         )
     }
 
+    /// 取得名稱欄目前的文字值
+    ///
+    /// - Returns: 名稱欄的文字值；欄位不存在或值不是字串時為 `nil`
+    func nameFieldValue() -> String? {
+        app.textFields[BLAccessibilityID.CampaignEdit.nameField].value as? String
+    }
+
+    /// 判定名稱欄是否取得鍵盤焦點，以 `hasKeyboardFocus` 鍵值判定
+    ///
+    /// - Returns: 名稱欄是否為鍵盤焦點
+    func isNameFieldFocused() -> Bool {
+        let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
+        return field.exists
+            && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+    }
+
+    /// 點名稱欄取得焦點後續打文字，不清空既有內容
+    ///
+    /// - Parameters:
+    ///   - text: 要續打的文字
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func appendName(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
+        field.appendText(
+            text,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
     /// 切換訂購提醒開關，點內層原生開關並確認值已改變
     ///
     /// - Parameters:

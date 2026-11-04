@@ -49,7 +49,7 @@ extension OrdersContainerPlan {
         case .edit(let id):
             return state.orders.contains { $0.id == id }
 
-        case .merge, .delete, .showDetail, .batchStatusChange, .changeStatus, .aiSummary:
+        case .merge, .delete, .batchStatusChange, .changeStatus, .aiSummary:
             return false
         }
     }

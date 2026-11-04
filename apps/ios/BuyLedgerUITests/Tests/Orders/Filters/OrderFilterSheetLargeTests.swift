@@ -34,6 +34,8 @@ final class OrderFilterSheetLargeTests: BLUITestCase {
     func testFilterSheetLargeApply_展開已收單捲到末格_觸發鈕兩項且結果兩筆() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilterLarge))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
         let filterSheet = OrderFilterSheetScreen(app: app)

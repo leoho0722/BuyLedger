@@ -35,10 +35,10 @@ struct RootFeature {
         /// 訂單功能狀態
         var orders: OrdersFeature.State
 
-        /// 開團功能狀態；``CampaignFeature/State/orders`` 投影經 reducer 的 `onChange(of:)` 與訂單保持同步
+        /// 開團功能狀態，其中的訂單投影 ``CampaignFeature/State/orders`` 隨訂單變更同步
         var campaigns = CampaignFeature.State()
 
-        /// 總覽功能狀態；四份投影皆由 reducer 的變更監看與對應來源保持同步
+        /// 總覽功能狀態，其中四份投影隨各自來源變更同步
         var dashboard = DashboardFeature.State()
 
         /// 分析功能狀態與選取的趨勢期間
@@ -134,18 +134,13 @@ struct RootFeature {
         @CasePathable
         enum View: Equatable {
 
-            /// 請開團、主檔目錄與啟動載入子層載入資料，訂單在主檔目錄讀完後才載入，並刷新共用幣別清單、監聽重大時間變更
+            /// 根畫面出現：各分頁載入資料 (訂單等主檔目錄讀完才載入)，刷新共用幣別清單並監聽重大時間變更
             case task
 
-            /// iPhone 分頁列切換主要分頁，保留「更多」堆疊
+            /// 原生根分頁切換主要分頁，保留「更多」堆疊
             ///
             /// - Parameter tab: 要切換到的主要分頁
             case tabSelected(RootTab)
-
-            /// iPad 側邊欄切換分頁前先清空「更多」堆疊；選取目前分頁時不處理
-            ///
-            /// - Parameter tab: 要切換到的主要分頁
-            case sidebarTabSelected(RootTab)
         }
     }
 
@@ -162,7 +157,7 @@ struct RootFeature {
 
     // MARK: - Body
 
-    /// 組合子層與根邏輯；保留 `CombineReducers`，讓尾端 `onChange` 看到子層變更後再同步投影
+    /// reducer 的骨架，只負責組合；保留 `CombineReducers` 讓尾端 `onChange` 在子層變更後才同步投影
     var body: some ReducerOf<Self> {
         CombineReducers {
             Scope(state: \.appLock, action: \.appLock) {
@@ -245,7 +240,7 @@ struct RootFeature {
 
 private extension RootFeature {
 
-    /// 以根功能解析後的時間與行事曆建立共用導覽操作
+    /// 以根功能的現在時間與行事曆建立的共用導覽操作
     var navigation: RootNavigationOperations {
         RootNavigationOperations(referenceDate: date.now, calendar: calendar)
     }
@@ -266,15 +261,6 @@ private extension RootFeature {
             )
 
         case .view(.tabSelected(let tab)):
-            state.selectedTab = tab
-            return .none
-
-        case .view(.sidebarTabSelected(let tab)):
-            guard tab != state.selectedTab else {
-                return .none
-            }
-            // 「更多」路徑非空時切分頁會讓 iPad 的 `NavigationSplitView` 崩潰，先清空
-            state.more.popToRoot()
             state.selectedTab = tab
             return .none
 

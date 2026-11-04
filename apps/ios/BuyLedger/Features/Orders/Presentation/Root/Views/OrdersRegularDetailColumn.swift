@@ -18,12 +18,13 @@ struct OrdersRegularDetailColumn: View {
 
     // MARK: - Body
 
-    /// 選取訂單仍存在時顯示共用詳情畫面，否則顯示選擇提示
+    /// `path` 詳情仍存在時顯示共用詳情畫面，否則顯示選擇提示
     var body: some View {
-        if let detailStore = store.scope(
-            state: \.detail.regularDetail,
-            action: \.detail.regularDetail
-        ),
+        if let pathID = store.detail.path.ids.last,
+           let detailStore = store.scope(
+               state: \.detail.path[id: pathID, case: \.detail],
+               action: \.detail.path[id: pathID].detail
+           ),
            detailStore.order != nil {
             OrderDetailView(store: detailStore)
         } else {
@@ -36,7 +37,7 @@ struct OrdersRegularDetailColumn: View {
 
 private extension OrdersRegularDetailColumn {
 
-    /// 沒有可顯示的選取訂單時的選擇提示
+    /// `path` 沒有可顯示訂單時的選擇提示
     var emptyState: some View {
         ContentUnavailableView(
             "orders.edit.label.selectOrders",
@@ -57,8 +58,9 @@ private extension OrdersRegularDetailColumn {
         state.load.$hasLoaded.withLock {
             $0 = true
         }
-        state.list.selectedOrderID = LedgerOrder.sampleOrders.first?.id
-        state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
+        if let orderID = LedgerOrder.sampleOrders.first?.id {
+            state.detail.showDetail(orderID: orderID)
+        }
         return state
     }()
 

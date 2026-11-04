@@ -10,20 +10,19 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證篩選面板套用、取消與日期變更的事件處理
+/// `OrderListFeature` 的單元測試，以 `TestStore` 逐步驗證篩選面板套用、取消與日期變更的事件處理
 struct OrderListFeatureFilterDelegatesTests {
 
-    /// 驗證套用 beauty 與 books 兩類後，訂單符合任一類別即顯示，選取重選為第一筆 books，且只通知一次選取變更
+    /// 驗證套用 beauty 與 books 後，清單只列出符合的 books 與 beauty，已排除的 outside 不再列出，不委派任何請求
     @Test
     @MainActor
-    func destination_套用多類別_重選第一筆並委派一次() async {
+    func destination_套用多類別_只列出符合的訂單() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             LedgerOrder.fixture(id: "outside", categories: ["snacks"]),
             LedgerOrder.fixture(id: "books", categories: ["books"]),
             LedgerOrder.fixture(id: "beauty", categories: ["beauty"]),
         ])
-        state.selectedOrderID = "outside"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
         state.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection.categories = ["beauty", "books"]
@@ -48,24 +47,21 @@ struct OrderListFeatureFilterDelegatesTests {
             )
         ) {
             $0.selectedCategories = ["beauty", "books"]
-            $0.selectedOrderID = "books"
             $0.destination = nil
         }
-        await store.receive(\.delegate.selectionChanged, "books")
         #expect(store.state.filteredOrders.map(\.id) == ["books", "beauty"])
     }
 
-    /// 驗證提交的類別集合與已套用的相同 (僅排列不同) 時，清單接收套用結果並關閉篩選面板，保留選取的訂單 B，不再回報選取變更
+    /// 驗證提交的類別集合與已套用的相同 (僅排列不同) 時，清單接收套用結果並關閉篩選面板，已套用類別保持不變，不委派任何請求
     @Test
     @MainActor
-    func destination_多類別集合相同_關閉且保留選取() async {
+    func destination_多類別集合相同_關閉且保留類別() async {
         // Given
         var state = OrderListFeatureTestSupport.makeState(orders: [
             LedgerOrder.fixture(id: "A", categories: ["beauty"]),
             LedgerOrder.fixture(id: "B", categories: ["books"]),
         ])
         state.selectedCategories = Set(["beauty", "books"])
-        state.selectedOrderID = "B"
         state.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: state))
         state.destination?.modify(\.filterSheet) {
             $0.pendingFilterSelection.categories = Set(["books", "beauty"])
@@ -91,7 +87,6 @@ struct OrderListFeatureFilterDelegatesTests {
         ) {
             $0.destination = nil
         }
-        #expect(store.state.selectedOrderID == "B")
         #expect(store.state.selectedCategories == ["beauty", "books"])
     }
 
@@ -162,10 +157,8 @@ struct OrderListFeatureFilterDelegatesTests {
         }
 
         // Then
-        await store.receive(\.delegate.selectionChanged, nil)
         #expect(
-            store.state.destination?.filterSheet?.committedFilterSelection.datePeriod
-                == .thisMonth
+            store.state.destination?.filterSheet?.committedFilterSelection.datePeriod == .thisMonth
         )
         #expect(store.state.destination?.filterSheet?.pendingFilterSelection.datePeriod == .all)
         #expect(store.state.destination?.filterSheet?.hasUnappliedFilterChanges == true)

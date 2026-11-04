@@ -12,7 +12,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `CampaignListView` 的快照測試，涵蓋各語系與分組方式
+/// `CampaignListView` 的快照測試，涵蓋各語系、分組方式與選取狀態
 @MainActor
 struct SnapshotCampaignsTests {
 
@@ -74,6 +74,74 @@ struct SnapshotCampaignsTests {
 
             // When
             let view = Self.makeListView(state: state, language: .english)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// 驗證按日分組時，同一天的三個開團落在同一組卡片，另一天的一個開團獨立成卡，畫面符合基準圖
+    @Test
+    func campaignListView_依日分組同日三筆與他日一筆_符合基準圖() {
+        TestDependencies.withFixedNow {
+            // Given
+            let sameDayCampaigns = [
+                Campaign.fixture(
+                    id: "campaign-same-day-1",
+                    name: "今日現貨團",
+                    openDate: SnapshotTestSupport.campaignDate(daysAgo: 0)
+                ),
+                Campaign.fixture(
+                    id: "campaign-same-day-2",
+                    name: "今日預購團",
+                    openDate: SnapshotTestSupport.campaignDate(daysAgo: 0)
+                ),
+                Campaign.fixture(
+                    id: "campaign-same-day-3",
+                    name: "今日限量團",
+                    openDate: SnapshotTestSupport.campaignDate(daysAgo: 0)
+                ),
+            ]
+            let otherDayCampaign = Campaign.fixture(
+                id: "campaign-other-day",
+                name: "昨日預購團",
+                openDate: SnapshotTestSupport.campaignDate(daysAgo: 1),
+                status: .closed
+            )
+            var state = CampaignListFeature.State(
+                campaigns: SharedReader(value: sameDayCampaigns + [otherDayCampaign]),
+                orders: SharedReader(value: []),
+                hasLoaded: SharedReader(value: true)
+            )
+            state.dateContext = CampaignDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            state.grouping = .day
+
+            // When
+            let view = Self.makeListView(state: state, language: .traditionalChinese)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// 驗證目前詳情對應的開團列以淺藍圓角底標示，其餘列維持原外觀，畫面符合基準圖
+    @Test
+    func campaignListView_選取其中一筆開團_符合基準圖() {
+        TestDependencies.withFixedNow {
+            // Given
+            var state = Self.makeRecentDaysListState()
+            state.grouping = .day
+            let selectedCampaignID: Campaign.ID = "campaign-april-10"
+
+            // When
+            let view = Self.makeListView(
+                state: state,
+                language: .traditionalChinese,
+                selectedCampaignID: selectedCampaignID
+            )
 
             // Then
             assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
@@ -196,19 +264,25 @@ private extension SnapshotCampaignsTests {
         return state
     }
 
-    /// 建立列表的固定尺寸宿主，讓各案例只指定狀態與語系
+    /// 建立列表的固定尺寸宿主，讓各案例只指定狀態、語系與選取的開團
     ///
     /// - Parameters:
     ///   - state: 待渲染的列表狀態
     ///   - language: 根標題與環境使用的語系
+    ///   - selectedCampaignID: 目前詳情對應的開團識別值，`nil` 表示沒有選取
     /// - Returns: 393 × 852 的列表導覽宿主
-    static func makeListView(state: CampaignListFeature.State, language: AppLanguage) -> some View {
+    static func makeListView(
+        state: CampaignListFeature.State,
+        language: AppLanguage,
+        selectedCampaignID: Campaign.ID? = nil
+    ) -> some View {
         NavigationStack {
             CampaignListView(
                 store: Store(initialState: state) {
                     EmptyReducer()
                 },
-                language: language
+                language: language,
+                selection: .constant(selectedCampaignID)
             )
         }
         .environment(\.locale, language.locale)

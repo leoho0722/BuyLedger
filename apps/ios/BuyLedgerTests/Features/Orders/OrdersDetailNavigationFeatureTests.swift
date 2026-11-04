@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrdersDetailNavigationFeature.State` 的單元測試，涵蓋詳情推入、右欄同步、堆疊移除與寫入結果的套用
+/// `OrdersDetailNavigationFeature.State` 的單元測試，涵蓋詳情路徑、堆疊移除與寫入結果的套用
 struct OrdersDetailNavigationFeatureTests {
 
     /// 驗證推入訂單詳情時，先清空既有堆疊，堆疊只剩指定訂單的詳情，且堆疊識別值已更換
@@ -52,78 +52,9 @@ struct OrdersDetailNavigationFeatureTests {
         #expect(state.path.first?.detail?.orderID == "A")
     }
 
-    /// 驗證右欄已是同一訂單時，沿用既有的詳情，內容不改由共用訂單重建
+    /// 驗證共用訂單非空時，初始化不自動開啟詳情
     @Test
-    func syncRegularDetail_相同訂單識別值_沿用既有詳情() {
-        // Given
-        let shared = Shared(value: [LedgerOrder.fixture(id: "A", itemCost: 200)])
-        var state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
-        state.regularDetail = OrderDetailFeature.State(
-            orderID: "A",
-            orders: SharedReader(value: [LedgerOrder.fixture(id: "A", itemCost: 100)])
-        )
-
-        // When
-        state.syncRegularDetail(selectedOrderID: "A")
-
-        // Then
-        #expect(state.regularDetail?.orderID == "A")
-        #expect(state.regularDetail?.order?.itemCost == 100)
-    }
-
-    /// 驗證右欄改成不同的訂單時，重建右欄詳情，內容改讀共用訂單
-    @Test
-    func syncRegularDetail_不同訂單識別值_重建為新訂單詳情() {
-        // Given
-        let shared = Shared(value: [
-            LedgerOrder.fixture(id: "A"),
-            LedgerOrder.fixture(id: "B", itemCost: 300),
-        ])
-        var state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
-        state.regularDetail = OrderDetailFeature.State(
-            orderID: "A",
-            orders: SharedReader(value: [LedgerOrder.fixture(id: "A", itemCost: 100)])
-        )
-
-        // When
-        state.syncRegularDetail(selectedOrderID: "B")
-
-        // Then
-        #expect(state.regularDetail?.orderID == "B")
-        #expect(state.regularDetail?.order?.itemCost == 300)
-    }
-
-    /// 驗證清單沒有選取時，右欄詳情清空
-    @Test
-    func syncRegularDetail_選取為nil_清空右欄詳情() {
-        // Given
-        let shared = Shared(value: [LedgerOrder.fixture(id: "A")])
-        var state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
-
-        // When
-        state.syncRegularDetail(selectedOrderID: nil)
-
-        // Then
-        #expect(state.regularDetail == nil)
-    }
-
-    /// 驗證選取的訂單已不在共用訂單中時，右欄詳情清空
-    @Test
-    func syncRegularDetail_選取訂單不存在_清空右欄詳情() {
-        // Given
-        let shared = Shared(value: [LedgerOrder.fixture(id: "A")])
-        var state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
-
-        // When
-        state.syncRegularDetail(selectedOrderID: "missing")
-
-        // Then
-        #expect(state.regularDetail == nil)
-    }
-
-    /// 驗證共用訂單非空時，初始化會讓右欄預設顯示第一筆，堆疊為空
-    @Test
-    func init_共用訂單非空_預設第一筆() {
+    func init_共用訂單非空_不自動開啟詳情() {
         // Given
         let shared = Shared(value: [LedgerOrder.fixture(id: "A"), LedgerOrder.fixture(id: "B")])
 
@@ -131,13 +62,12 @@ struct OrdersDetailNavigationFeatureTests {
         let state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
 
         // Then
-        #expect(state.regularDetail?.orderID == "A")
         #expect(state.path.isEmpty)
     }
 
-    /// 驗證共用訂單為空時，初始化後右欄沒有詳情
+    /// 驗證共用訂單為空時，初始化後詳情路徑為空
     @Test
-    func init_共用訂單為空_右欄為空() {
+    func init_共用訂單為空_詳情路徑為空() {
         // Given
         let shared = Shared<[LedgerOrder]>(value: [])
 
@@ -145,7 +75,7 @@ struct OrdersDetailNavigationFeatureTests {
         let state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
 
         // Then
-        #expect(state.regularDetail == nil)
+        #expect(state.path.isEmpty)
     }
 
     /// 驗證 `popDetail` 移除位於中間的訂單詳情與其後的元素，前方元素保留原本的識別值
@@ -201,7 +131,7 @@ struct OrdersDetailNavigationFeatureTests {
         }
 
         // When
-        state.applyLoadedOrders(selectedOrderID: "A")
+        state.applyLoadedOrders()
 
         // Then
         #expect(state.path.count == 1)
@@ -220,7 +150,7 @@ struct OrdersDetailNavigationFeatureTests {
         let idsBefore = state.path.ids
 
         // When
-        state.applyLoadedOrders(selectedOrderID: "A")
+        state.applyLoadedOrders()
 
         // Then
         #expect(state.path.ids == idsBefore)
@@ -239,26 +169,25 @@ struct OrdersDetailNavigationFeatureTests {
         }
 
         // When
-        state.applyLoadedOrders(selectedOrderID: "B")
+        state.applyLoadedOrders()
 
         // Then
         #expect(state.path.isEmpty)
     }
 
-    /// 驗證冷啟動時右欄沒有詳情，`applyLoadedOrders` 載入後右欄依清單選取顯示該訂單
+    /// 驗證冷啟動後載入訂單不會自動開啟詳情
     @Test
-    func applyLoadedOrders_冷啟動右欄為空_右欄顯示選取的訂單() {
+    func applyLoadedOrders_冷啟動載入訂單_維持詳情路徑為空() {
         // Given
         let shared = Shared<[LedgerOrder]>(value: [])
         var state = OrdersDetailNavigationFeature.State(orders: SharedReader(shared))
         shared.withLock { $0 = [LedgerOrder.fixture(id: "A"), LedgerOrder.fixture(id: "B")] }
 
         // When
-        state.applyLoadedOrders(selectedOrderID: "A")
+        state.applyLoadedOrders()
 
         // Then
-        #expect(state.regularDetail?.orderID == "A")
-        #expect(state.regularDetail?.order?.id == "A")
+        #expect(state.path.isEmpty)
     }
 
     /// 驗證 `apply` 套用寫入結果時，依 `detailPopIDs` 移除對應的詳情，前方元素保留識別值

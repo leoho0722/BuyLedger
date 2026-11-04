@@ -220,12 +220,12 @@ struct ProjectionWriteBoundaryGuardsTests {
             expectedCount: 0
         ),
         ProjectionWriteBoundaryScenario(
-            relativePath: "Features/App/Presentation/Root/RootSidebarLayout.swift",
+            relativePath: "Features/App/Presentation/Root/RootNavigationLayout.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         ProjectionWriteBoundaryScenario(
-            relativePath: "Features/App/Presentation/Root/RootSidebarLayout.swift",
+            relativePath: "Features/App/Presentation/Root/RootNavigationLayout.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),

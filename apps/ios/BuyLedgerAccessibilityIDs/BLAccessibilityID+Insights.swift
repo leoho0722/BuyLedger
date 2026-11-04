@@ -30,7 +30,10 @@ extension BLAccessibilityID {
         /// 成本圓餅圖
         static let costDonut = "insights.chart.costDonut"
 
-        /// 期間選項，key 取 ``InsightsDateRange`` 的 `rawValue`
+        /// 下單熱力圖
+        static let heatmap = "insights.chart.heatmap"
+
+        /// 取得期間選項的識別碼，key 取 ``InsightsDateRange`` 的 `rawValue`
         ///
         /// - Parameter rangeID: 分析期間識別值
         /// - Returns: 對應期間選項的 accessibility identifier
@@ -38,7 +41,7 @@ extension BLAccessibilityID {
             option("insights.rangeSegment", key: rangeID)
         }
 
-        /// 類別排行列，key 取類別名 (點擊深連結到訂單)
+        /// 取得類別排行列的識別碼，key 取類別名 (點擊深連結到訂單)
         ///
         /// - Parameter category: 類別名稱
         /// - Returns: 對應類別排行列的 accessibility identifier
@@ -46,7 +49,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("insights.categoryRank.row", key: category)
         }
 
-        /// 每團毛利排行列，key 取開團識別值 (點擊深連結到開團詳情)
+        /// 取得每團毛利排行列的識別碼，key 取開團識別值 (點擊深連結到開團詳情)
         ///
         /// - Parameter campaignID: 開團識別值
         /// - Returns: 對應開團排行列的 accessibility identifier

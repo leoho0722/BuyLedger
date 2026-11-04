@@ -113,6 +113,7 @@ private extension OptionPickerSheet {
             )
         }
         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.root)
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -132,18 +133,10 @@ private extension OptionPickerSheet {
             }
         }
         .modifier(BLSearchableModifier(text: $searchText, isEnabled: isSearchEnabled))
-        .scrollDismissesKeyboard(.interactively)
         .navigationDestination(isPresented: $isAddPaymentMethodPresented) {
             if case .paymentMethod(let prompt, let onSubmit) = addition {
                 // 編輯器送出後自己會退回選擇器，這裡不能再包一層呼叫 `dismiss()`，否則會關掉宿主 sheet
-                PaymentMethodEditorSheet(
-                    title: prompt.title,
-                    message: prompt.message,
-                    namePlaceholder: prompt.placeholder,
-                    submitTitle: "orders.list.button.add",
-                    isEmbedded: true,
-                    onSubmit: onSubmit
-                )
+                EmbeddedPaymentMethodEditor(prompt: prompt, onSubmit: onSubmit)
             }
         }
     }
@@ -160,6 +153,82 @@ private extension OptionPickerSheet {
                 Image(systemName: "xmark")
             }
             .accessibilityLabel(Text("common.action.cancel"))
+        }
+    }
+}
+
+// MARK: - Nested Types
+
+private extension OptionPickerSheet {
+
+    /// 嵌入選擇器推入的付款方式編輯器，草稿隨每次推入重新建立
+    struct EmbeddedPaymentMethodEditor: View {
+
+        /// 名稱輸入草稿
+        @State private var draftName = ""
+
+        /// 嵌入時不呈現捨棄確認，此狀態只為滿足編輯器的介面
+        @State private var isDiscardConfirmationPresented = false
+
+        /// 是否標記為銀行匯款類付款方式
+        @State private var isDraftBankTransfer = false
+
+        /// 是否標記為無卡類付款方式
+        @State private var isDraftCardless = false
+
+        /// 是否標記為貨到付款類付款方式
+        @State private var isDraftCashOnDelivery = false
+
+        /// 名稱欄位是否持有焦點
+        @State private var isNameFieldFocused = false
+
+        /// 編輯器送出名稱與付款方式旗標的回呼
+        let onSubmit: PaymentMethodEditorSheet.SubmitAction
+
+        /// 新增按鈕與編輯器的文案
+        let prompt: AddPrompt
+
+        /// 建立嵌入編輯器，草稿由本元件保存
+        ///
+        /// - Parameters:
+        ///   - prompt: 新增按鈕與編輯器的文案
+        ///   - onSubmit: 編輯器送出名稱與付款方式旗標的回呼
+        init(prompt: AddPrompt, onSubmit: @escaping PaymentMethodEditorSheet.SubmitAction) {
+            self.prompt = prompt
+            self.onSubmit = onSubmit
+        }
+
+        /// 以本地草稿呈現嵌入式編輯器，送出時回傳修剪後的名稱與旗標
+        var body: some View {
+            PaymentMethodEditorSheet(
+                title: prompt.title,
+                message: prompt.message,
+                namePlaceholder: prompt.placeholder,
+                submitTitle: "orders.list.button.add",
+                draftName: $draftName,
+                isDraftCardless: $isDraftCardless,
+                isDraftBankTransfer: $isDraftBankTransfer,
+                isDraftCashOnDelivery: $isDraftCashOnDelivery,
+                isNameFieldFocused: $isNameFieldFocused,
+                isDiscardConfirmationPresented: $isDiscardConfirmationPresented,
+                // 嵌入時不顯示取消鍵也不阻擋下滑，未儲存變更不影響畫面
+                isDirty: false,
+                canSubmit: !trimmedName.isEmpty,
+                isEmbedded: true,
+                onSubmit: {
+                    onSubmit(
+                        trimmedName,
+                        isDraftCardless,
+                        isDraftBankTransfer,
+                        isDraftCashOnDelivery
+                    )
+                }
+            )
+        }
+
+        /// 去除前後空白後的名稱
+        private var trimmedName: String {
+            draftName.trimmingCharacters(in: .whitespacesAndNewlines)
         }
     }
 }

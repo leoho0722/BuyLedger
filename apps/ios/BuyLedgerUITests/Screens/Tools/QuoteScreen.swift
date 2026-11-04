@@ -43,6 +43,17 @@ extension QuoteScreen {
         }
         return element.value as? String
     }
+
+    /// 本金欄目前的文字值
+    ///
+    /// - Returns: 本金欄的文字值；元素不存在或值不是字串時為 `nil`
+    var principalFieldValue: String? {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        guard field.waitForExistence(timeout: 10) else {
+            return nil
+        }
+        return field.value as? String
+    }
 }
 
 // MARK: - Internal Method
@@ -120,6 +131,70 @@ extension QuoteScreen {
     func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.Quote.retryButton]
         button.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 捲動露出本金欄後點擊，取得鍵盤焦點
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapPrincipalField(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後本金欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
+        field.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 清空本金欄後輸入文字並保留鍵盤焦點
+    ///
+    /// - Parameters:
+    ///   - amount: 要輸入的本金字串
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func replacePrincipalKeepingKeyboard(
+        _ amount: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後本金欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
+        field.clearAndType(
+            amount,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 判定本金欄是否取得鍵盤焦點
+    ///
+    /// - Returns: 本金欄是否為鍵盤焦點
+    func isPrincipalFieldFocused() -> Bool {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        return field.exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+    }
+
+    /// 續打本金欄文字，呼叫端需先確認焦點，續打時不點擊
+    ///
+    /// - Parameter text: 要續打的文字
+    func appendPrincipal(_ text: String) {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        field.typeText(text)
+    }
+
+    /// 收起本金欄的數字鍵盤
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func dismissPrincipalKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Quote.principalField]
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 }
 

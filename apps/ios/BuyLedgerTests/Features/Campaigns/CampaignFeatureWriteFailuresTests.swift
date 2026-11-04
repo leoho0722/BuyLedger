@@ -112,7 +112,7 @@ struct CampaignFeatureWriteFailuresTests {
         await store.receive(\.writes.statusResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.status)) {
-            $0.presentation.destination = CampaignFeatureTestSupport.failureAlert(
+            $0.presentation.notice = CampaignFeatureTestSupport.failureAlert(
                 "campaigns.general.message.campaignStatusUpdated"
             )
         }
@@ -166,7 +166,7 @@ struct CampaignFeatureWriteFailuresTests {
         await store.receive(\.writes.settleResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.settle)) {
-            $0.presentation.destination = CampaignFeatureTestSupport.failureAlert(
+            $0.presentation.notice = CampaignFeatureTestSupport.failureAlert(
                 "campaigns.general.message.campaignSettledTry"
             )
         }
@@ -204,6 +204,15 @@ struct CampaignFeatureWriteFailuresTests {
             }
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
+        let expectedNotice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
+            }
+        } message: {
+            TextState("campaigns.general.message.campaignDeletedTry")
+        }
         let store = TestStore(initialState: initial) {
             CampaignFeature()
         } withDependencies: {
@@ -220,11 +229,11 @@ struct CampaignFeatureWriteFailuresTests {
         await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.failure)
         await store.receive(\.writes.delegate.failed)
-        await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
-            $0.presentation.destination = CampaignFeatureTestSupport.failureAlert(
-                "campaigns.general.message.campaignDeletedTry"
-            )
+        await store.receive(\.presentation.noticeRequested, expectedNotice) {
+            $0.presentation.notice = expectedNotice
         }
+        #expect(store.state.presentation.destination == nil)
+        #expect(store.state.presentation.notice == expectedNotice)
         #expect(store.state.campaigns == [campaign])
         #expect(removedCampaignIDs.value == ["C1"])
         #expect(removedCampaignNames.value == ["團"])

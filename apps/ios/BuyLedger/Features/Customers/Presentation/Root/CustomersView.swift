@@ -32,6 +32,7 @@ struct CustomersView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .blReadableScrollContent(.text)
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Customers.listRoot)
         .task {
@@ -96,7 +97,9 @@ private extension CustomersView {
                         store.send(.view(.customerTapped(ranked.customer.name)))
                     } label: {
                         CustomerTopCard(customer: ranked.customer, rank: ranked.rank)
-                            .contentShape(.rect)
+                            .contentShape(
+                                RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                            )
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(

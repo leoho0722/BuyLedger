@@ -29,6 +29,17 @@ extension SettingsScreen {
         }
         return row.combinedText
     }
+
+    /// 每月目標金額欄目前的文字值
+    ///
+    /// - Returns: 目標金額欄的文字值；元素不存在或值不是字串時為 `nil`
+    var monthlyGoalFieldValue: String? {
+        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
+        guard field.waitForExistence(timeout: 10) else {
+            return nil
+        }
+        return field.value as? String
+    }
 }
 
 // MARK: - Internal Method
@@ -49,17 +60,25 @@ extension SettingsScreen {
         line: UInt = #line
     ) -> SettingsScreen {
         AppNavigator(app: app).selectTab(.more, file: file, line: line)
+        // 更多根是全頁 CollectionView，iPhone 上可能長期不可點，只等存在後再點入口列
         let moreRoot = app.descendants(matching: .any)[BLAccessibilityID.More.root]
-        guard moreRoot.waitUntilHittableOrFail(
-            in: app,
-            timeout: 10,
-            file: file,
-            line: line
-        ) else {
+        guard moreRoot.waitForExistence(timeout: 10) else {
+            app.failWithDiagnostics(
+                "更多根 identifier「\(BLAccessibilityID.More.root)」逾時仍未出現",
+                file: file,
+                line: line
+            )
             return SettingsScreen(app: app)
         }
 
         let settingsRow = app.descendants(matching: .any)[BLAccessibilityID.More.row(.settings)]
+        // 橫向 iPhone 的更多清單較短，設定入口列可能在下方未建立或露在視窗外，先捲入可點範圍
+        if !settingsRow.isHittableOnScreen,
+           !app.scrollToHittableGently(settingsRow, within: moreRoot),
+           !app.scrollToHittable(settingsRow, within: moreRoot) {
+            app.failWithDiagnostics("更多清單捲動後仍找不到可點的設定入口列", file: file, line: line)
+            return SettingsScreen(app: app)
+        }
         settingsRow.tapAfterWaiting(in: app, file: file, line: line)
 
         let screen = SettingsScreen(app: app)
@@ -127,6 +146,48 @@ extension SettingsScreen {
     func openDefaultCurrency(file: StaticString = #filePath, line: UInt = #line) {
         let row = element(BLAccessibilityID.Settings.defaultCurrencyRow)
         row.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 清空每月目標金額欄後輸入新文字，之後鍵盤焦點保留在目標金額欄
+    ///
+    /// - Parameters:
+    ///   - text: 要輸入的文字
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func replaceMonthlyGoal(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
+        field.clearAndType(
+            text,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 續打每月目標金額欄文字，呼叫端需先確認焦點，續打時不點擊
+    ///
+    /// - Parameter text: 要續打的文字
+    func appendMonthlyGoal(_ text: String) {
+        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
+        field.typeText(text)
+    }
+
+    /// 判定每月目標金額欄是否取得鍵盤焦點
+    ///
+    /// - Returns: 目標金額欄是否為鍵盤焦點
+    func isMonthlyGoalFieldFocused() -> Bool {
+        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
+        return field.exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+    }
+
+    /// 收起每月目標金額欄的數字鍵盤
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func dismissMonthlyGoalKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 }
 

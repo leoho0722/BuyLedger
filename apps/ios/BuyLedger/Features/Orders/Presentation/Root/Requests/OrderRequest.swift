@@ -26,11 +26,6 @@ enum OrderRequest: Equatable, Sendable {
     /// - Parameter id: 訂單識別值
     case delete(LedgerOrder.ID)
 
-    /// 推入指定訂單的詳情
-    ///
-    /// - Parameter id: 訂單識別值
-    case showDetail(LedgerOrder.ID)
-
     /// 批次寫入已選訂單的新狀態
     ///
     /// - Parameter orders: 已排除未選取與狀態未變更的訂單

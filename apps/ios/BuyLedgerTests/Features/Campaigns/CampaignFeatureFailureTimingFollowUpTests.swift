@@ -41,17 +41,15 @@ struct CampaignFeatureFailureTimingFollowUpTests {
             $0 = [campaign]
         }
         initial.presentation.destination = .edit(editState)
-        let saveFailureNotice: CampaignPresentationFeature.Destination.State = .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.campaignSavedTry")
+        let saveFailureNotice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState("campaigns.general.message.campaignSavedTry")
+        }
         let failingRename: CampaignService.RenameCampaign = { _, _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
@@ -88,17 +86,15 @@ struct CampaignFeatureFailureTimingFollowUpTests {
     @Test
     func formSheetDismissed_存檔失敗在表單關閉中到達_關好後呈現存檔失敗提示() async {
         // Given
-        let saveFailureNotice: CampaignPresentationFeature.Destination.State = .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.campaignSavedTry")
+        let saveFailureNotice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState("campaigns.general.message.campaignSavedTry")
+        }
         var initial = CampaignFeature.State()
         initial.presentation.queue.isFormClosing = true
         initial.presentation.queue.pendingNotice = saveFailureNotice
@@ -110,11 +106,11 @@ struct CampaignFeatureFailureTimingFollowUpTests {
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = saveFailureNotice
+            $0.presentation.notice = saveFailureNotice
         }
 
         // Then
-        #expect(store.state.presentation.destination == saveFailureNotice)
+        #expect(store.state.presentation.notice == saveFailureNotice)
     }
 
     /// 驗證表單開啟中，詳情頁變更開團狀態失敗時，失敗提示暫存、表單維持開啟，開團狀態不變
@@ -132,17 +128,15 @@ struct CampaignFeatureFailureTimingFollowUpTests {
             settledDate: nil,
             notes: ""
         )
-        let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.campaignStatusUpdated")
+        let expectedNotice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState("campaigns.general.message.campaignStatusUpdated")
+        }
         let editState = CampaignFeatureTestSupport.makeEditState()
         var initial = CampaignFeature.State()
         initial.$campaigns.withLock {
@@ -181,17 +175,15 @@ struct CampaignFeatureFailureTimingFollowUpTests {
     @Test
     func formSheetDismissed_關閉中已暫存詳情狀態失敗提示_表單關好後呈現() async {
         // Given
-        let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
-            AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("orders.list.label.operationFailed")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("orders.merge.label.ok")
-                }
-            } message: {
-                TextState("campaigns.general.message.campaignStatusUpdated")
+        let expectedNotice = AlertState<CampaignPresentationFeature.Destination.Alert> {
+            TextState("orders.list.label.operationFailed")
+        } actions: {
+            ButtonState(role: .cancel) {
+                TextState("orders.merge.label.ok")
             }
-        )
+        } message: {
+            TextState("campaigns.general.message.campaignStatusUpdated")
+        }
         var initial = CampaignFeature.State()
         initial.presentation.queue.isFormClosing = true
         initial.presentation.queue.pendingNotice = expectedNotice
@@ -203,10 +195,10 @@ struct CampaignFeatureFailureTimingFollowUpTests {
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = expectedNotice
+            $0.presentation.notice = expectedNotice
         }
 
         // Then
-        #expect(store.state.presentation.destination == expectedNotice)
+        #expect(store.state.presentation.notice == expectedNotice)
     }
 }

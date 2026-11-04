@@ -5,7 +5,6 @@
 //  Created by Leo Ho on 2026/7/24.
 //
 
-import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -151,9 +150,11 @@ struct BLAccessibilityIDTests {
         BLAccessibilityID.Root.sidebar,
         BLAccessibilityID.Dashboard.root,
         BLAccessibilityID.Dashboard.emptyState,
+        BLAccessibilityID.Insights.heatmap,
         BLAccessibilityID.Settings.languagePicker,
         BLAccessibilityID.Settings.monthlyGoalField,
         BLAccessibilityID.Common.keyboardDoneButton,
+        BLAccessibilityID.Common.detailEmptyState,
     ])
     func staticIdentifiers_靜態識別碼_皆為ASCII字元(_ identifier: String) {
         // Given
@@ -164,6 +165,34 @@ struct BLAccessibilityIDTests {
         // Then
         #expect(isASCIIOnly)
         #expect(!identifier.isEmpty)
+    }
+
+    /// 驗證 `feature` 作用域的選取項目識別碼格式正確且皆為 ASCII 字元
+    ///
+    /// - Parameter scenario: 功能模組案例與預期的完整識別碼
+    @Test(arguments: [
+        FeatureScopedItemCase(
+            feature: .orders,
+            expectedIdentifier: "common.navigation.orders.selectedItem"
+        ),
+        FeatureScopedItemCase(
+            feature: .campaigns,
+            expectedIdentifier: "common.navigation.campaigns.selectedItem"
+        ),
+        FeatureScopedItemCase(
+            feature: .more,
+            expectedIdentifier: "common.navigation.more.selectedItem"
+        ),
+    ])
+    func selectedItem_指定功能範疇_組成符合慣例之ASCII識別碼(scenario: FeatureScopedItemCase) {
+        // Given
+
+        // When
+        let identifier = BLAccessibilityID.Common.selectedItem(scenario.feature)
+
+        // Then
+        #expect(identifier == scenario.expectedIdentifier)
+        #expect(identifier.unicodeScalars.allSatisfy { $0.isASCII })
     }
 
     /// 驗證 `RootTab` 的無障礙分頁鍵與測試端的分頁目錄完全相同，新增或改名分頁時此測試會轉紅
@@ -191,6 +220,16 @@ extension BLAccessibilityIDTests {
         let key: BLAccessibilityID.Dashboard.KPI
 
         /// 對應該鍵的完整識別碼
+        let expectedIdentifier: String
+    }
+
+    /// 功能作用域選取項目識別碼案例，將功能範圍與獨立指定的預期識別碼配對
+    struct FeatureScopedItemCase: Sendable {
+
+        /// 功能模組範圍
+        let feature: BLAccessibilityID.Common.Feature
+
+        /// 獨立指定的完整預期識別碼
         let expectedIdentifier: String
     }
 }

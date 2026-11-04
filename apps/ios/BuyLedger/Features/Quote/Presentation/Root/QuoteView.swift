@@ -39,6 +39,7 @@ struct QuoteView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .blReadableScrollContent(.form)
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Quote.root)
         .scrollDismissesKeyboard(.interactively)
@@ -109,26 +110,6 @@ private extension QuoteView {
         }
     }
 
-    /// 幣別選擇 sheet 內容
-    var currencyPickerSheet: some View {
-        OptionPickerSheet(
-            title: "fx.rates.label.selectSourceCurrency",
-            options: store.rateSource.availableCurrencyCodes,
-            selection: .single(
-                selected: store.rateSource.fromCurrency.rawValue,
-                onSelect: {
-                    store.send(.view(.currencySelected($0)))
-                }
-            ),
-            emptyState: .init(
-                title: "orders.edit.label.currenciesAvailable",
-                description: "orders.edit.message.internetConnectionRequired"
-            ),
-            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
-            isSearchEnabled: true
-        )
-    }
-
     /// 建議售價 hero 卡
     @ViewBuilder
     var suggestedHero: some View {
@@ -187,6 +168,26 @@ private extension QuoteView {
             .accessibilityLabel(Text("common.action.button.done"))
             .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
         }
+    }
+
+    /// 幣別選擇 sheet 內容
+    var currencyPickerSheet: some View {
+        OptionPickerSheet(
+            title: "fx.rates.label.selectSourceCurrency",
+            options: store.rateSource.availableCurrencyCodes,
+            selection: .single(
+                selected: store.rateSource.fromCurrency.rawValue,
+                onSelect: {
+                    store.send(.view(.currencySelected($0)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.edit.label.currenciesAvailable",
+                description: "orders.edit.message.internetConnectionRequired"
+            ),
+            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+            isSearchEnabled: true
+        )
     }
 }
 

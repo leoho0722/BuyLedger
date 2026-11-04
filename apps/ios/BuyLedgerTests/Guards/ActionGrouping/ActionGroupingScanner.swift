@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Testing
 
 /// 掃描 View 的 `store.send` 與 reducer 的子 Feature view action，供 action 分組守門使用
 enum ActionGroupingScanner {
@@ -63,8 +62,7 @@ enum ActionGroupingScanner {
         "Features/Orders/Presentation/OrderFilter/Views/OrderFilterPaymentMethodSection.swift",
         "Features/Orders/Presentation/OrderFilter/Views/OrderFilterCategorySection.swift",
         "Features/App/Presentation/Root/RootView.swift",
-        "Features/App/Presentation/Root/RootTabLayout.swift",
-        "Features/App/Presentation/Root/RootSidebarLayout.swift",
+        "Features/App/Presentation/Root/RootNavigationLayout.swift",
         "Features/App/Presentation/AppLock/AppLockView.swift",
         "Features/App/Presentation/PersistenceFailure/PersistenceFailureView.swift",
         "Features/More/Presentation/Root/MoreView.swift",
@@ -197,6 +195,8 @@ extension ActionGroupingScanner {
         let stripped = stripCommentsAndStrings(from: source)
         var violations: [Violation] = []
         var usedAllowlistKeys = Set<String>()
+        let storeSendPattern = #/\b(?:store|\w+Store)\s*\.\s*send\s*\(\s*/#
+        let viewActionPrefixPattern = #/^\.\s*view\s*\(/#
 
         for match in stripped.matches(of: storeSendPattern) {
             let suffix = String(stripped[match.range.upperBound...])
@@ -246,7 +246,8 @@ extension ActionGroupingScanner {
     /// - Returns: 子 Feature view action 違規清單
     static func reducerChildViewViolations(in source: String, relativePath: String) -> [Violation] {
         let stripped = stripCommentsAndStrings(from: source)
-        return stripped.matches(of: reducerChildViewPattern).map { match in
+        let childViewPattern = #/\.\s*(?!send\b|view\b)[a-z]\w*\s*\(\s*\.\s*view\s*\(/#
+        return stripped.matches(of: childViewPattern).map { match in
             let detail = "reducer 子層 view action 違規：\(snippet(String(stripped[match.range])))"
             return Violation(file: relativePath, detail: detail)
         }
@@ -289,35 +290,9 @@ extension ActionGroupingScanner {
 
 private extension ActionGroupingScanner {
 
-    /// 測試 target 所在的 iOS 平台目錄
-    static var iosRoot: URL {
-        TestPaths.iosRoot
-    }
-
     /// App 正式程式碼的根目錄
     static var productionRoot: URL {
-        iosRoot.appending(path: "BuyLedger")
-    }
-
-    /// View 送出 action 的掃描模式
-    ///
-    /// - Note: `Regex` 不是 `Sendable`，不能存成非隔離的 `static let`，改為每次取用時建立
-    static var storeSendPattern: Regex<Substring> {
-        #/\b(?:store|\w+Store)\s*\.\s*send\s*\(\s*/#
-    }
-
-    /// View action 必須以 `.view(` 開頭的掃描模式
-    ///
-    /// - Note: `Regex` 不是 `Sendable`，不能存成非隔離的 `static let`，改為每次取用時建立
-    static var viewActionPrefixPattern: Regex<Substring> {
-        #/^\.\s*view\s*\(/#
-    }
-
-    /// reducer 包裝子 Feature `.view(` 寫法的掃描模式
-    ///
-    /// - Note: `Regex` 不是 `Sendable`，不能存成非隔離的 `static let`，改為每次取用時建立
-    static var reducerChildViewPattern: Regex<Substring> {
-        #/\.\s*(?!send\b|view\b)[a-z]\w*\s*\(\s*\.\s*view\s*\(/#
+        TestPaths.iosRoot.appending(path: "BuyLedger")
     }
 
     /// 移除註解與字串字面值，保留程式碼空白與換行

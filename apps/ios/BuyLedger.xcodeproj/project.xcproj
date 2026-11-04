@@ -213,7 +213,7 @@
         "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
         "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "408",
+        "CURRENT_PROJECT_VERSION": "413",
         "DEAD_CODE_STRIPPING": "YES",
         "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
         "DEVELOPMENT_TEAM": "23JEQ2524P",
@@ -315,7 +315,7 @@
       "build-settings": {
         "BUNDLE_LOADER": "$(TEST_HOST)",
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "408",
+        "CURRENT_PROJECT_VERSION": "413",
         "DEAD_CODE_STRIPPING": "YES",
         "DEVELOPMENT_TEAM": "23JEQ2524P",
         "GENERATE_INFOPLIST_FILE": "YES",
@@ -350,7 +350,7 @@
       ],
       "build-settings": {
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "408",
+        "CURRENT_PROJECT_VERSION": "413",
         "DEAD_CODE_STRIPPING": "YES",
         "DEVELOPMENT_TEAM": "23JEQ2524P",
         "GENERATE_INFOPLIST_FILE": "YES",

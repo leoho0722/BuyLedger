@@ -15,6 +15,14 @@ import Testing
 @MainActor
 struct RootFeatureForegroundTests {
 
+    // MARK: - Properties
+
+    /// 詳情開啟時記錄的日期脈絡時間 (2026-04-29 00:00 UTC)
+    private static let aprilTwentyNinth = Date(timeIntervalSince1970: 1_777_420_800)
+
+    /// 跨入下月的時間 (2026-05-01 00:00 UTC)
+    private static let mayFirst = Date(timeIntervalSince1970: 1_777_593_600)
+
     /// 驗證回到前景時，更多頁的生物辨識類型更新為裝置回報的類型，已開啟的設定頁仍保留開啟當時的類型
     @Test
     func appLock_回到前景_更多頁辨識類型同步() async {
@@ -185,6 +193,70 @@ struct RootFeatureForegroundTests {
         #expect(titles == ["昨天"])
         #expect(store.state.campaigns.campaigns == [campaign])
     }
+
+    /// 驗證跨月回到前景時，因這次刷新才被本月篩選排除的目前訂單詳情會清空
+    @Test
+    func appLock_跨月後回到前景_清空被本月篩選排除的訂單詳情() async {
+        // Given
+        let calendar = TestDependencies.fixedCalendar
+        let initial = Self.makeDateFilteredDetailState()
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(Self.mayFirst)
+            $0.calendar = calendar
+            $0.biometricAuthService.biometryType = {
+                .unavailable
+            }
+        }
+
+        // When
+        await store.send(.appLock(.view(.scenePhaseChanged(.active))))
+
+        // Then
+        await store.receive(\.appLock.delegate.didBecomeActive) {
+            $0.campaigns.list.dateContext = CampaignDateContext(
+                now: Self.mayFirst,
+                calendar: calendar
+            )
+            $0.orders.list.dateContext = OrderDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.dashboard.dateContext = DashboardDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.insights.dateContext = InsightsDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.orders.detail.path.removeAll()
+        }
+        await store.finish()
+        #expect(store.state.orders.detail.path.isEmpty)
+    }
+
+    /// 驗證收到系統重大時間變更且跨月時，因這次刷新才被本月篩選排除的目前訂單詳情會清空
+    @Test
+    func launch_系統時間變更跨月_清空被本月篩選排除的訂單詳情() async {
+        // Given
+        let calendar = TestDependencies.fixedCalendar
+        let initial = Self.makeDateFilteredDetailState()
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(Self.mayFirst)
+            $0.calendar = calendar
+        }
+
+        // When
+        await store.send(.launch(.delegate(.significantTimeChanged))) {
+            $0.campaigns.list.dateContext = CampaignDateContext(
+                now: Self.mayFirst,
+                calendar: calendar
+            )
+            $0.orders.list.dateContext = OrderDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.dashboard.dateContext = DashboardDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.insights.dateContext = InsightsDateContext(now: Self.mayFirst, calendar: calendar)
+            $0.orders.detail.path.removeAll()
+        }
+
+        // Then
+        await store.finish()
+        #expect(store.state.orders.detail.path.isEmpty)
+    }
 }
 
 // MARK: - Private Method
@@ -223,6 +295,28 @@ private extension RootFeatureForegroundTests {
         )
         state.dashboard.dateContext = DashboardDateContext(now: recordedDate, calendar: calendar)
         state.insights.dateContext = InsightsDateContext(now: recordedDate, calendar: calendar)
+        return state
+    }
+
+    /// 建立開著 `BL-2604-017` 詳情、套用本月篩選且日期脈絡停在 2026-04-29 的根狀態
+    ///
+    /// - Returns: 跨到下月後詳情會被本月篩選排除的根狀態
+    static func makeDateFilteredDetailState() -> RootFeature.State {
+        let calendar = TestDependencies.fixedCalendar
+        var state = makeCampaignDateState(
+            campaigns: [],
+            recordedDate: aprilTwentyNinth,
+            calendar: calendar
+        )
+        state.orders = OrdersContainerPlanTestSupport.makeState(orders: [
+            LedgerOrder.fixture(
+                id: "BL-2604-017",
+                date: Date(timeIntervalSince1970: 1_776_988_800)
+            ),
+        ])
+        state.orders.refreshDateContext(now: aprilTwentyNinth, calendar: calendar)
+        state.orders.list.selectedDatePeriod = .thisMonth
+        state.orders.detail.showDetail(orderID: "BL-2604-017")
         return state
     }
 }

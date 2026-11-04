@@ -17,7 +17,7 @@ struct MoreFeature {
     @ObservableState
     struct State: Equatable {
 
-        /// 目前推入的子畫面，返回時釋放該畫面狀態
+        /// 目前工具的唯一導覽元素，由入口選取決定
         var path = StackState<Path.State>()
 
         /// 主檔目錄的載入與新增流程，沒有自己的畫面
@@ -35,6 +35,29 @@ struct MoreFeature {
         /// 建立設定頁使用的版本文字
         let appVersion: String
 
+        /// 目前工具對應的入口，由路徑推導；未開啟工具時為 `nil`
+        var currentEntry: Entry? {
+            guard let element = path.last else {
+                return nil
+            }
+            switch element {
+            case .customers:
+                return .customers
+
+            case .fx:
+                return .fx
+
+            case .lookupManagement(let lookup):
+                return .lookup(lookup.kind)
+
+            case .quote:
+                return .quote
+
+            case .settings:
+                return .settings
+            }
+        }
+
         /// 建立此分頁獨立的訂單投影來源
         ///
         /// - Parameter appVersion: 設定頁要呈現的 App 版本
@@ -43,43 +66,46 @@ struct MoreFeature {
             self.appVersion = appVersion
         }
 
-        /// 依被點擊的入口推入對應的子畫面；設定入口會先清空既有堆疊
-        ///
-        /// - Parameter entry: 被點擊的入口
-        mutating func push(_ entry: Entry) {
-            switch entry {
-            case .fx:
-                path.append(.fx(FxFeature.State()))
-
-            case .customers:
-                path.append(.customers(CustomersFeature.State(orders: SharedReader($orders))))
-
-            case .quote:
-                path.append(.quote(QuoteFeature.State()))
-
-            case .orderSources:
-                path.append(.lookupManagement(LookupManagementFeature.State(kind: .orderSource)))
-
-            case .categories:
-                path.append(.lookupManagement(LookupManagementFeature.State(kind: .category)))
-
-            case .paymentMethods:
-                path.append(.lookupManagement(LookupManagementFeature.State(kind: .paymentMethod)))
-
-            case .reconciliationStatuses:
-                path.append(
-                    .lookupManagement(LookupManagementFeature.State(kind: .reconciliationStatus))
-                )
-
-            case .settings:
-                showSettings()
-            }
+        /// 開啟設定頁；設定頁已開啟時保留既有狀態
+        mutating func showSettings() {
+            open(.settings)
         }
 
-        /// 清空既有堆疊，再以目前投影推入唯一設定頁
-        mutating func showSettings() {
+        /// 開啟入口對應的工具：同一工具保留既有狀態，不同工具替換根目的地
+        ///
+        /// - Parameter entry: 被選取的入口
+        mutating func open(_ entry: Entry) {
+            guard currentEntry != entry else {
+                return
+            }
             path.removeAll()
-            path.append(
+            path.append(makeElement(for: entry))
+        }
+
+        /// 清空根目的地，回到入口清單
+        mutating func clearDestination() {
+            path.removeAll()
+        }
+
+        /// 依入口建立唯一導覽元素，工具狀態在每次開啟時重新建立
+        ///
+        /// - Parameter entry: 要建立的入口
+        /// - Returns: 對應入口的導覽元素
+        private func makeElement(for entry: Entry) -> Path.State {
+            switch entry {
+            case .fx:
+                .fx(FxFeature.State())
+
+            case .customers:
+                .customers(CustomersFeature.State(orders: SharedReader($orders)))
+
+            case .quote:
+                .quote(QuoteFeature.State())
+
+            case .lookup(let kind):
+                .lookupManagement(LookupManagementFeature.State(kind: kind))
+
+            case .settings:
                 .settings(
                     SettingsFeature.State(
                         snapshot: preferences,
@@ -87,12 +113,7 @@ struct MoreFeature {
                         biometryType: biometryType
                     )
                 )
-            )
-        }
-
-        /// 切離更多頁前清空導覽堆疊
-        mutating func popToRoot() {
-            path.removeAll()
+            }
         }
     }
 
@@ -103,7 +124,7 @@ struct MoreFeature {
 
         /// 更多頁自己送出的操作
         ///
-        /// - Parameter action: 使用者點擊的入口
+        /// - Parameter action: 使用者選取的入口
         case view(View)
 
         /// 交給根功能的跨功能意圖
@@ -133,10 +154,10 @@ struct MoreFeature {
         @CasePathable
         enum View: Equatable {
 
-            /// 使用者點擊工具、管理項目或設定列
+            /// 入口列的選取變更，`nil` 代表使用者離開目前工具
             ///
-            /// - Parameter entry: 被點擊的入口
-            case entryTapped(Entry)
+            /// - Parameter entry: 被選取的入口，`nil` 代表離開
+            case entrySelected(Entry?)
         }
 
         /// 子畫面需要根功能處理的意圖
@@ -151,12 +172,12 @@ struct MoreFeature {
             /// - Parameters:
             ///   - request: 原新增請求，保留發起表單的識別值
             ///   - isStored: 是否寫入成功
-            case optionAdditionCompleted(LookupAdditionRequest, isStored: Bool)
+            case optionAdditionCompleted(request: LookupAdditionRequest, isStored: Bool)
 
             /// 客戶頁要求載入訂單
             case ordersLoadRequested
 
-            /// 客戶頁已清空堆疊並選定要查看的客戶
+            /// 客戶頁選定要查看的客戶
             ///
             /// - Parameter name: 客戶名稱
             case customerSelected(String)
@@ -227,8 +248,8 @@ extension MoreFeature {
         case settings(SettingsFeature)
     }
 
-    /// 更多頁八個入口，順序與 accessibility 列識別型別一致
-    enum Entry: Equatable {
+    /// 更多頁的入口，四種主檔共用同一個 `lookup` 入口並以種類區分
+    enum Entry: Hashable {
 
         /// 匯率工具
         case fx
@@ -239,17 +260,10 @@ extension MoreFeature {
         /// 報價試算
         case quote
 
-        /// 訂單來源主檔
-        case orderSources
-
-        /// 商品類別主檔
-        case categories
-
-        /// 付款方式主檔
-        case paymentMethods
-
-        /// 對帳狀態主檔
-        case reconciliationStatuses
+        /// 訂單來源、商品類別、付款方式或對帳狀態主檔
+        ///
+        /// - Parameter kind: 主檔種類
+        case lookup(LookupKind)
 
         /// 設定
         case settings
@@ -258,15 +272,13 @@ extension MoreFeature {
 
 // MARK: - Equatable
 
-extension MoreFeature.Path.State: Equatable {
-
-}
+extension MoreFeature.Path.State: Equatable {}
 
 // MARK: - Private Method
 
 private extension MoreFeature {
 
-    /// 建立入口目的地，或轉送子畫面的跨功能委派
+    /// 開啟或清空入口對應的工具，或轉送子畫面的跨功能委派
     ///
     /// - Parameters:
     ///   - state: 更多頁的導覽與投影
@@ -274,8 +286,12 @@ private extension MoreFeature {
     /// - Returns: 要交給根功能的委派，沒有時回傳空效果
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case .view(.entryTapped(let entry)):
-            state.push(entry)
+        case .view(.entrySelected(let entry)):
+            if let entry {
+                state.open(entry)
+            } else {
+                state.clearDestination()
+            }
             return .none
 
         case .delegate:
@@ -285,7 +301,6 @@ private extension MoreFeature {
             return .send(.delegate(.ordersLoadRequested))
 
         case .path(.element(id: _, action: .customers(.delegate(.customerSelected(let name))))):
-            state.path.removeAll()
             return .send(.delegate(.customerSelected(name)))
 
         case .path(
@@ -313,7 +328,7 @@ private extension MoreFeature {
             return .send(.delegate(.catalogLoadFinished))
 
         case .catalog(.delegate(.additionCompleted(let request, let isStored))):
-            return .send(.delegate(.optionAdditionCompleted(request, isStored: isStored)))
+            return .send(.delegate(.optionAdditionCompleted(request: request, isStored: isStored)))
 
         case .catalog:
             return .none

@@ -19,6 +19,9 @@ struct CampaignListView: View {
     /// App 目前選用的顯示語系
     let language: AppLanguage
 
+    /// 原生分欄導覽選取的開團識別值綁定，未選取時為 `nil`
+    let selection: Binding<Campaign.ID?>
+
     // MARK: - Body
 
     /// 依載入狀態切換內容，並掛上根標題、工具列與載入任務
@@ -42,6 +45,92 @@ struct CampaignListView: View {
 // MARK: - Private Views
 
 private extension CampaignListView {
+
+    /// 依載入狀態切換載入失敗畫面、載入中指示或載入完成的內容
+    @ViewBuilder
+    var content: some View {
+        switch store.loadState {
+        case .failed(let message):
+            loadFailure(message: message)
+
+        case .loading:
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .loaded:
+            loadedContent
+        }
+    }
+
+    /// 顯示載入失敗畫面與重試鍵
+    ///
+    /// - Parameter message: 持續顯示的失敗訊息
+    /// - Returns: 載入失敗 view
+    func loadFailure(message: String) -> some View {
+        BLLoadFailureView(
+            message: message,
+            retryIdentifier: BLAccessibilityID.Campaigns.listLoadFailureRetryButton
+        ) {
+            store.send(.view(.retryTapped))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listLoadFailure)
+    }
+
+    /// 載入完成後依有無開團與篩選結果，顯示空狀態或區段清單
+    @ViewBuilder
+    var loadedContent: some View {
+        if store.campaigns.isEmpty {
+            emptyState
+        } else if let visibleSections = store.visibleSections {
+            sectionList(visibleSections.sections, dateContext: visibleSections.dateContext)
+        } else {
+            filteredEmptyState
+        }
+    }
+
+    /// 完全沒有開團時的空狀態
+    var emptyState: some View {
+        ContentUnavailableView(
+            "orders.edit.label.campaigns",
+            systemImage: "shippingbox",
+            description: Text("campaigns.list.message.tapTopright")
+        )
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
+    }
+
+    /// 依日期區段呈現開團，編輯、刪除與選取都轉成列表的操作
+    ///
+    /// - Parameters:
+    ///   - sections: 已依篩選與分組算好的日期區段
+    ///   - dateContext: 列表記錄的現在時間與行事曆
+    /// - Returns: 區段清單 view
+    func sectionList(
+        _ sections: [CampaignDateSection],
+        dateContext: CampaignDateContext
+    ) -> some View {
+        CampaignSectionList(
+            dateContext: dateContext,
+            isShowingOpenDate: store.grouping == .year,
+            onDelete: {
+                store.send(.view(.deleteCampaignTapped($0)))
+            },
+            onEdit: {
+                store.send(.view(.editCampaignTapped($0)))
+            },
+            sections: sections,
+            selection: selection,
+            summaries: store.rowSummaries
+        )
+    }
+
+    /// 有開團但目前狀態篩選下沒有符合者時的空狀態
+    var filteredEmptyState: some View {
+        ContentUnavailableView(
+            "campaigns.list.label.matchingCampaigns",
+            systemImage: "line.3.horizontal.decrease.circle",
+            description: Text("campaigns.list.message.campaignsMatchCurrent")
+        )
+    }
 
     /// 工具列的篩選與分組選單
     var filterMenu: some View {
@@ -71,64 +160,6 @@ private extension CampaignListView {
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
     }
 
-    /// 工具列的「新增開團」按鈕
-    var addCampaignButton: some View {
-        Button {
-            store.send(.view(.newCampaignTapped))
-        } label: {
-            Image(systemName: "plus")
-        }
-        .accessibilityLabel(Text("campaigns.list.label.addCampaign"))
-        .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
-    }
-
-    /// 完全沒有開團時的空狀態
-    var emptyState: some View {
-        ContentUnavailableView(
-            "orders.edit.label.campaigns",
-            systemImage: "shippingbox",
-            description: Text("campaigns.list.message.tapTopright")
-        )
-        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
-    }
-
-    /// 有開團但目前狀態篩選下沒有符合者時的空狀態
-    var filteredEmptyState: some View {
-        ContentUnavailableView(
-            "campaigns.list.label.matchingCampaigns",
-            systemImage: "line.3.horizontal.decrease.circle",
-            description: Text("campaigns.list.message.campaignsMatchCurrent")
-        )
-    }
-
-    /// 載入完成後依有無開團與篩選結果，顯示空狀態或區段清單
-    @ViewBuilder
-    var loadedContent: some View {
-        if store.campaigns.isEmpty {
-            emptyState
-        } else if let visibleSections = store.visibleSections {
-            sectionList(visibleSections.sections, dateContext: visibleSections.dateContext)
-        } else {
-            filteredEmptyState
-        }
-    }
-
-    /// 依載入狀態切換載入失敗畫面、載入中指示或載入完成的內容
-    @ViewBuilder
-    var content: some View {
-        switch store.loadState {
-        case .failed(let message):
-            loadFailure(message: message)
-
-        case .loading:
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-        case .loaded:
-            loadedContent
-        }
-    }
-
     /// 建立對應開團狀態的篩選選項
     ///
     /// - Parameter status: 對應的開團狀態
@@ -138,45 +169,15 @@ private extension CampaignListView {
             .tag(CampaignStatus?.some(status))
     }
 
-    /// 顯示載入失敗畫面與重試鍵
-    ///
-    /// - Parameter message: 持續顯示的失敗訊息
-    /// - Returns: 載入失敗 view
-    func loadFailure(message: String) -> some View {
-        BLLoadFailureView(
-            message: message,
-            retryIdentifier: BLAccessibilityID.Campaigns.listLoadFailureRetryButton
-        ) {
-            store.send(.view(.retryTapped))
+    /// 工具列的「新增開團」按鈕
+    var addCampaignButton: some View {
+        Button {
+            store.send(.view(.newCampaignTapped))
+        } label: {
+            Image(systemName: "plus")
         }
-        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listLoadFailure)
-    }
-
-    /// 依日期區段呈現開團，操作一律轉成列表的 view action
-    ///
-    /// - Parameters:
-    ///   - sections: 已依篩選與分組算好的日期區段
-    ///   - dateContext: 列表記錄的現在時間與行事曆
-    /// - Returns: 區段清單 view
-    func sectionList(
-        _ sections: [CampaignDateSection],
-        dateContext: CampaignDateContext
-    ) -> some View {
-        CampaignSectionList(
-            dateContext: dateContext,
-            isShowingOpenDate: store.grouping == .year,
-            onDelete: {
-                store.send(.view(.deleteCampaignTapped($0)))
-            },
-            onEdit: {
-                store.send(.view(.editCampaignTapped($0)))
-            },
-            onSelect: {
-                store.send(.view(.campaignTapped($0)))
-            },
-            sections: sections,
-            summaries: store.rowSummaries
-        )
+        .accessibilityLabel(Text("campaigns.list.label.addCampaign"))
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
     }
 }
 
@@ -228,7 +229,8 @@ private extension CampaignListView {
             store: Store(initialState: state) {
                 CampaignListFeature()
             },
-            language: .traditionalChinese
+            language: .traditionalChinese,
+            selection: .constant(nil)
         )
     }
 }
@@ -244,7 +246,8 @@ private extension CampaignListView {
             store: Store(initialState: state) {
                 EmptyReducer()
             },
-            language: .traditionalChinese
+            language: .traditionalChinese,
+            selection: .constant(nil)
         )
     }
 }
@@ -261,7 +264,8 @@ private extension CampaignListView {
             store: Store(initialState: state) {
                 EmptyReducer()
             },
-            language: .traditionalChinese
+            language: .traditionalChinese,
+            selection: .constant(nil)
         )
     }
 }
@@ -278,7 +282,8 @@ private extension CampaignListView {
             store: Store(initialState: state) {
                 EmptyReducer()
             },
-            language: .traditionalChinese
+            language: .traditionalChinese,
+            selection: .constant(nil)
         )
     }
 }

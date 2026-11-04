@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證日期脈絡的記錄與點擊操作後送給 `OrdersFeature` 的請求
+/// `OrderListFeature` 的單元測試，以 `TestStore` 逐步驗證日期脈絡的記錄與點擊操作後送給 `OrdersFeature` 的請求
 @MainActor
 struct OrderListFeatureTests {
 
@@ -137,21 +137,6 @@ struct OrderListFeatureTests {
         await store.receive(\.delegate.requested, .delete("A"))
     }
 
-    /// 驗證點擊訂單時只送出帶有訂單 A 識別值的顯示詳情請求，不改變清單狀態
-    @Test
-    func orderTapped_點擊訂單_委派顯示詳情請求() async {
-        // Given
-        let store = TestStore(initialState: OrderListFeatureTestSupport.makeState()) {
-            OrderListFeature()
-        }
-
-        // When
-        await store.send(.view(.orderTapped("A")))
-
-        // Then
-        await store.receive(\.delegate.requested, .showDetail("A"))
-    }
-
     /// 驗證點擊 AI 摘要時只送出摘要請求，不自行呈現摘要
     @Test
     func aiSummaryTapped_點擊摘要_委派摘要請求() async {
@@ -165,22 +150,5 @@ struct OrderListFeatureTests {
 
         // Then
         await store.receive(\.delegate.requested, .aiSummary)
-    }
-
-    /// 驗證選取訂單 B 時，清單更新選取的識別值，並送出 `selectionChanged` 通知
-    @Test
-    func orderSelected_選取訂單_更新選取並通知容器() async {
-        // Given
-        let store = TestStore(initialState: OrderListFeatureTestSupport.makeState()) {
-            OrderListFeature()
-        }
-
-        // When
-        await store.send(.view(.orderSelected("B"))) {
-            $0.selectedOrderID = "B"
-        }
-
-        // Then
-        await store.receive(\.delegate.selectionChanged, "B")
     }
 }
