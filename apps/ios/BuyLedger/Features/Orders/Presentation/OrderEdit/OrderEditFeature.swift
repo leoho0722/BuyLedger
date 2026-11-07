@@ -24,9 +24,6 @@ struct OrderEditFeature {
         /// 表單草稿；只保留未儲存變更需要比較的欄位
         var draft: OrderDraft
 
-        /// 是否剛將無卡折抵金額調整到上限
-        var isCardlessDeductionCapped: Bool = false
-
         /// 照片草稿與編輯狀態；既有訂單的照片在區段出現時讀取
         var photos: OrderEditPhotosFeature.State
 
@@ -45,7 +42,7 @@ struct OrderEditFeature {
         /// 本次開啟表單的識別值，與訂單編號無關
         let id: UUID
 
-        /// 表單開啟時夾限後的草稿，供判斷未儲存變更
+        /// 表單開啟時的草稿，供判斷未儲存變更
         let initialDraft: OrderDraft
 
         /// 表單建立時的行事曆，供完整時間格式化使用
@@ -56,7 +53,7 @@ struct OrderEditFeature {
             original == nil ? "orders.list.label.newOrder" : "orders.detail.label.editOrder"
         }
 
-        /// 客戶實付金額的繫結入口，修改時重新檢查折抵上限
+        /// 客戶實付金額的繫結入口，只寫回實付欄位
         var chargedAmount: Decimal {
             get {
                 draft.chargedAmount
@@ -66,7 +63,7 @@ struct OrderEditFeature {
             }
         }
 
-        /// 無卡折抵金額的繫結入口，修改時重新檢查上限
+        /// 無卡折抵金額的繫結入口，保留使用者輸入的金額
         var cardlessDeductionAmount: Decimal {
             get {
                 draft.cardlessDeductionAmount
@@ -82,8 +79,8 @@ struct OrderEditFeature {
         }
 
         /// 顧客名稱、訂單來源與至少一個商品類別是否皆已填寫
-        var canSave: Bool {
-            OrderEditDraftOperations.canSave(draft: draft)
+        var hasRequiredFields: Bool {
+            OrderEditDraftOperations.hasRequiredFields(draft: draft)
         }
 
         /// 草稿或照片有未儲存變更
@@ -94,6 +91,17 @@ struct OrderEditFeature {
         /// 目前付款方式是否為無卡類
         var isSelectedPaymentMethodCardless: Bool {
             OrderEditDraftOperations.selectedPaymentMethod(state: self)?.isCardless ?? false
+        }
+
+        /// 是否為無卡付款且折抵超過客戶實付
+        var isCardlessDeductionExceeded: Bool {
+            isSelectedPaymentMethodCardless
+                && draft.cardlessDeductionAmount > max(0, draft.chargedAmount)
+        }
+
+        /// 是否必填齊全且無卡折抵未超過客戶實付
+        var canSave: Bool {
+            hasRequiredFields && !isCardlessDeductionExceeded
         }
 
         /// 目前付款方式是否為銀行匯款
@@ -146,19 +154,18 @@ struct OrderEditFeature {
             prefill: Prefill? = nil
         ) {
             self.original = original
-            let prepared = OrderEditDraftOperations.prepareDraft(
+            let draft = OrderEditDraftOperations.prepareDraft(
                 original: original,
                 currentDate: currentDate,
                 defaultCurrency: defaultCurrency,
                 prefill: prefill
             )
-            self.draft = prepared.draft
-            self.initialDraft = prepared.draft
-            self.isCardlessDeductionCapped = prepared.isCardlessDeductionCapped
+            self.draft = draft
+            self.initialDraft = draft
             self.photos = OrderEditDraftOperations.photos(original: original, prefill: prefill)
             self.mergeSourceIDs = prefill?.mergeSourceIDs ?? []
             self.calendar = options.calendar
-            self.pickers = OrderEditPickersFeature.State(options: options, draft: prepared.draft)
+            self.pickers = OrderEditPickersFeature.State(options: options, draft: draft)
             self.id = id
         }
 
@@ -223,6 +230,40 @@ struct OrderEditFeature {
 
             /// 備註
             case notes
+        }
+
+        /// 依目前語言組成商品數量的顯示文字
+        ///
+        /// - Parameters:
+        ///   - quantity: 商品數量
+        ///   - locale: 畫面目前套用的語言與地區
+        /// - Returns: 含數量標籤與數字的文字
+        func itemQuantityDisplayText(_ quantity: Int, locale: Locale) -> String {
+            AppLanguage.format("orders.detail.label.quantity", quantity, locale: locale)
+        }
+
+        /// 依目前語言組成含草稿幣別的商品明細標題
+        ///
+        /// - Parameter locale: 畫面目前套用的語言與地區
+        /// - Returns: 含幣別代碼的商品明細標題
+        func itemDetailsTitle(locale: Locale) -> String {
+            AppLanguage.format(
+                "orders.edit.label.itemDetailsCurrency",
+                draft.currency.rawValue,
+                locale: locale
+            )
+        }
+
+        /// 依注入的行事曆與目前語言組成完整訂購日期說明
+        ///
+        /// - Parameter locale: 畫面目前套用的語言與地區
+        /// - Returns: 訂購日期標籤與包含秒數的時間戳
+        func orderDateTimestampText(locale: Locale) -> String {
+            AppLanguage.format(
+                "orders.edit.label.orderDateTimestamp",
+                OrderFormatters.fullTimestamp(draft.date, calendar: calendar, locale: locale),
+                locale: locale
+            )
         }
 
         /// 將已落盤的主檔項目加入清單並選取
@@ -362,8 +403,8 @@ private extension OrderEditFeature {
     /// - Returns: 存檔、主檔新增或關閉表單的效果
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case .binding(let bindingAction):
-            return OrderEditDraftOperations.applyBinding(bindingAction, state: &state)
+        case .binding:
+            return .none
 
         case .view(let view):
             return OrderEditOperations(dismiss: dismiss) {

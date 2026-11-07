@@ -19,6 +19,9 @@ struct OrderEditItemsSection: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
+    /// 非輔助字級時單價輸入欄的寬度，隨 Dynamic Type 縮放
+    @ScaledMetric private var unitPriceWidth: CGFloat = 120
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderEditFeature>
 
@@ -68,23 +71,28 @@ private extension OrderEditItemsSection {
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             // 關閉內容類型，避免系統提供不相關建議
-            TextField("orders.list.label.itemName", text: item.name, axis: .vertical)
-                .lineLimit(1...3)
-                .font(BLTypographyStyle.body.font.weight(.medium))
-                .textContentType(nil)
-                .focused(focusedField, equals: .itemName(item.id))
+            BLTextField(
+                "orders.list.label.itemName",
+                text: item.name,
+                axis: .vertical,
+                focus: focusedField,
+                equals: .itemName(item.id)
+            )
+            .lineLimit(1...3)
+            .font(BLTypographyStyle.body.font.weight(.medium))
+            .textContentType(nil)
+            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.itemNameField)
 
             itemControlsLayout {
                 Stepper(value: item.quantity, in: 1...999) {
                     Text(
-                        AppLanguage.format(
-                            "orders.detail.label.quantity",
+                        store.state.itemQuantityDisplayText(
                             item.quantity.wrappedValue,
                             locale: locale
                         )
                     )
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(.blSecondaryLabel)
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
 
                 Spacer()
@@ -94,19 +102,23 @@ private extension OrderEditItemsSection {
                         .blTextStyle(.footnote)
                         .foregroundStyle(.blSecondaryLabel)
 
-                    TextField(
+                    BLNumberField(
                         "",
                         value: item.unitPrice,
-                        format: .number.precision(.fractionLength(0)).grouping(.never)
+                        format: .number.precision(.fractionLength(0)).grouping(.never),
+                        focus: focusedField,
+                        equals: .itemUnitPrice(item.id)
                     )
-                    .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : 120)
+                    .frame(
+                        maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : unitPriceWidth
+                    )
                     .frame(minHeight: BLHitTarget.minimum)
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .labelsHidden()
                     .keyboardType(.numberPad)
-                    .focused(focusedField, equals: .itemUnitPrice(item.id))
                     .contentShape(.rect)
+                    .accessibilityIdentifier(BLAccessibilityID.OrderEdit.itemUnitPriceField)
                 }
             }
             // 輔助字級下採用理想高度，避免 Spacer 在垂直排列中撐出多餘空白
@@ -117,13 +129,7 @@ private extension OrderEditItemsSection {
     /// 商品明細標題與系統清單編輯入口
     var sectionHeader: some View {
         HStack {
-            Text(
-                AppLanguage.format(
-                    "orders.edit.label.itemDetailsCurrency",
-                    store.draft.currency.rawValue,
-                    locale: locale
-                )
-            )
+            Text(store.state.itemDetailsTitle(locale: locale))
 
             Spacer()
 

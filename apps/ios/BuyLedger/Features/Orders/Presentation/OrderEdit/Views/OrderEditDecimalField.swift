@@ -88,16 +88,21 @@ private extension OrderEditDecimalField {
 
     /// 整數數值輸入，保留鍵盤、對齊、焦點與命中區
     var numberField: some View {
-        TextField("", value: value, format: .number.precision(.fractionLength(0)).grouping(.never))
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .frame(minHeight: BLHitTarget.minimum)
-            .multilineTextAlignment(.trailing)
-            .monospacedDigit()
-            .labelsHidden()
-            .keyboardType(.numberPad)
-            .focused(focusedField, equals: field)
-            .contentShape(.rect)
-            .accessibilityIdentifier(identifier ?? "")
+        BLNumberField(
+            "",
+            value: value,
+            format: .number.precision(.fractionLength(0)).grouping(.never),
+            focus: focusedField,
+            equals: field
+        )
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(minHeight: BLHitTarget.minimum)
+        .multilineTextAlignment(.trailing)
+        .monospacedDigit()
+        .labelsHidden()
+        .keyboardType(.numberPad)
+        .contentShape(.rect)
+        .accessibilityIdentifier(identifier ?? "")
     }
 }
 

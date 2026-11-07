@@ -40,36 +40,23 @@ struct OrderEditBasicSection: View {
 
 private extension OrderEditBasicSection {
 
-    /// 基本資料的區段標題
-    var sectionHeader: some View {
-        Text("orders.edit.label.basicInformation")
-    }
+    /// 客戶名稱、來源、類別與訂購日期
+    @ViewBuilder
+    var fields: some View {
+        BLTextField(
+            "orders.list.label.customerName",
+            text: $store.draft.customerName,
+            focus: focusedField,
+            equals: .customerName
+        )
+        .textContentType(.name)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
 
-    /// 訂購時間與必填欄位說明
-    var sectionFooter: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(
-                AppLanguage.format(
-                    "orders.edit.label.orderDateTimestamp",
-                    OrderFormatters.fullTimestamp(
-                        store.draft.date,
-                        calendar: store.calendar,
-                        locale: locale
-                    ),
-                    locale: locale
-                )
-            )
-            .blTextStyle(.footnote)
-            .foregroundStyle(.blSecondaryLabel)
-            .monospacedDigit()
-            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.orderDateTimestamp)
+        orderSourcePickerRow
 
-            if !store.canSave {
-                Text("orders.edit.message.customerNameOrder")
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(.blSecondaryLabel)
-            }
-        }
+        categoryPickerRow
+
+        orderDateRow
     }
 
     /// 訂單來源的選擇器入口，保留原有選取值與提示文字
@@ -123,19 +110,26 @@ private extension OrderEditBasicSection {
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.orderDatePicker)
     }
 
-    /// 客戶名稱、來源、類別與訂購日期
-    @ViewBuilder
-    var fields: some View {
-        TextField("orders.list.label.customerName", text: $store.draft.customerName)
-            .textContentType(.name)
-            .focused(focusedField, equals: .customerName)
-            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
+    /// 基本資料的區段標題
+    var sectionHeader: some View {
+        Text("orders.edit.label.basicInformation")
+    }
 
-        orderSourcePickerRow
+    /// 訂購時間與必填欄位說明
+    var sectionFooter: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            Text(store.state.orderDateTimestampText(locale: locale))
+                .blTextStyle(.footnote)
+                .foregroundStyle(.blSecondaryLabel)
+                .monospacedDigit()
+                .accessibilityIdentifier(BLAccessibilityID.OrderEdit.orderDateTimestamp)
 
-        categoryPickerRow
-
-        orderDateRow
+            if !store.hasRequiredFields {
+                Text("orders.edit.message.customerNameOrder")
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blSecondaryLabel)
+            }
+        }
     }
 }
 

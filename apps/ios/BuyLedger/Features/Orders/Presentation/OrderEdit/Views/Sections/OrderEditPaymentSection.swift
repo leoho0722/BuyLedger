@@ -53,14 +53,16 @@ private extension OrderEditPaymentSection {
                 title: "orders.detail.label.cardlessDeduction",
                 value: $store.cardlessDeductionAmount,
                 field: .cardlessDeduction,
-                focusedField: focusedField
+                focusedField: focusedField,
+                identifier: BLAccessibilityID.OrderEdit.cardlessDeductionField
             )
 
             OrderEditDecimalField(
                 title: "orders.detail.label.cardlessTopup",
                 value: $store.draft.cardlessSupplementAmount,
                 field: .cardlessSupplement,
-                focusedField: focusedField
+                focusedField: focusedField,
+                identifier: BLAccessibilityID.OrderEdit.cardlessSupplementField
             )
         }
     }
@@ -70,21 +72,23 @@ private extension OrderEditPaymentSection {
         Text("orders.edit.label.receivedAmountNt")
     }
 
-    /// 無卡計算方式與折抵金額已夾限的提示
+    /// 無卡付款時的計算方式說明，折抵超額時在其下方加紅字檢核訊息
     @ViewBuilder
     var sectionFooter: some View {
-        if store.isSelectedPaymentMethodCardless || store.isCardlessDeductionCapped {
+        if store.isSelectedPaymentMethodCardless {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
-                if store.isSelectedPaymentMethodCardless {
-                    Text("orders.edit.message.onlyCardlessPayment")
-                        .blTextStyle(.footnote)
-                        .foregroundStyle(.blSecondaryLabel)
-                }
+                Text("orders.edit.message.onlyCardlessPayment")
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blSecondaryLabel)
+                    .accessibilityIdentifier(BLAccessibilityID.OrderEdit.cardlessPaymentNote)
 
-                if store.isCardlessDeductionCapped {
+                if store.isCardlessDeductionExceeded {
                     Text("orders.edit.message.cardlessDeductionCannot")
                         .blTextStyle(.footnote)
-                        .foregroundStyle(.blSecondaryLabel)
+                        .foregroundStyle(BLTone.destructive.onSurface)
+                        .accessibilityIdentifier(
+                            BLAccessibilityID.OrderEdit.cardlessDeductionExceededMessage
+                        )
                 }
             }
         }

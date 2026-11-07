@@ -48,24 +48,23 @@ private extension OrdersCompactView {
             : detailSelectionBinding
 
         return OrdersCompactListView(store: listStore, sections: sections, selection: selection)
-        .task {
-            listStore.send(.view(.task))
-        }
-        .searchable(
-            text: $listStore.searchText.sending(\.view.searchTextChanged),
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text("orders.list.placeholder.searchCustomersOrder")
-        )
-        .rootNavigationTitle(listStore.navigationTitleKey, language: language)
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            OrdersToolbarContent(
-                isAllFilteredSelected: snapshot.isAllSelected,
-                filteredIDs: snapshot.ids,
-                store: listStore
+            .task {
+                listStore.send(.view(.task))
+            }
+            .blSearchable(
+                text: $listStore.searchText.sending(\.view.searchTextChanged),
+                prompt: Text("orders.list.placeholder.searchCustomersOrder")
             )
-        }
-        .alert(OrdersView.alertBinding(store: store, isDetail: false))
+            .rootNavigationTitle(listStore.navigationTitleKey, language: language)
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                OrdersToolbarContent(
+                    isAllFilteredSelected: snapshot.isAllSelected,
+                    filteredIDs: snapshot.ids,
+                    store: listStore
+                )
+            }
+            .alert(OrdersView.alertBinding(store: store, isDetail: false))
     }
 }
 

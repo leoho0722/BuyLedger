@@ -53,9 +53,10 @@ paths:
     - 參數化測試 (`@Test(arguments:)`) 的各案例共用同一個產生器 (依賴 `testValue` 以測試為單位快取)，後面案例的 id 不從 0 起；會推入堆疊的測試拆成多個測試方法並共用 helper，不要參數化。
 - **Swift 6.4 的 IRGen 會在 `Result<Void, PersistenceError>` 的 `.success`／`.failure` case key path 崩潰** (如 `receive(\.autoCloseResponse.failure)`)：這類回應只比對到 case (`receive(\.autoCloseResponse)`)，成敗以後續 action 或替身紀錄斷言。
 - **`@Reducer enum` 的 case 不能以 `destination?.edit?.x = …` 設值** (setter unavailable)：production 與 TestStore 的斷言 closure 都用 `destination?.modify(\.edit) { $0.x = … }`；讀取可以用 `?.edit?.x`。
-- **binding 行為測試要走畫面實際的綁定路徑**：以 `Store` 建立、`@Bindable var bindable = store`，對 `$bindable.<屬性>.wrappedValue` 指派；`TestStore` 送 `.set(\.draft.name, …)` 守不住畫面實際送出的 action。
-    - `$store.draft.name` 這類巢狀欄位綁定送出的是整個 `draft` 的 `.set(\.draft, …)`，`BindingAction` 要 key path 完全相等才比對得上 (見 `apps/ios/CLAUDE.md`)。
-    - 同時寫一條「改其他欄位不觸發該反應」的測試，才分得出正確與錯誤實作 (參考 `CampaignEditFeatureBindingTests`)。
+- **Feature 測試一律用 `TestStore`，不用 `Store`**：`Store` 不比對狀態變化，也不檢查未接收的 action，漏掉的變更不會讓測試失敗。只有 snapshot 測試例外：畫面只接受 `Store`。
+- **binding 測試送畫面實際送出的 action**：頂層欄位與可寫的 computed property 用 `store.send(\.binding.<欄位>, 值)`。
+    - `$store.draft.name` 這類巢狀欄位綁定送出的是整個 `draft`，測試也送 `store.send(\.binding.draft, 改好的草稿)`，不送 `.set(\.draft.name, …)`：`BindingAction` 要 key path 完全相等才比對得上 (見 `apps/ios/CLAUDE.md`)。
+    - 同時寫一條「改其他欄位不觸發該反應」的測試，才分得出正確與錯誤實作。
 - **純 `AlertState` 的 `.ifLet` 收到 `.presented` 動作後會自動清空該呈現**：清空發生在 `base._reduce` 之後，父層 reducer 仍讀得到該次呈現的值；窮舉測試依實際行為核對 `$0.xxx = nil`，不憑直覺增減。
 - **`AISummaryFeature` 串流測試一律注入同一個 `TestClock`**：測試環境的 `\.continuousClock` 可能是 `ImmediateClock`，逾時計時器會搶在串流前結束。
     - `$0.continuousClock` 與串流替身共用該 clock 的 `sleep(for:)`，以 `advance(by:)` 推進；替身內不用 `ContinuousClock` 或 `Task.sleep`。

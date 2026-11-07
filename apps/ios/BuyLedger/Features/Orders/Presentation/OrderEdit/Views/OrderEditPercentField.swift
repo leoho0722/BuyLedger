@@ -21,6 +21,9 @@ struct OrderEditPercentField: View {
     /// 表單共用的鍵盤焦點綁定
     let focusedField: FocusState<OrderEditFeature.State.Field?>.Binding
 
+    /// UI 測試定位用的識別碼，未指定時沿用空值
+    let identifier: String?
+
     /// 欄位的本地化標題
     let title: String
 
@@ -62,16 +65,18 @@ private extension OrderEditPercentField {
     /// 百分比數值與符號，沿用共用的比例換算綁定
     var numberField: some View {
         HStack(spacing: BLSpacing.extraSmall) {
-            TextField(
+            BLNumberField(
                 "",
                 value: OrderPercentConversion.percentageBinding(for: value),
-                format: Decimal.FormatStyle.number.precision(.fractionLength(2)).grouping(.never)
+                format: .number.precision(.fractionLength(2)).grouping(.never),
+                focus: focusedField,
+                equals: field
             )
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .labelsHidden()
             .keyboardType(.decimalPad)
-            .focused(focusedField, equals: field)
+            .accessibilityIdentifier(identifier ?? "")
 
             Text(verbatim: "%")
                 .foregroundStyle(.blSecondaryLabel)
@@ -91,6 +96,7 @@ private extension OrderEditPercentField {
         OrderEditPercentField(
             field: .cardFeeRate,
             focusedField: $focusedField,
+            identifier: nil,
             title: "orders.edit.label.cardFee",
             value: .constant(0.015)
         )

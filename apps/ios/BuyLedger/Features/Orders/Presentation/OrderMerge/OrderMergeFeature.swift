@@ -48,20 +48,6 @@ struct OrderMergeFeature {
         /// sheet item 的穩定識別值
         let id: UUID
 
-        /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
-        private var filteredCandidates: [LedgerOrder] {
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !query.isEmpty else {
-                return candidates
-            }
-
-            return candidates.filter {
-                ([$0.id, $0.customer.name] + $0.categories + $0.items.map(\.name))
-                    .joined(separator: " ")
-                    .localizedStandardContains(query)
-            }
-        }
-
         /// 依主訂單與全部訂單建立合併流程狀態；候選清單在此一次過濾完成
         ///
         /// - Parameters:
@@ -87,6 +73,44 @@ struct OrderMergeFeature {
                 calendar: dateContext.calendar,
                 locale: locale
             )
+        }
+
+        /// 回傳候選區段的篩選說明；只有最後一個區段附上說明
+        ///
+        /// - Parameters:
+        ///   - section: 要查詢說明的候選區段
+        ///   - sections: 同一次畫面更新已取得的全部候選區段
+        ///   - locale: 說明文字使用的語系
+        /// - Returns: 最後一個區段的篩選說明；其他區段為 `nil`
+        /// - Note: 傳入已取得的區段，避免每個區段都重新篩選與分組
+        func candidateFilterNotice(
+            for section: OrderDateSection,
+            in sections: [OrderDateSection],
+            locale: Locale
+        ) -> String? {
+            guard section.id == sections.last?.id else {
+                return nil
+            }
+            return AppLanguage.format(
+                "orders.merge.message.candidateFilterNotice",
+                primary.currency.rawValue,
+                primary.customer.name,
+                locale: locale
+            )
+        }
+
+        /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
+        private var filteredCandidates: [LedgerOrder] {
+            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !query.isEmpty else {
+                return candidates
+            }
+
+            return candidates.filter {
+                ([$0.id, $0.customer.name] + $0.categories + $0.items.map(\.name))
+                    .joined(separator: " ")
+                    .localizedStandardContains(query)
+            }
         }
     }
 

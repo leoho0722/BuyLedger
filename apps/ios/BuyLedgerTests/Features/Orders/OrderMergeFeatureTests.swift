@@ -214,4 +214,90 @@ struct OrderMergeFeatureTests {
         #expect(sections.map { $0.orders.map(\.id) } == [["TODAY"], ["YESTERDAY"], ["EARLIER"]])
         #expect(sections.map(\.id) == expectedSectionIDs)
     }
+
+    /// 驗證候選清單最後一個區段附上篩選說明，說明寫出同幣別與同客戶的條件
+    ///
+    /// - Throws: 候選區段為空時丟出測試錯誤
+    @Test
+    func candidateFilterNotice_最後一個區段_附上篩選說明() throws {
+        // Given
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        let reference = Date(timeIntervalSince1970: 1_770_000_000)
+        let primary = OrderMergeFeatureTestSupport.makeOrder(id: "O1", status: .shipping)
+        let orders = [
+            primary,
+            OrderMergeFeatureTestSupport.makeOrder(
+                id: "O2",
+                status: .purchased,
+                date: reference.addingTimeInterval(-3_600)
+            ),
+            OrderMergeFeatureTestSupport.makeOrder(
+                id: "O4",
+                status: .purchased,
+                date: reference.addingTimeInterval(-86_400)
+            ),
+        ]
+        let state = withDependencies {
+            $0.uuid = .incrementing
+        } operation: {
+            OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: OrderDateContext(now: reference, calendar: calendar)
+            )
+        }
+        let locale = Locale(identifier: "zh-Hant")
+        let sections = state.candidateSections(locale: locale)
+        let lastSection = try #require(sections.last)
+
+        // When
+        let notice = state.candidateFilterNotice(for: lastSection, in: sections, locale: locale)
+
+        // Then
+        #expect(notice == "僅列出與主訂單同幣別 (JPY)、同客戶「Alice」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。")
+    }
+
+    /// 驗證兩個日期區段中較新的第一個區段不附上篩選說明
+    ///
+    /// - Throws: 候選區段為空時丟出測試錯誤
+    @Test
+    func candidateFilterNotice_非最後一個區段_不附上篩選說明() throws {
+        // Given
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        let reference = Date(timeIntervalSince1970: 1_770_000_000)
+        let primary = OrderMergeFeatureTestSupport.makeOrder(id: "O1", status: .shipping)
+        let orders = [
+            primary,
+            OrderMergeFeatureTestSupport.makeOrder(
+                id: "O2",
+                status: .purchased,
+                date: reference.addingTimeInterval(-3_600)
+            ),
+            OrderMergeFeatureTestSupport.makeOrder(
+                id: "O4",
+                status: .purchased,
+                date: reference.addingTimeInterval(-86_400)
+            ),
+        ]
+        let state = withDependencies {
+            $0.uuid = .incrementing
+        } operation: {
+            OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: OrderDateContext(now: reference, calendar: calendar)
+            )
+        }
+        let locale = Locale(identifier: "zh-Hant")
+        let sections = state.candidateSections(locale: locale)
+        let firstSection = try #require(sections.first)
+
+        // When
+        let notice = state.candidateFilterNotice(for: firstSection, in: sections, locale: locale)
+
+        // Then
+        #expect(notice == nil)
+    }
 }

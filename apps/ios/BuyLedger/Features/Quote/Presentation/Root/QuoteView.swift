@@ -25,10 +25,10 @@ struct QuoteView: View {
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<QuoteFeature>
 
-    /// 數值欄位的鍵盤焦點
+    /// 數值欄位的鍵盤焦點鏡像
     ///
-    /// - Note: 實際狀態由 ``QuoteFeature/State/isAmountFieldFocused`` 持有
-    @FocusState private var isAmountFieldFocused: Bool
+    /// - Note: 實際狀態由 ``QuoteFeature/State/focusedField`` 持有
+    @FocusState private var focusedField: QuoteFeature.State.Field?
 
     // MARK: - Body
 
@@ -43,7 +43,7 @@ struct QuoteView: View {
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Quote.root)
         .scrollDismissesKeyboard(.interactively)
-        .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
+        .bind($store.focusedField, to: $focusedField)
         .task {
             await store.send(.view(.task)).finish()
         }
@@ -89,7 +89,7 @@ private extension QuoteView {
                 platformFeePercent: $store.platformFeePercent,
                 targetMarginPercent: $store.targetMarginPercent,
                 currencyCode: store.rateSource.fromCurrency.rawValue,
-                focus: $isAmountFieldFocused,
+                focus: $focusedField,
                 onCurrencyPickerTapped: {
                     store.send(.view(.currencyPickerTapped))
                 }
@@ -161,7 +161,7 @@ private extension QuoteView {
             Spacer()
 
             Button {
-                store.isAmountFieldFocused = false
+                store.focusedField = nil
             } label: {
                 Image(systemName: "checkmark")
             }

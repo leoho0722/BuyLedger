@@ -21,6 +21,39 @@ struct QuoteScreen {
 @MainActor
 extension QuoteScreen {
 
+    /// 商品本金輸入欄位
+    var principalField: XCUIElement {
+        app.textFields[BLAccessibilityID.Quote.principalField].firstMatch
+    }
+
+    /// 當地運費輸入欄位
+    var localShippingField: XCUIElement {
+        app.textFields[BLAccessibilityID.Quote.localShippingField].firstMatch
+    }
+
+    /// 當地運費欄目前的文字值，元素不存在或值不是字串時為缺值
+    var localShippingFieldValue: String? {
+        let field = localShippingField
+        guard field.waitForExistence(timeout: 10) else {
+            return nil
+        }
+        return field.value as? String
+    }
+
+    /// 刷卡費率輸入欄位
+    var cardFeeField: XCUIElement {
+        app.textFields[BLAccessibilityID.Quote.cardFeeField].firstMatch
+    }
+
+    /// 刷卡費率欄目前的文字值，元素不存在或值不是字串時為缺值
+    var cardFeeFieldValue: String? {
+        let field = cardFeeField
+        guard field.waitForExistence(timeout: 10) else {
+            return nil
+        }
+        return field.value as? String
+    }
+
     /// 建議售價 hero 卡的 accessibility value
     ///
     /// - Returns: 建議售價的 accessibility value；元素不存在時為 `nil`
@@ -80,6 +113,47 @@ extension QuoteScreen {
         entry.tapAfterWaiting(in: app, file: file, line: line)
 
         return QuoteScreen(app: app)
+    }
+
+    /// 露出指定欄位後點左側取得焦點，保留當前鍵盤供直接換欄測試
+    ///
+    /// - Parameters:
+    ///   - field: 要取得焦點的報價輸入欄位
+    ///   - dx: 欄位內點擊位置的水平比例
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 欄位是否取得焦點且鍵盤就緒
+    @discardableResult
+    func focusFieldFromLeft(
+        _ field: XCUIElement,
+        dx: CGFloat = 0.04,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        if !field.isHittableOnScreen, !app.scrollToHittable(field, within: rootElement) {
+            app.failWithDiagnostics("捲動後報價欄位仍未穩定或不可點", file: file, line: line)
+            return false
+        }
+        return field.tapLeftToFocus(
+            in: app,
+            dx: dx,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 透過共用數字鍵盤流程，收起指定欄位的鍵盤或 Popover
+    ///
+    /// - Parameters:
+    ///   - field: 目前持有數字鍵盤焦點的報價欄位
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func dismissKeyboard(
+        for field: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 
     /// 開啟來源幣別選擇器

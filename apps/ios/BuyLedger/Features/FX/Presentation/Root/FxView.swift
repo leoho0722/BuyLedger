@@ -164,10 +164,11 @@ private extension FxView {
     /// 金額輸入欄
     @ViewBuilder
     var amountField: some View {
-        TextField(
+        BLNumberField(
             "fx.rates.action.enterAmount",
             value: $store.amount,
-            format: .number.precision(.fractionLength(0...2)).grouping(.never)
+            format: .number.precision(.fractionLength(0...2)).grouping(.never),
+            focus: $isAmountFieldFocused
         )
         .padding(.vertical, BLSpacing.medium)
         .padding(.horizontal, BLSpacing.medium)
@@ -176,7 +177,6 @@ private extension FxView {
         .background(.blFillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         .keyboardType(.decimalPad)
-        .focused($isAmountFieldFocused)
         .accessibilityIdentifier(BLAccessibilityID.Fx.amountField)
     }
 
@@ -235,6 +235,9 @@ private extension FxView {
                         )
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier(
+                    BLAccessibilityID.Fx.presetAmountButton(amount: "\(value)")
+                )
             }
         }
     }

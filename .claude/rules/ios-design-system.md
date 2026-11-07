@@ -92,7 +92,11 @@ paths:
     - 進度一律 `ProgressView` + `BLProgressViewStyle`，不用 `GeometryReader` 疊形狀模擬；彩底上以 `track` 參數指定軌道色。
     - 帶標題的進度列由 `BLProgressView` 自行排版標題與目前值，系統 `ProgressView(value:)` 只套 `BLProgressViewStyle` 畫進度條：進度語意留在系統元件；不在 `ProgressViewStyle` 內以 `configuration.label`／`currentValueLabel` 畫文字，整批 snapshot 的離屏渲染會偶發漏畫那段文字。
     - 整個 `BLProgressView` 以 `.accessibilityElement(children: .combine)` 合併，可見文字不隱藏：父層合併朗讀讀的是實際畫出的文字；隱藏文字再給 `ProgressView` 加 `.accessibilityLabel`／`.accessibilityValue`，合併朗讀會缺目前值 (由 `CampaignProgressAccessibilityTests` 守住)。
-    - 訂單搜尋用 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁值選擇列用 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`。
+    - 系統搜尋欄一律透過 `.blSearchable(text:prompt:)` 套用，它內含 `.searchable(placement: .navigationBarDrawer(displayMode: .always))` 並處理聚焦游標；設定頁值選擇列用 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`。
+- **文字與數字輸入欄一律用 `BLTextField`／`BLNumberField`，不直接宣告 `TextField(`**：聚焦時的游標與清空由元件集中處理，數字欄聚焦即清空草稿，文字欄游標放在既有文字尾端，各畫面自行實作會漏掉其中一項。
+    - 允許直接宣告的只有兩個元件本身、`OptionPickerAddSection` (alert 內的輸入欄，alert 只接受原生控制項) 與 Preview 示範；`.searchable` 不經這兩個元件，由 `.blSearchable` 處理，列表內一般輸入欄形式的搜尋 (類別搜尋) 仍用 `BLTextField`。
+    - `searchable`、`searchFocused`、`searchSelection` 只出現在 `BLSearchableModifier`：呼叫端另掛焦點或選取會繞過它的游標追蹤，由 `InputFieldConventionScanTests` 守門。
+    - `InputFieldConventionScanTests` 掃描正式原始碼守門，違規會列出檔案與行號。
 - **含工具列 `.borderedProminent` 按鈕的畫面，snapshot 測試改用 `.image(drawHierarchyInKeyWindow: true)`**：離屏渲染會整張變黑，實際執行正常 (參考 `paymentMethodEditorSheet_新增付款方式_顯示空白表單`)。
 - **破壞性用 `Button(role: .destructive)` 表達**，`BLButtonStyle` 不提供破壞性變體。
     - 例外：`swipeActions` 內只開啟確認對話框的刪除鈕用一般 `Button` 加 `.tint(.blRed)` (參考 `LookupItemList`)：iPadOS 27 點下 destructive 角色的滑動鈕會先移除列，確認刪除後資料再刪一次，清單列數不符而閃退；破壞性語意由確認對話框承擔。

@@ -66,6 +66,7 @@ paths:
     - 取消與捨棄以 closure 交回呼叫端。
     - `OptionPickerSheet` 的本地 `@State` 只限搜尋與推入等互動狀態。
     - 嵌入式付款方式編輯器的草稿也在其元件內，每次推入重建。
+- **`BLTextField`、`BLNumberField` 同屬不綁 store 的元件**：文字或金額由呼叫端 `Binding` 持有，`BLNumberField` 只在內部持有字串草稿 (`@State`)，焦點由呼叫端的 `FocusState` 傳入。
 - **任一時刻只呈現一層 modal**：同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉 (參考 `LookupManagementFeature.Destination`)，不靠多個 `.sheet` 各自以布林避讓。
     - 同一個 `destination` 的表單送出後若要接續呈現寫入失敗通知或回溯確認 alert，等 `.sheet(item:onDismiss:)` 回報關閉後才呈現：
         - 通知設進獨立通知狀態，確認 alert 設進 `destination`。
@@ -117,10 +118,13 @@ paths:
     - 收鍵盤一律把焦點設為 `nil`／`false`，不呼叫 UIKit 的 `endEditing`；`.searchable` 畫面由系統提供 Cancel 鈕與捲動收合。
 - **焦點狀態放 `Feature.State`**，讓自動聚焦與清除焦點能由 TestStore 涵蓋。
     - view 的 `@FocusState` 只當鏡像，以 `.bind($store.focusedField, to: $focusedField)` 連結。
-    - Design System 元件 (`PaymentMethodEditorSheet`) 不 import TCA，因此以同語意手寫焦點同步：
+    - Design System 元件不 import TCA，焦點由呼叫端以 `FocusState` 傳入，元件不另建焦點狀態 (`BLTextField`、`BLNumberField`)。`PaymentMethodEditorSheet` 因持有自己的 `@FocusState` 鏡像，以同語意手寫焦點同步：
         - `onAppear` 依 Binding 還原焦點。
         - 雙向 `onChange` 以相等判斷避免回寫迴圈。
     - 焦點 enum case 依畫面視覺順序宣告 (參考 `OrderEditFeature.State.Field`)。
+- **多個輸入欄不共用同一個 Bool 焦點**：共用時換欄不會產生 `false` 到 `true` 的轉換，輸入欄判斷不出自己取得焦點，`BLNumberField` 不會清空，輸入會插進原值。每欄以列舉的一個值表示 (參考 `QuoteFeature.State.focusedField`)。
+- **跨欄位限制以檢核訊息提示並停用儲存，reducer 不在輸入時改寫另一欄**：數字欄逐字寫回，夾限會在輸入中途把另一欄改成中途值；存檔時的正規化 (`LedgerOrder.applyingPaymentMethodFlags`) 保留為其他寫入路徑的防線。
+    - 參考 `OrderEditFeature.State.isCardlessDeductionExceeded` 與收款區段底部的紅字。
 - **輸入會改變清單內容的 `TextField` 不放 `List` 的 section header**：內容變動時 header 會重建，輸入一個字就失焦、鍵盤收起；改放獨立 section 的普通列並給固定 `.id` (參考 `OrderCategoryFilterRows.SearchRow` 的類別搜尋)。
     - insetGrouped 會以儲存格圓角遮罩列的內容與背景，沒有公開 API 可關閉；列內灰底改用 `Capsule`，與儲存格輪廓一致。
 - **數字鍵盤工具列只放一個「完成」**，不加上一欄／下一欄箭頭。

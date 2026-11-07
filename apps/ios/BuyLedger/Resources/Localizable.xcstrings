@@ -4886,13 +4886,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The cardless deduction cannot exceed the customer payment amount, so it has been adjusted to the limit."
+            "value" : "The cardless deduction cannot exceed the customer payment amount. Please adjust the deduction."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無卡折抵金額不得超過客戶實付金額，已自動調整為上限。"
+            "value" : "無卡折抵金額不得超過客戶實付金額，請調整折抵金額。"
           }
         }
       }

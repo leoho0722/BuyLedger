@@ -44,6 +44,11 @@ extension FxScreen {
         return element.combinedText
     }
 
+    /// 金額輸入欄位
+    var amountField: XCUIElement {
+        app.textFields[BLAccessibilityID.Fx.amountField].firstMatch
+    }
+
     /// 來源金額欄目前的文字值
     ///
     /// - Returns: 金額欄的文字值；元素不存在或值不是字串時為 `nil`
@@ -169,6 +174,39 @@ extension FxScreen {
     func dismissAmountKeyboard(file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.Fx.amountField]
         field.dismissNumericKeyboard(in: app, file: file, line: line)
+    }
+
+    /// 捲動露出金額欄後點欄位左側取得焦點，等鍵盤就位
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 金額欄是否已從左側點擊取得焦點且鍵盤就緒
+    @discardableResult
+    func focusAmountFromLeft(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let field = amountField
+        if !field.isHittableOnScreen, !app.scrollToHittable(field, within: rootElement) {
+            app.failWithDiagnostics("捲動後金額欄位仍未穩定或不可點", file: file, line: line)
+            return false
+        }
+        return field.tapLeftToFocus(in: app, file: file, line: line)
+    }
+
+    /// 點指定的快捷金額按鈕
+    ///
+    /// - Parameters:
+    ///   - amount: 按鈕對應的未格式化金額字串
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapPresetAmount(_ amount: String, file: StaticString = #filePath, line: UInt = #line) {
+        let button = app.descendants(matching: .any)[
+            BLAccessibilityID.Fx.presetAmountButton(amount: amount)
+        ]
+        if !button.isHittableOnScreen, !app.scrollToHittable(button, within: rootElement) {
+            app.failWithDiagnostics("捲動後快捷金額按鈕仍未穩定或不可點", file: file, line: line)
+            return
+        }
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 判定金額欄是否取得鍵盤焦點

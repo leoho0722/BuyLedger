@@ -61,7 +61,7 @@ extension BLAccessibilityID {
             case received
         }
 
-        /// 開團卡片列，key 取開團識別值
+        /// 取得開團卡片列的識別碼，以開團識別值識別
         ///
         /// - Parameter campaignID: 開團識別值
         /// - Returns: 對應開團卡片列的 accessibility identifier
@@ -69,7 +69,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("campaigns.list.row", key: campaignID)
         }
 
-        /// 客戶分貨列，key 取客戶名稱
+        /// 取得客戶分貨列的識別碼，以客戶名稱識別
         ///
         /// - Parameter customerName: 客戶名稱
         /// - Returns: 對應客戶分貨列的 accessibility identifier
@@ -77,7 +77,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("campaigns.detail.distributionRow", key: customerName)
         }
 
-        /// 訂單收款切換鍵，key 取訂單識別值
+        /// 取得訂單收款切換鍵的識別碼，以訂單識別值識別
         ///
         /// - Parameter orderID: 訂單識別值
         /// - Returns: 對應訂單收款切換鍵的 accessibility identifier
@@ -85,7 +85,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("campaigns.detail.receiptToggle", key: orderID)
         }
 
-        /// 結團結算的數值列，主要數值放各列的 accessibility value
+        /// 取得結團結算數值列的識別碼，主要數值放在各列的 accessibility value
         ///
         /// - Parameter kind: 結團結算摘要種類
         /// - Returns: 對應結算摘要列的 accessibility identifier
@@ -102,6 +102,9 @@ extension BLAccessibilityID {
 
         /// 開團名稱欄位
         static let nameField = "campaignEdit.nameField"
+
+        /// 開團備註欄位
+        static let notesField = "campaignEdit.notesField"
 
         /// 開團日期選擇器
         static let openDatePicker = "campaignEdit.openDatePicker"

@@ -27,6 +27,17 @@ struct QuoteFeatureTests {
         ]
     )
 
+    /// 依畫面順序逐一驗證的七個欄位焦點
+    private static let focusFields: [QuoteFeature.State.Field] = [
+        .itemPrice,
+        .domesticShipping,
+        .internationalShippingTWD,
+        .cardFeePercent,
+        .paymentFeePercent,
+        .platformFeePercent,
+        .targetMarginPercent,
+    ]
+
     /// 驗證未帶參數建立 State 時，來源幣別預設為韓元，所有金額與費率輸入都是零
     @Test
     func init_未帶參數_來源幣別為韓元且輸入皆為零() {
@@ -44,6 +55,124 @@ struct QuoteFeatureTests {
         #expect(state.paymentFeePercent == 0)
         #expect(state.platformFeePercent == 0)
         #expect(state.targetMarginPercent == 0)
+        #expect(state.focusedField == nil)
+    }
+
+    /// 驗證每個欄位以綁定動作取得焦點時，只更新焦點而不改金額或費率
+    ///
+    /// - Parameter field: 這次取得焦點的欄位
+    @Test(arguments: Self.focusFields)
+    @MainActor
+    func binding_逐欄取得焦點_只更新焦點並保留金額(field: QuoteFeature.State.Field) async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                itemPrice: 2500,
+                domesticShipping: 30,
+                internationalShippingTWD: 100,
+                cardFeePercent: 2,
+                paymentFeePercent: 3,
+                platformFeePercent: 4,
+                targetMarginPercent: 25
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // When
+        await store.send(\.binding.focusedField, field) {
+            $0.focusedField = field
+        }
+
+        // Then
+        #expect(store.state.focusedField == field)
+        #expect(store.state.itemPrice == 2500)
+        #expect(store.state.domesticShipping == 30)
+        #expect(store.state.internationalShippingTWD == 100)
+        #expect(store.state.cardFeePercent == 2)
+        #expect(store.state.paymentFeePercent == 3)
+        #expect(store.state.platformFeePercent == 4)
+        #expect(store.state.targetMarginPercent == 25)
+    }
+
+    /// 驗證本金已有焦點時，綁定動作可直接改為當地運費，兩欄金額都不改變
+    @Test
+    @MainActor
+    func binding_本金直接切到當地運費_更新焦點且保留兩欄金額() async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                itemPrice: 2500,
+                domesticShipping: 30,
+                focusedField: .itemPrice
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // When
+        await store.send(\.binding.focusedField, .domesticShipping) {
+            $0.focusedField = .domesticShipping
+        }
+
+        // Then
+        #expect(store.state.focusedField == .domesticShipping)
+        #expect(store.state.itemPrice == 2500)
+        #expect(store.state.domesticShipping == 30)
+    }
+
+    /// 驗證每個欄位聚焦時，完成鍵送出的綁定動作寫入缺值會清除焦點且保留金額
+    ///
+    /// - Parameter field: 點完成鍵之前持有焦點的欄位
+    @Test(arguments: Self.focusFields)
+    @MainActor
+    func binding_完成鍵解除逐欄焦點_焦點為缺值且金額保留(field: QuoteFeature.State.Field) async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                itemPrice: 2500,
+                domesticShipping: 30,
+                focusedField: field
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // When
+        await store.send(\.binding.focusedField, nil) {
+            $0.focusedField = nil
+        }
+
+        // Then
+        #expect(store.state.focusedField == nil)
+        #expect(store.state.itemPrice == 2500)
+        #expect(store.state.domesticShipping == 30)
+    }
+
+    /// 驗證輸入本金時不會清除或移動目前的當地運費焦點
+    @Test
+    @MainActor
+    func binding_修改其他數值欄位_保留原有焦點() async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                itemPrice: 2500,
+                domesticShipping: 30,
+                focusedField: .domesticShipping
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // When
+        await store.send(\.binding.itemPrice, 1000) {
+            $0.itemPrice = 1000
+        }
+
+        // Then
+        #expect(store.state.focusedField == .domesticShipping)
+        #expect(store.state.itemPrice == 1000)
+        #expect(store.state.domesticShipping == 30)
     }
 
     /// 驗證來源為韓元且帶有匯率與刷卡費時，商品折算金額與刷卡費加總為總成本

@@ -17,34 +17,24 @@ enum OrderEditDraftOperations {
 
 extension OrderEditDraftOperations {
 
-    /// 準備初始草稿，夾限預填金額並保留是否曾超額的資訊
+    /// 以合併預填或原始訂單建立初始草稿，保留原有金額
     ///
     /// - Parameters:
     ///   - original: 既有訂單；新訂單為 `nil`
     ///   - currentDate: 新訂單的預設日期
     ///   - defaultCurrency: 新訂單的預設幣別
     ///   - prefill: 合併確認帶入的草稿
-    /// - Returns: 夾限後的草稿與是否顯示夾限提示
+    /// - Returns: 保留預填或原始金額的草稿
     static func prepareDraft(
         original: LedgerOrder?,
         currentDate: Date,
         defaultCurrency: CurrencyCode,
         prefill: OrderEditFeature.State.Prefill?
-    ) -> (draft: OrderDraft, isCardlessDeductionCapped: Bool) {
-        var draft = prefill?.draft ?? OrderDraft(
+    ) -> OrderDraft {
+        prefill?.draft ?? OrderDraft(
             original: original,
             currentDate: currentDate,
             defaultCurrency: defaultCurrency
-        )
-        let uncappedDeduction = prefill?.draft.cardlessDeductionAmount
-            ?? original?.cardlessDeductionAmount ?? 0
-        draft.cardlessDeductionAmount = min(
-            draft.cardlessDeductionAmount,
-            max(0, draft.chargedAmount)
-        )
-        return (
-            draft: draft,
-            isCardlessDeductionCapped: uncappedDeduction > draft.cardlessDeductionAmount
         )
     }
 
@@ -81,7 +71,7 @@ extension OrderEditDraftOperations {
     ///
     /// - Parameter draft: 要檢查的訂單草稿
     /// - Returns: 客戶名稱、來源與至少一個類別皆非空白時為 `true`
-    static func canSave(draft: OrderDraft) -> Bool {
+    static func hasRequiredFields(draft: OrderDraft) -> Bool {
         let fields = [draft.customerName, draft.orderSource]
         let hasCategory = draft.categories.contains {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -109,24 +99,6 @@ extension OrderEditDraftOperations {
     /// - Returns: 以頓號分隔的類別名稱
     static func categoriesDisplayText(draft: OrderDraft) -> String {
         draft.categories.joined(separator: "、")
-    }
-
-    /// 金額欄位變更時重新檢查無卡折抵上限，其他欄位只由 `BindingReducer` 寫入
-    ///
-    /// - Parameters:
-    ///   - action: 表單欄位的雙向繫結變更
-    ///   - state: 持有草稿與上限提示的表單狀態
-    /// - Returns: 不產生效果
-    static func applyBinding(
-        _ action: BindingAction<OrderEditFeature.State>,
-        state: inout OrderEditFeature.State
-    ) -> Effect<OrderEditFeature.Action> {
-        if case \.chargedAmount = action {
-            reconcileCardlessDeductionCap(state: &state)
-        } else if case \.cardlessDeductionAmount = action {
-            reconcileCardlessDeductionCap(state: &state)
-        }
-        return .none
     }
 
     /// 把照片區段要求的檢視位置交給選擇器路由，其他照片事件不改表單
@@ -204,19 +176,6 @@ extension OrderEditDraftOperations {
 // MARK: - Private Method
 
 private extension OrderEditDraftOperations {
-
-    /// 依客戶實付金額限制無卡折抵金額，並更新提示狀態
-    ///
-    /// - Parameter state: 要更新金額與提示的父層狀態
-    static func reconcileCardlessDeductionCap(state: inout OrderEditFeature.State) {
-        let cap = max(0, state.draft.chargedAmount)
-        if state.draft.cardlessDeductionAmount > cap {
-            state.draft.cardlessDeductionAmount = cap
-            state.isCardlessDeductionCapped = true
-        } else {
-            state.isCardlessDeductionCapped = false
-        }
-    }
 
     /// 將子層選取請求套用到父層持有的草稿
     ///

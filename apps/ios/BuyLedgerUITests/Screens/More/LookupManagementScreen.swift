@@ -36,6 +36,16 @@ extension LookupManagementScreen {
 @MainActor
 extension LookupManagementScreen {
 
+    /// 單欄主檔名稱輸入欄位
+    var nameField: XCUIElement {
+        app.textFields[BLAccessibilityID.LookupManagement.nameField]
+    }
+
+    /// 付款方式名稱輸入欄位
+    var paymentMethodNameField: XCUIElement {
+        app.textFields[BLAccessibilityID.LookupManagement.paymentMethodNameField]
+    }
+
     /// 新增主檔項目的按鈕
     var addButton: XCUIElement {
         app.buttons[BLAccessibilityID.LookupManagement.addButton]
@@ -92,6 +102,80 @@ extension LookupManagementScreen {
 
 @MainActor
 extension LookupManagementScreen {
+
+    /// 從更多頁開啟付款方式管理
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openPaymentMethodManagement(file: StaticString = #filePath, line: UInt = #line) {
+        guard RootNavigationScreen(app: app).goToMore(file: file, line: line) else {
+            app.failWithDiagnostics("切到更多分頁後畫面未就緒", file: file, line: line)
+            return
+        }
+        let row = app.descendants(matching: .any)[BLAccessibilityID.More.row(.paymentMethods)]
+        row.tapAfterWaiting(in: app, file: file, line: line)
+        if !waitUntilReady() {
+            app.failWithDiagnostics("付款方式管理頁面未出現", file: file, line: line)
+        }
+    }
+
+    /// 開啟既有付款方式的編輯表單，不改動名稱
+    ///
+    /// - Parameters:
+    ///   - name: 目前的付款方式名稱
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func beginEditPaymentMethod(
+        named name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let row = itemRow(named: name)
+        guard row.waitUntilHittable(timeout: 10) else {
+            app.failWithDiagnostics("付款方式「\(name)」列未出現或無法操作", file: file, line: line)
+            return
+        }
+        row.swipeLeft()
+        let editButton = app.buttons[BLAccessibilityID.LookupManagement.editButton(name)]
+        editButton.tapAfterWaiting(in: app, file: file, line: line)
+        let editor = PaymentMethodEditorScreen(app: app)
+        if !editor.waitUntilReady() {
+            app.failWithDiagnostics("付款方式編輯表單未出現", file: file, line: line)
+        }
+    }
+
+    /// 以 return 收起單行名稱欄的鍵盤並確認焦點解除
+    ///
+    /// - Parameters:
+    ///   - field: 主檔或付款方式的單行名稱欄位
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 欄位是否已失焦且鍵盤已收起
+    func dismissKeyboard(
+        for field: XCUIElement,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        guard field.waitForExistence(timeout: 10) else {
+            app.failWithDiagnostics("找不到要解除焦點的名稱欄位", file: file, line: line)
+            return false
+        }
+        let predicate = NSPredicate(format: "hasKeyboardFocus == true")
+        if predicate.evaluate(with: field) {
+            field.typeText(XCUIKeyboardKey.return.rawValue)
+        }
+        let hasDismissed = pollUntil(timeout: 10) {
+            !predicate.evaluate(with: field)
+                && !app.keyboards.firstMatch.exists
+                && !app.isNumericPopoverPresented
+        }
+        guard hasDismissed else {
+            app.failWithDiagnostics("名稱欄的鍵盤或焦點仍未解除", file: file, line: line)
+            return false
+        }
+        return true
+    }
 
     /// 從更多頁開啟商品類別管理
     ///

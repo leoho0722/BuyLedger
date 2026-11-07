@@ -12,7 +12,9 @@ struct OptionPickerSheet: View {
 
     // MARK: - Properties
 
-    /// 嵌入時返回上一頁，獨立 sheet 時關閉選擇器
+    /// 用於關閉選擇器的 `dismiss` action
+    ///
+    /// - Note: 嵌入時返回上一頁，獨立 sheet 時關閉選擇器
     @Environment(\.dismiss) private var dismiss
 
     /// 是否推入付款方式編輯器
@@ -21,7 +23,9 @@ struct OptionPickerSheet: View {
     /// 搜尋欄目前的輸入
     @State private var searchText = ""
 
-    /// 可用的新增入口；`nil` 時隱藏新增按鈕
+    /// 可用的新增入口
+    ///
+    /// - Note: `nil` 時隱藏新增按鈕
     let addition: Addition?
 
     /// 沒有符合選項時顯示的文案
@@ -33,7 +37,9 @@ struct OptionPickerSheet: View {
     /// 是否顯示搜尋欄
     let isSearchEnabled: Bool
 
-    /// 自訂顯示名稱與搜尋補充文字；`nil` 時使用原值
+    /// 自訂顯示名稱與搜尋補充文字
+    ///
+    /// - Note: `nil` 時使用原值
     let labeling: Labeling?
 
     /// 尚未套用搜尋的完整選項清單
@@ -80,7 +86,7 @@ struct OptionPickerSheet: View {
 
     // MARK: - Body
 
-    /// 嵌入宿主或以獨立導覽堆疊呈現選項內容
+    /// 依是否嵌入決定導覽堆疊的選項內容畫面
     var body: some View {
         if isEmbedded {
             configuredContent
@@ -96,8 +102,31 @@ struct OptionPickerSheet: View {
 
 private extension OptionPickerSheet {
 
-    /// 組合新增入口、選項、搜尋與導覽目的地
+    /// 搜尋欄與導覽目的地組成的畫面內容
     var configuredContent: some View {
+        searchableContent
+            .navigationDestination(isPresented: $isAddPaymentMethodPresented) {
+                if case .paymentMethod(let prompt, let onSubmit) = addition {
+                    // 編輯器送出後自己會退回選擇器，這裡不能再包一層呼叫 `dismiss()`，否則會關掉宿主 sheet
+                    EmbeddedPaymentMethodEditor(prompt: prompt, onSubmit: onSubmit)
+                }
+            }
+    }
+
+    /// 依搜尋開關決定是否套上共用搜尋欄的畫面內容
+    ///
+    /// - Note: 停用時不建立搜尋狀態
+    @ViewBuilder
+    var searchableContent: some View {
+        if isSearchEnabled {
+            listContent.blSearchable(text: $searchText, prompt: Text("common.action.action.search"))
+        } else {
+            listContent
+        }
+    }
+
+    /// 清單內容：新增入口、選項與工具列
+    var listContent: some View {
         List {
             if let addition {
                 OptionPickerAddSection(addition: addition) {
@@ -132,16 +161,9 @@ private extension OptionPickerSheet {
                 cancelToolbarItem()
             }
         }
-        .modifier(BLSearchableModifier(text: $searchText, isEnabled: isSearchEnabled))
-        .navigationDestination(isPresented: $isAddPaymentMethodPresented) {
-            if case .paymentMethod(let prompt, let onSubmit) = addition {
-                // 編輯器送出後自己會退回選擇器，這裡不能再包一層呼叫 `dismiss()`，否則會關掉宿主 sheet
-                EmbeddedPaymentMethodEditor(prompt: prompt, onSubmit: onSubmit)
-            }
-        }
     }
 
-    /// 獨立 sheet 使用的取消按鈕
+    /// 建立獨立 sheet 使用的取消按鈕
     ///
     /// - Returns: 關閉目前選擇器的工具列項目
     @ToolbarContentBuilder
@@ -167,7 +189,9 @@ private extension OptionPickerSheet {
         /// 名稱輸入草稿
         @State private var draftName = ""
 
-        /// 嵌入時不呈現捨棄確認，此狀態只為滿足編輯器的介面
+        /// 是否顯示捨棄確認彈窗
+        ///
+        /// - Note: 嵌入時不呈現捨棄確認，此狀態只為滿足編輯器的介面
         @State private var isDiscardConfirmationPresented = false
 
         /// 是否標記為銀行匯款類付款方式
@@ -198,7 +222,9 @@ private extension OptionPickerSheet {
             self.onSubmit = onSubmit
         }
 
-        /// 以本地草稿呈現嵌入式編輯器，送出時回傳修剪後的名稱與旗標
+        /// 本地草稿與嵌入式編輯器組成的畫面內容
+        ///
+        /// - Note: 送出時回傳修剪後的名稱與旗標
         var body: some View {
             PaymentMethodEditorSheet(
                 title: prompt.title,
@@ -237,7 +263,9 @@ private extension OptionPickerSheet {
 
 private extension OptionPickerSheet {
 
-    /// 依搜尋輸入比對顯示名稱、補充文字與原值
+    /// 搜尋輸入篩出的選項清單
+    ///
+    /// - Note: 比對顯示名稱、補充文字與原值
     var filteredOptions: [String] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {

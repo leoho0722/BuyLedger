@@ -36,10 +36,16 @@ private extension OrderEditNotesSection {
 
     /// 可輸入三至八行的選填備註
     var notesField: some View {
-        TextField("orders.edit.placeholder.enterNotesOptional", text: $notes, axis: .vertical)
-            .lineLimit(3...8)
-            .textContentType(.none)
-            .focused(focusedField, equals: .notes)
+        BLTextField(
+            "orders.edit.placeholder.enterNotesOptional",
+            text: $notes,
+            axis: .vertical,
+            focus: focusedField,
+            equals: .notes
+        )
+        .lineLimit(3...8)
+        .textContentType(nil)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.notesField)
     }
 
     /// 備註區段的標題
