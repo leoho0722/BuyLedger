@@ -13,7 +13,7 @@ paths:
 
 - **`BuyLedgerUITests` target 不能 `import Testing` (建置錯誤 `_Testing_Unavailable`)**：UI target 內不啟動 App 的純值自檢 (如 `AdaptiveLayoutCheckCounterexampleTests`) 也用 XCTest。
 - **選擇性執行與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
-- **實機前置 (開啟 UI 自動化、未接硬體鍵盤、解鎖) 見 `apps/ios/CLAUDE.md` 的「UI 測試」**：本機 UI 測試在實機執行，裝置為 iPhone 12 與 iPad Air 5。
+- **執行裝置與前置見 `apps/ios/CLAUDE.md` 的「UI 測試」**：本機 UI 測試預設跑 iPhone 17 (iOS 26.5) 與 iPad Air 11-inch (M4) (iPadOS 27.0) 模擬器，需要實機時改跑 iPhone 12 與 iPad Air 5。
 - **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，到達判斷版面所需的畫面後立刻宣告 `XCTSkipUnless`，再接其他 Given 步驟。skip 條件只能是版面，不得因元素找不到或其他狀態而 skip；skip 訊息寫明版面限制。
     - 根導覽專屬案例：`launch` 後即可用 `AppNavigator(app:).rootLayout` 以 `requireValue` 取值後比對 `.regular`／`.compact` (側邊欄或頂部分頁列為 `.regular`，底部分頁列為 `.compact`，判不出來為 `nil`)。
     - 訂單功能專屬案例：先 `RootNavigationScreen(app:).goToOrders()` 切到訂單分頁並等清單就緒，再以 `XCTestCase+PlatformScope.swift` 的 `isRegularLayout(app)`／`isCompactLayout(app)` 判斷 (依訂單前景並排或收合)；在訂單前景之前判斷會因無法辨識 Orders 前景欄位而失敗。
@@ -109,7 +109,7 @@ paths:
 
 ## 轉向測試
 
-- **轉向測試 (`XCUIDevice.shared.orientation`) 在實機執行**：setter 只設定裝置方向，不等介面轉完就斷言，會在直向取得 compact 版面而誤判通過；改用 `Support/XCTestCase+Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`，兩者都會等視窗方向確定才返回。
+- **轉向測試 (`XCUIDevice.shared.orientation`) 一律經轉向 helper**：setter 只設定裝置方向，不等介面轉完就斷言，會在直向取得 compact 版面而誤判通過；改用 `Support/XCTestCase+Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`，兩者都會等視窗方向確定才返回。
     - Device Hub 的旋轉鈕只轉外框，Orientation 選單也不一定讓介面轉向 (iPad 會轉、iPhone 17 Pro Max 不會)，兩者都不能用來驗證橫向版面。
 - **需要實測橫向畫面時，以 Xcode 27.1 MCP 的 `orientation` 指令轉向**：介面會跟著轉，回傳完整的橫向截圖；Device Hub 的旋轉鈕與 Orientation 選單不能驗證橫向版面 (見上一條)。
     - 只支援 iOS 27 以上的模擬器，與實機 XCUITest 無關。

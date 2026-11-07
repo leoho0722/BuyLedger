@@ -245,27 +245,26 @@ mobilebuildmcp simulator build-and-run \
 
 三份測試計畫的語言／地區都鎖 zh-Hant／TW (不隨模擬器系統設定變動)，覆蓋率只統計 App target。
 
-單元測試 (`BuyLedger` scheme，`BuyLedger.xctestplan`) 本機在實機執行 (iPhone 12 或 iPad Air 5)：
+單元測試 (`BuyLedger` scheme，`BuyLedger.xctestplan`) 本機預設在 iPhone 17 iOS 26.5 模擬器執行 (含守門與 snapshot 測試)：
 
 ```bash
-# 查詢已連接的實機 (以識別碼指定)
-mobilebuildmcp device list
+# 查詢模擬器識別碼
+mobilebuildmcp simulator list
 
-mobilebuildmcp device test \
+mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
-  --device-id <裝置識別碼>
-```
+  --simulator-id <iPhone 17 iOS 26.5 模擬器識別碼>
 
-實機執行時，讀 repo 原始碼的守門測試 (`*ScanTests`、`*GuardsTests`、`LayerBoundaryTests` 等) 與 snapshot 測試以 `--extra-args -skip-testing:BuyLedgerTests/<類別>` 排除，改跑 iPhone 17 iOS 26.5 模擬器，以 `-only-testing` 指定類別，snapshot 範例如下：
-
-```bash
+# 只跑單一類別，例如 snapshot
 mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-id <iPhone 17 iOS 26.5 模擬器識別碼> \
   --extra-args -only-testing:BuyLedgerTests/SnapshotDashboardTests
 ```
+
+需要實機時改用 `mobilebuildmcp device test --device-id <裝置識別碼>` (iPhone 12 或 iPad Air 5，以 `mobilebuildmcp device list` 查詢)；讀 repo 原始碼的守門測試 (`*ScanTests`、`*GuardsTests`、`LayerBoundaryTests` 等) 與 snapshot 測試在實機一定失敗，以 `--extra-args -skip-testing:BuyLedgerTests/<類別>` 排除後仍在模擬器跑。
 
 Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。snapshot 跑在模擬器時先把外觀鎖淺色 (`mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`)，否則自動外觀入夜切深色會讓整批 baseline 失敗。守門測試會讀原始碼，執行期間不可改檔。固定時間注入的規則見 [`.claude/rules/ios-unit-tests.md`](../../.claude/rules/ios-unit-tests.md) 的「Snapshot 測試」。
 
@@ -275,13 +274,15 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 mobilebuildmcp simulator get-coverage-report --xcresult-path <測試輸出的 .xcresult 路徑> --target BuyLedger
 ```
 
-UI 自動化測試 (XCUITest，`BuyLedgerUITests` scheme，本機在實機執行，預設跑 `BuyLedgerUITests.xctestplan` 主回歸；啟動效能量測在 `BuyLedgerUITests-Performance.xctestplan`；實機前置見 `apps/ios/CLAUDE.md` 的「UI 測試」)：
+UI 自動化測試 (XCUITest，`BuyLedgerUITests` scheme，本機預設在 iPhone 17 iOS 26.5 與 iPad Air 11-inch (M4) iPadOS 27.0 模擬器各跑一次，預設跑 `BuyLedgerUITests.xctestplan` 主回歸；啟動效能量測在 `BuyLedgerUITests-Performance.xctestplan`；執行前置與實機改跑方式見 `apps/ios/CLAUDE.md` 的「UI 測試」)：
 
 ```bash
-mobilebuildmcp device test \
+mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedgerUITests \
-  --device-id <裝置識別碼>
+  --simulator-id <模擬器識別碼> \
+  --extra-args -only-testing:BuyLedgerUITests \
+  --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests
 ```
 
 UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析，常用旗標為 `-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。硬規則 (一律用 identifier 定位、測試前必 seed、找不到元素不得 skip 掩蓋) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。

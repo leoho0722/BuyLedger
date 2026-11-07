@@ -59,9 +59,13 @@
 
 ### UI 測試
 
-- **單元與 UI 測試的本機執行跑實機，不跑模擬器 (Duo 版面驗證與下方子項的例外除外)**：iPhone 12 (iOS 26.x，涵蓋最低版本) 與 iPad Air 5 (iPadOS 27.x)，以 UDID 固定同一台，走 `mobilebuildmcp device test`。Automatic signing 的 device build 要帶 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`。
-  - 實機前置：開啟 UI 自動化、未接硬體鍵盤、解鎖。iPad 軟體鍵盤須能顯示，先單獨跑 `KeyboardDismissTests` 通過才算前提成立；失敗時先修環境，不改產品端鍵盤工具列。
-  - 例外：讀 repo 原始碼的守門測試 (實機讀不到 Mac 上的檔案，一定失敗) 與 snapshot 測試 (基準是 iOS 26.5 模擬器淺色模式錄製的) 改跑 iPhone 17 iOS 26.5 模擬器，跑前執行 `mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`。守門測試執行時會讀原始碼，執行期間不可改檔。
+- **單元與 UI 測試的本機執行預設跑模擬器**：iPhone 17 (iOS 26.5，涵蓋最低版本) 與 iPad Air 11-inch (M4) (iPadOS 27.0)，以 `mobilebuildmcp simulator list` 查到的識別碼固定同一台，走 `mobilebuildmcp simulator test`；單元測試 (含守門與 snapshot) 跑 iPhone 17，UI 測試兩台各跑一次。
+  - 跑前執行 `mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`：snapshot 基準是 iOS 26.5 模擬器淺色模式錄製的。
+  - 跑 UI 測試前確認模擬器不在硬體鍵盤狀態，iPad 先單獨跑 `KeyboardDismissTests` 通過才算前提成立 (處理方式見 `.claude/rules/ios-ui-tests.md`)；失敗時先修環境，不改產品端鍵盤工具列。
+  - 守門測試執行時會讀原始碼，執行期間不可改檔。
+- **需要實機時 (硬體相依或使用者指定) 改跑 iPhone 12 (iOS 26.x) 與 iPad Air 5 (iPadOS 27.x)**：以 UDID 固定同一台，走 `mobilebuildmcp device test`。Automatic signing 的 device build 要帶 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`。
+  - 實機前置：開啟 UI 自動化、未接硬體鍵盤、解鎖。
+  - 讀 repo 原始碼的守門測試 (實機讀不到 Mac 上的檔案，一定失敗) 與 snapshot 測試仍跑 iPhone 17 iOS 26.5 模擬器。
 - **`BuyLedgerUITests` 走獨立 scheme**：`-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
   - 全功能回歸用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`，不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
   - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
