@@ -57,6 +57,27 @@ struct LocalizationCatalogTests {
         #expect(englishValue == example.expectedEnglishValue, "字串目錄條目缺少英文值或與驗收值不同：\(example.key)")
     }
 
+    /// 驗證規格範例的字串目錄條目，`extractionState` 與正體中文、英文值皆與規格相同
+    ///
+    /// - Parameter example: 規格範例的 key、`extractionState` 與中英文值
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test(arguments: SpecCatalogEntryExample.examples)
+    func catalogEntry_規格範例條目_狀態與中英文值皆與規格相同(example: SpecCatalogEntryExample) throws {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let entry = strings[example.key] as? [String: Any]
+        let extractionState = entry?["extractionState"] as? String
+        let chineseValue = Self.stringValue(forKey: example.key, language: "zh-Hant", in: strings)
+        let englishValue = Self.stringValue(forKey: example.key, language: "en", in: strings)
+
+        // Then
+        #expect(extractionState == example.expectedExtractionState, "條目狀態與規格不同：\(example.key)")
+        #expect(chineseValue == example.expectedChineseValue, "正體中文值與規格不同：\(example.key)")
+        #expect(englishValue == example.expectedEnglishValue, "英文值與規格不同：\(example.key)")
+    }
+
     /// 驗證含中文的條目，英文值與正體中文來源不得相同，允許清單內的條目除外
     ///
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
@@ -226,6 +247,8 @@ struct LocalizationCatalogTests {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
         let deadKeys = [
+            "campaigns.general.label.deleteData",
+            "common.action.confirm",
             "common.action.label.back",
             "common.general.action.clearSearch",
             "common.general.label.addReminder",
@@ -233,8 +256,21 @@ struct LocalizationCatalogTests {
             "common.general.label.baseCurrency",
             "common.general.label.estimatedProfit",
             "common.general.label.returning",
+            "common.general.label.workspace",
+            "common.ui.label.disabled",
+            "common.ui.label.eightLowerThan",
+            "common.ui.label.primaryAction",
+            "common.ui.label.raisedCardShadow",
+            "common.ui.label.secondaryAction",
+            "common.ui.label.spendingMonth",
+            "common.ui.label.standardCardShadow",
+            "common.ui.label.textAction",
+            "fx.rates.message.exchangeRatesLoaded",
+            "orders.edit.button.saveAndContinue",
             "orders.edit.label.automatic",
             "orders.general.label.traditionalChinese",
+            "orders.list.label.date",
+            "orders.list.message.tryAnotherSearch",
             "orders.merge.message.photoLimitNoticeLegacy",
         ]
 
@@ -243,6 +279,159 @@ struct LocalizationCatalogTests {
 
         // Then
         #expect(foundDeadKeys.isEmpty, "已清理之死碼 Key 不得存在於目錄：\(foundDeadKeys)")
+    }
+
+    /// 驗證字串目錄沒有 `extractionState` 為 `stale` 的條目，殘留的條目需改為 manual 或刪除
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func staleKeys_真實目錄_不得有stale條目() throws {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let keys = Self.staleKeys(in: strings)
+
+        // Then
+        #expect(keys.isEmpty, "字串目錄仍有 stale 條目，需改為 manual 或刪除：\(keys)")
+    }
+
+    /// 驗證字串目錄的翻譯值沒有寫死百分比數字，百分比改由 FormatStyle 依語言格式化
+    ///
+    /// - Throws: 讀取字串目錄或建立正規表示式失敗時丟出錯誤
+    @Test
+    func literalPercentageKeys_真實目錄_不得含字面百分比() throws {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let keys = try Self.literalPercentageKeys(in: strings)
+
+        // Then
+        #expect(keys.isEmpty, "翻譯值寫死了百分比數字，應改由 FormatStyle 格式化：\(keys)")
+    }
+
+    /// 驗證字面百分比判定規則，數字後接 `%` 的字面值命中，格式指定符與沒有數字的百分比不命中
+    ///
+    /// - Parameter example: 合成條目 `zh-Hant` 的字串值與預期命中的 key
+    /// - Throws: 建立正規表示式失敗時丟出錯誤
+    @Test(arguments: LiteralPercentageExample.examples)
+    func literalPercentageKeys_合成單一條目_依判定規則回報(example: LiteralPercentageExample) throws {
+        // Given
+        let strings: [String: Any] = [
+            "synthetic.key": [
+                "localizations": [
+                    "zh-Hant": [
+                        "stringUnit": [
+                            "state": "translated",
+                            "value": example.value,
+                        ],
+                    ],
+                ],
+            ],
+        ]
+
+        // When
+        let keys = try Self.literalPercentageKeys(in: strings)
+
+        // Then
+        #expect(keys == example.expectedKeys)
+    }
+
+    /// 驗證變體的 `other` 分支含字面百分比時，仍會回報該 key
+    ///
+    /// - Throws: 建立正規表示式失敗時丟出錯誤
+    @Test
+    func literalPercentageKeys_變體的other分支含百分比_回報該key() throws {
+        // Given
+        let strings: [String: Any] = [
+            "synthetic.plural": [
+                "localizations": [
+                    "zh-Hant": [
+                        "variations": [
+                            "plural": [
+                                "other": [
+                                    "stringUnit": [
+                                        "state": "translated",
+                                        "value": "已完成 100%",
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]
+
+        // When
+        let keys = try Self.literalPercentageKeys(in: strings)
+
+        // Then
+        #expect(keys == ["synthetic.plural"])
+    }
+
+    /// 驗證替代變數的 `one` 分支含字面百分比時，仍會回報該 key
+    ///
+    /// - Throws: 建立正規表示式失敗時丟出錯誤
+    @Test
+    func literalPercentageKeys_替代變數的one分支含百分比_回報該key() throws {
+        // Given
+        let strings: [String: Any] = [
+            "synthetic.substitution": [
+                "localizations": [
+                    "en": [
+                        "substitutions": [
+                            "count": [
+                                "argNum": 1,
+                                "formatSpecifier": "lld",
+                                "variations": [
+                                    "plural": [
+                                        "one": [
+                                            "stringUnit": [
+                                                "state": "translated",
+                                                "value": "%1$lld item at 1.5%",
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ]
+
+        // When
+        let keys = try Self.literalPercentageKeys(in: strings)
+
+        // Then
+        #expect(keys == ["synthetic.substitution"])
+    }
+
+    /// 驗證 `staleKeys` 只回傳 `extractionState` 為 `stale` 的條目，manual 與無狀態的條目不回傳
+    @Test
+    func staleKeys_合成目錄_只回傳stale條目() {
+        // Given
+        let strings: [String: Any] = [
+            "synthetic.stale": ["extractionState": "stale"],
+            "synthetic.manual": ["extractionState": "manual"],
+            "synthetic.none": [
+                "localizations": [
+                    "zh-Hant": [
+                        "stringUnit": [
+                            "state": "translated",
+                            "value": "無狀態",
+                        ],
+                    ],
+                ],
+            ],
+        ]
+
+        // When
+        let keys = Self.staleKeys(in: strings)
+
+        // Then
+        #expect(keys == ["synthetic.stale"])
     }
 }
 
@@ -361,6 +550,68 @@ extension LocalizationCatalogTests {
         /// 該 key 已驗收的英文值
         let expectedEnglishValue: String
     }
+
+    /// 規格範例的字串目錄條目，每筆為一組 key、狀態與中英文值，供參數化測試逐一驗證
+    struct SpecCatalogEntryExample: Sendable {
+
+        /// 規格範例的兩筆條目，一筆沒有 `extractionState`，一筆為 manual
+        static let examples = [
+            Self(
+                key: "dashboard.overview.label.revenue",
+                expectedExtractionState: nil,
+                expectedChineseValue: "營業額",
+                expectedEnglishValue: "Revenue"
+            ),
+            Self(
+                key: "orders.general.message.orderSavedTry",
+                expectedExtractionState: "manual",
+                expectedChineseValue: "訂單儲存失敗，請稍後再試。",
+                expectedEnglishValue: "The order could not be saved. Try again later."
+            ),
+        ]
+
+        /// 字串目錄的 key
+        let key: String
+
+        /// 該 key 的 `extractionState`，沒有狀態標記時為 nil
+        let expectedExtractionState: String?
+
+        /// 該 key 的正體中文值
+        let expectedChineseValue: String
+
+        /// 該 key 的英文值
+        let expectedEnglishValue: String
+    }
+
+    /// 字面百分比判定的單一案例，合成條目 `zh-Hant` 的字串值與預期命中的 key 清單
+    struct LiteralPercentageExample: Sendable {
+
+        /// 判定規則的正反例，預期命中時為含合成 key 的清單，未命中時為空清單
+        static let examples = [
+            Self(value: "100%", expectedKeys: ["synthetic.key"]),
+            Self(value: "1.5%", expectedKeys: ["synthetic.key"]),
+            Self(value: "0% ~ 100%", expectedKeys: ["synthetic.key"]),
+            Self(value: "8 %", expectedKeys: ["synthetic.key"]),
+            Self(value: "50%%", expectedKeys: ["synthetic.key"]),
+            Self(value: "100% to", expectedKeys: ["synthetic.key"]),
+            Self(value: "目標毛利需低於 100% 才能計算建議售價。", expectedKeys: ["synthetic.key"]),
+            Self(value: "Enter 1.5 for 1.5%.", expectedKeys: ["synthetic.key"]),
+            Self(
+                value: "The target margin must be below 100% to calculate a suggested price.",
+                expectedKeys: ["synthetic.key"]
+            ),
+            Self(value: "1 %1$@ = %2$@ TWD", expectedKeys: []),
+            Self(value: "%1$lld 筆", expectedKeys: []),
+            Self(value: "%1$lld 筆 · %2$@", expectedKeys: []),
+            Self(value: "%@", expectedKeys: []),
+        ]
+
+        /// 合成條目 `zh-Hant` 的字串值
+        let value: String
+
+        /// 預期命中的 key 清單，未命中時為空陣列
+        let expectedKeys: [String]
+    }
 }
 
 // MARK: - Private Method
@@ -460,5 +711,82 @@ private extension LocalizationCatalogTests {
             }
         }
         return blankLocalizations
+    }
+
+    /// 找出 `extractionState` 為 `stale` 的條目 key，依字母序排列
+    ///
+    /// - Parameter strings: 字串目錄的 `strings` 內容
+    /// - Returns: 狀態為 `stale` 的 key
+    static func staleKeys(in strings: [String: Any]) -> [String] {
+        strings
+            .filter { _, entry in
+                (entry as? [String: Any])?["extractionState"] as? String == "stale"
+            }
+            .keys
+            .sorted()
+    }
+
+    /// 找出任一語言的翻譯值含字面百分比的條目 key，依字母序排列
+    ///
+    /// - Parameter strings: 字串目錄的 `strings` 內容
+    /// - Returns: 命中字面百分比規則的 key
+    /// - Throws: 建立正規表示式失敗時丟出錯誤
+    static func literalPercentageKeys(in strings: [String: Any]) throws -> [String] {
+        var keys: [String] = []
+        for (key, entry) in strings {
+            for value in Self.localizedValues(inEntry: entry) {
+                if try Self.containsLiteralPercentage(value) {
+                    keys.append(key)
+                    break
+                }
+            }
+        }
+        return keys.sorted()
+    }
+
+    /// 收集條目 `localizations` 下所有語言的字串值，含 `variations` 與 `substitutions` 的巢狀結構
+    ///
+    /// - Parameter entry: 字串目錄中單一條目的內容
+    /// - Returns: 條目內所有 `stringUnit.value`
+    static func localizedValues(inEntry entry: Any) -> [String] {
+        guard let localizations = (entry as? [String: Any])?["localizations"] else {
+            return []
+        }
+        return Self.stringUnitValues(in: localizations)
+    }
+
+    /// 遞迴走訪 JSON 節點，收集節點以下所有 `stringUnit.value`
+    ///
+    /// - Parameter node: 字串目錄中任一層的 JSON 節點
+    /// - Returns: 節點以下所有字串值
+    static func stringUnitValues(in node: Any) -> [String] {
+        if let dictionary = node as? [String: Any] {
+            var values: [String] = []
+            if let stringUnit = dictionary["stringUnit"] as? [String: Any],
+               let value = stringUnit["value"] as? String {
+                values.append(value)
+            }
+            for child in dictionary.values {
+                values += Self.stringUnitValues(in: child)
+            }
+            return values
+        }
+        if let array = node as? [Any] {
+            return array.flatMap { Self.stringUnitValues(in: $0) }
+        }
+        return []
+    }
+
+    /// 判斷文字是否含字面百分比，即數字後接 `%` (中間可夾空白)，且該 `%` 不是格式指定符的開頭
+    ///
+    /// - Parameter text: 字串目錄中單一 `stringUnit.value`
+    /// - Returns: 含字面百分比時為 `true`
+    /// - Throws: 建立正規表示式失敗時丟出錯誤
+    /// - Note: 格式指定符只認 `%` 直接接位置標記、精度、長度修飾與轉換字元，不認旗標與空白；`%%` 不是指定符，視為字面百分比
+    static func containsLiteralPercentage(_ text: String) throws -> Bool {
+        let regex = try NSRegularExpression(
+            pattern: #"[0-9] *%(?!(?:[0-9]+\$)?(?:\.[0-9]+)?(?:hh|ll|h|l|q|z|t|j)?[@dDiuUxXoOfFeEgGcCsSp])"#
+        )
+        return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
     }
 }

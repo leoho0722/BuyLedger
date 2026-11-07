@@ -182,9 +182,9 @@ fi
 
 # 4. 打包後檢查
 
-# Xcode build 可能改寫 .xcstrings，提醒檢查後再還原
+# 打包後 App 原始碼不應變動；.xcstrings 被改寫代表 catalog 抽取狀態與程式碼不一致
 dirty="$(uncommitted_build_inputs)"
 if [[ -n "$dirty" ]]; then
-    echo "⚠️  打包後 App 原始碼出現變更 (Xcode 可能改寫了 .xcstrings)，確認後再還原：" >&2
+    echo "⚠️  打包後 App 原始碼出現變更；若是 .xcstrings，依 .claude/rules/ios-accessibility-localization.md 修正抽取狀態，不整檔還原：" >&2
     printf '%s\n' "$dirty" >&2
 fi

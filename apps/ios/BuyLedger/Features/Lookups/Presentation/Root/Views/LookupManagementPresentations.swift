@@ -38,7 +38,7 @@ struct LookupManagementPresentations: View {
             ) {
                 RenameFormSheet(
                     renameStore: $0,
-                    namePlaceholder: store.state.kind.nameFieldPlaceholder,
+                    namePlaceholder: Self.catalogResource(store.state.kind.nameFieldPlaceholder),
                     title: renameSheetTitle
                 )
             }
@@ -48,7 +48,7 @@ struct LookupManagementPresentations: View {
             ) {
                 PaymentMethodEditFormSheet(
                     editStore: $0,
-                    namePlaceholder: store.state.kind.nameFieldPlaceholder
+                    namePlaceholder: Self.catalogResource(store.state.kind.nameFieldPlaceholder)
                 )
             }
             .alert($store.scope(state: \.$destination, action: \.destination).alert)
@@ -73,9 +73,11 @@ private extension LookupManagementPresentations {
         var body: some View {
             if addStore.hasClassification {
                 PaymentMethodEditorSheet(
-                    title: kind.addFormTitle,
-                    message: kind.addFormMessage,
-                    namePlaceholder: kind.nameFieldPlaceholder,
+                    title: LookupManagementPresentations.catalogResource(kind.addFormTitle),
+                    message: LookupManagementPresentations.catalogResource(kind.addFormMessage),
+                    namePlaceholder: LookupManagementPresentations.catalogResource(
+                        kind.nameFieldPlaceholder
+                    ),
                     submitTitle: "orders.list.button.add",
                     draftName: $addStore.draftName,
                     isDraftCardless: $addStore.isDraftCardless,
@@ -84,47 +86,43 @@ private extension LookupManagementPresentations {
                     isNameFieldFocused: $addStore.isNameFieldFocused,
                     isDiscardConfirmationPresented: $addStore.isDiscardConfirmationPresented,
                     isDirty: addStore.isDirty,
-                    canSubmit: addStore.canSubmit,
-                    onCancel: {
-                        addStore.send(.view(.cancelButtonTapped))
-                    },
-                    onDiscardChanges: {
-                        addStore.send(.view(.discardChangesButtonTapped))
-                    },
-                    onSubmit: {
-                        addStore.send(
-                            .view(
-                                .saveButtonTapped(
-                                    name: addStore.trimmedName,
-                                    flags: addStore.draftFlags
-                                )
+                    canSubmit: addStore.canSubmit
+                ) {
+                    addStore.send(.view(.cancelButtonTapped))
+                } onDiscardChanges: {
+                    addStore.send(.view(.discardChangesButtonTapped))
+                } onSubmit: {
+                    addStore.send(
+                        .view(
+                            .saveButtonTapped(
+                                name: addStore.trimmedName,
+                                flags: addStore.draftFlags
                             )
                         )
-                    }
-                )
+                    )
+                }
             } else {
                 LookupNameEditorSheet(
                     title: LocalizedStringKey(kind.addFormTitle),
-                    message: kind.addFormMessage,
-                    namePlaceholder: kind.nameFieldPlaceholder,
+                    message: LookupManagementPresentations.catalogResource(kind.addFormMessage),
+                    namePlaceholder: LookupManagementPresentations.catalogResource(
+                        kind.nameFieldPlaceholder
+                    ),
                     submitTitle: "orders.list.button.add",
                     draftName: $addStore.draftName,
                     isNameFieldFocused: $addStore.isNameFieldFocused,
                     isDiscardConfirmationPresented: $addStore.isDiscardConfirmationPresented,
                     isDirty: addStore.isDirty,
-                    canSubmit: addStore.canSubmit,
-                    onCancel: {
-                        addStore.send(.view(.cancelButtonTapped))
-                    },
-                    onDiscardChanges: {
-                        addStore.send(.view(.discardChangesButtonTapped))
-                    },
-                    onSubmit: {
-                        addStore.send(
-                            .view(.saveButtonTapped(name: addStore.trimmedName, flags: .none))
-                        )
-                    }
-                )
+                    canSubmit: addStore.canSubmit
+                ) {
+                    addStore.send(.view(.cancelButtonTapped))
+                } onDiscardChanges: {
+                    addStore.send(.view(.discardChangesButtonTapped))
+                } onSubmit: {
+                    addStore.send(
+                        .view(.saveButtonTapped(name: addStore.trimmedName, flags: .none))
+                    )
+                }
             }
         }
     }
@@ -136,7 +134,7 @@ private extension LookupManagementPresentations {
         @Bindable var renameStore: StoreOf<LookupRenameFormFeature>
 
         /// 名稱欄位的佔位文字
-        let namePlaceholder: String
+        let namePlaceholder: LocalizedStringResource
 
         /// 導覽列標題，依主檔種類決定
         let title: LocalizedStringKey
@@ -152,17 +150,14 @@ private extension LookupManagementPresentations {
                 isNameFieldFocused: $renameStore.isNameFieldFocused,
                 isDiscardConfirmationPresented: $renameStore.isDiscardConfirmationPresented,
                 isDirty: renameStore.isDirty,
-                canSubmit: renameStore.canSubmit,
-                onCancel: {
-                    renameStore.send(.view(.cancelButtonTapped))
-                },
-                onDiscardChanges: {
-                    renameStore.send(.view(.discardChangesButtonTapped))
-                },
-                onSubmit: {
-                    renameStore.send(.view(.saveButtonTapped(name: renameStore.trimmedName)))
-                }
-            )
+                canSubmit: renameStore.canSubmit
+            ) {
+                renameStore.send(.view(.cancelButtonTapped))
+            } onDiscardChanges: {
+                renameStore.send(.view(.discardChangesButtonTapped))
+            } onSubmit: {
+                renameStore.send(.view(.saveButtonTapped(name: renameStore.trimmedName)))
+            }
         }
     }
 
@@ -173,7 +168,7 @@ private extension LookupManagementPresentations {
         @Bindable var editStore: StoreOf<PaymentMethodEditFormFeature>
 
         /// 名稱欄位的佔位文字
-        let namePlaceholder: String
+        let namePlaceholder: LocalizedStringResource
 
         /// 呈現付款方式編輯表單，取消、捨棄與送出都交給子 store 的 reducer 處理
         var body: some View {
@@ -189,24 +184,21 @@ private extension LookupManagementPresentations {
                 isNameFieldFocused: $editStore.isNameFieldFocused,
                 isDiscardConfirmationPresented: $editStore.isDiscardConfirmationPresented,
                 isDirty: editStore.isDirty,
-                canSubmit: editStore.canSubmit,
-                onCancel: {
-                    editStore.send(.view(.cancelButtonTapped))
-                },
-                onDiscardChanges: {
-                    editStore.send(.view(.discardChangesButtonTapped))
-                },
-                onSubmit: {
-                    editStore.send(
-                        .view(
-                            .saveButtonTapped(
-                                name: editStore.trimmedName,
-                                flags: editStore.draftFlags
-                            )
+                canSubmit: editStore.canSubmit
+            ) {
+                editStore.send(.view(.cancelButtonTapped))
+            } onDiscardChanges: {
+                editStore.send(.view(.discardChangesButtonTapped))
+            } onSubmit: {
+                editStore.send(
+                    .view(
+                        .saveButtonTapped(
+                            name: editStore.trimmedName,
+                            flags: editStore.draftFlags
                         )
                     )
-                }
-            )
+                )
+            }
         }
     }
 }
@@ -230,6 +222,15 @@ private extension LookupManagementPresentations {
         case .reconciliationStatus:
             "orders.lookup.label.renameStatus"
         }
+    }
+
+    /// 將 `LookupKind` 提供的 catalog key 轉成資源，讓元件以 App 語言解析
+    ///
+    /// - Parameter key: `LookupKind` 提供的 catalog key
+    /// - Returns: 對應該 key 的 `LocalizedStringResource`
+    /// - Note: key 在 catalog 維持 manual，非字面值不會被編譯器抽取；只用於已知是 catalog key 的值
+    static func catalogResource(_ key: String) -> LocalizedStringResource {
+        LocalizedStringResource(String.LocalizationValue(key))
     }
 
     /// 通知 Feature 表單 sheet 關閉動畫已結束，讓暫存的提示接著顯示

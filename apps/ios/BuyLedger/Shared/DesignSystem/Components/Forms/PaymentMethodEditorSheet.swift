@@ -49,11 +49,11 @@ struct PaymentMethodEditorSheet: View {
     /// 是否嵌入既有導覽堆疊；預設 `false` 為獨立 sheet
     private let isEmbedded: Bool
 
-    /// 表單上方的說明訊息；空字串時不顯示
-    private let message: String
+    /// 表單上方的說明訊息；`nil` 時不顯示
+    private let message: LocalizedStringResource?
 
     /// 名稱 `TextField` 的 placeholder
-    private let namePlaceholder: String
+    private let namePlaceholder: LocalizedStringResource
 
     /// 取消鍵的處理
     ///
@@ -71,10 +71,10 @@ struct PaymentMethodEditorSheet: View {
     private let onSubmit: () -> Void
 
     /// 提交按鈕的文字
-    private let submitTitle: String
+    private let submitTitle: LocalizedStringResource
 
     /// Sheet 的標題 (顯示在 navigation bar)
-    private let title: String
+    private let title: LocalizedStringResource
 
     // MARK: - Init
 
@@ -82,7 +82,7 @@ struct PaymentMethodEditorSheet: View {
     ///
     /// - Parameters:
     ///   - title: 導覽標題
-    ///   - message: 表單上方說明；空字串時不顯示
+    ///   - message: 表單上方說明；`nil` 時不顯示
     ///   - namePlaceholder: 名稱 `TextField` placeholder
     ///   - submitTitle: 提交按鈕文字 (新增用「新增」、編輯用「儲存」)
     ///   - draftName: 名稱輸入草稿
@@ -98,10 +98,10 @@ struct PaymentMethodEditorSheet: View {
     ///   - isEmbedded: 是否嵌入既有導覽堆疊，預設為 `false` 時以獨立 sheet 呈現
     ///   - onSubmit: 提交付款方式時執行
     init(
-        title: String,
-        message: String,
-        namePlaceholder: String,
-        submitTitle: String,
+        title: LocalizedStringResource,
+        message: LocalizedStringResource?,
+        namePlaceholder: LocalizedStringResource,
+        submitTitle: LocalizedStringResource,
         draftName: Binding<String>,
         isDraftCardless: Binding<Bool>,
         isDraftBankTransfer: Binding<Bool>,
@@ -137,7 +137,7 @@ struct PaymentMethodEditorSheet: View {
     ///
     /// - Parameters:
     ///   - title: 導覽標題
-    ///   - message: 表單上方說明；空字串時不顯示
+    ///   - message: 表單上方說明；`nil` 時不顯示
     ///   - namePlaceholder: 名稱 `TextField` placeholder
     ///   - submitTitle: 提交按鈕文字
     ///   - initialName: 固定的名稱草稿，空字串時提交按鈕停用
@@ -147,10 +147,10 @@ struct PaymentMethodEditorSheet: View {
     ///   - isEmbedded: 是否嵌入既有導覽堆疊，預設為 `false`
     ///   - onSubmit: 提交時收到固定草稿與旗標的回呼
     init(
-        title: String,
-        message: String,
-        namePlaceholder: String,
-        submitTitle: String,
+        title: LocalizedStringResource,
+        message: LocalizedStringResource?,
+        namePlaceholder: LocalizedStringResource,
+        submitTitle: LocalizedStringResource,
         initialName: String = "",
         isInitialCardless: Bool = false,
         isInitialBankTransfer: Bool = false,
@@ -171,16 +171,15 @@ struct PaymentMethodEditorSheet: View {
             isDiscardConfirmationPresented: .constant(false),
             isDirty: false,
             canSubmit: !initialName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-            isEmbedded: isEmbedded,
-            onSubmit: {
-                onSubmit(
-                    initialName,
-                    isInitialCardless,
-                    isInitialBankTransfer,
-                    isInitialCashOnDelivery
-                )
-            }
-        )
+            isEmbedded: isEmbedded
+        ) {
+            onSubmit(
+                initialName,
+                isInitialCardless,
+                isInitialBankTransfer,
+                isInitialCashOnDelivery
+            )
+        }
     }
 
     // MARK: - Body
@@ -204,6 +203,7 @@ struct PaymentMethodEditorSheet: View {
                 Button("orders.list.label.discardChanges", role: .destructive) {
                     discardChanges()
                 }
+
                 Button("orders.list.label.keepEditing", role: .cancel) {
                 }
             } message: {
@@ -222,19 +222,15 @@ private extension PaymentMethodEditorSheet {
     var formContent: some View {
         Form {
             Section {
-                BLTextField(
-                    LocalizedStringKey(namePlaceholder),
-                    text: $draftName,
-                    focus: $isNameFieldKeyboardFocused
-                )
+                BLTextField(namePlaceholder, text: $draftName, focus: $isNameFieldKeyboardFocused)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodNameField)
             } header: {
                 Text("orders.detail.label.paymentMethodName")
             } footer: {
-                if !message.isEmpty {
-                    Text(LocalizedStringKey(message))
+                if let message {
+                    Text(message)
                         .blTextStyle(.footnote)
                         .foregroundStyle(.blSecondaryLabel)
                 }
@@ -291,7 +287,7 @@ private extension PaymentMethodEditorSheet {
             }
             isNameFieldKeyboardFocused = newValue
         }
-        .navigationTitle(Text(LocalizedStringKey(title)))
+        .navigationTitle(Text(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !isEmbedded {
@@ -308,7 +304,7 @@ private extension PaymentMethodEditorSheet {
                     Image(systemName: "checkmark")
                 }
                 .buttonStyle(.borderedProminent)
-                .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
+                .accessibilityLabel(Text(submitTitle))
                 .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodSaveButton)
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canSubmit)
@@ -377,10 +373,9 @@ private extension PaymentMethodEditorSheet {
         title: "orders.edit.label.addPaymentMethod",
         message: "orders.edit.message.enterNewPayment",
         namePlaceholder: "orders.detail.label.paymentMethodName",
-        submitTitle: "orders.list.button.add",
-        onSubmit: { _, _, _, _ in
-        }
-    )
+        submitTitle: "orders.list.button.add"
+    ) { _, _, _, _ in
+    }
 }
 
 #Preview("orders.lookup.label.editPaymentMethod") {
@@ -390,8 +385,7 @@ private extension PaymentMethodEditorSheet {
         namePlaceholder: "orders.detail.label.paymentMethodName",
         submitTitle: "orders.edit.button.save",
         initialName: "銀行匯款",
-        isInitialBankTransfer: true,
-        onSubmit: { _, _, _, _ in
-        }
-    )
+        isInitialBankTransfer: true
+    ) { _, _, _, _ in
+    }
 }

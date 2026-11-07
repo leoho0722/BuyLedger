@@ -36,27 +36,27 @@ struct BLTextField<FocusValue: Hashable>: View {
     private let prompt: Text?
 
     /// 欄位標題，同時作為無障礙名稱
-    private let titleKey: LocalizedStringKey
+    private let title: LocalizedStringResource
 
     // MARK: - Init
 
     /// 建立以 `Bool` 表示焦點的文字欄位
     ///
     /// - Parameters:
-    ///   - titleKey: 欄位標題
+    ///   - title: 欄位標題
     ///   - text: 文字內容
     ///   - prompt: 無輸入時顯示的提示文字
     ///   - axis: 輸入軸向，`nil` 為單行
     ///   - focus: 呼叫端的 `Bool` 焦點狀態
     init(
-        _ titleKey: LocalizedStringKey,
+        _ title: LocalizedStringResource,
         text: Binding<String>,
         prompt: Text? = nil,
         axis: Axis? = nil,
         focus: FocusState<FocusValue>.Binding
     ) where FocusValue == Bool {
         self.init(
-            titleKey,
+            title,
             text: text,
             prompt: prompt,
             axis: axis,
@@ -68,14 +68,14 @@ struct BLTextField<FocusValue: Hashable>: View {
     /// 建立以列舉表示焦點的文字欄位
     ///
     /// - Parameters:
-    ///   - titleKey: 欄位標題
+    ///   - title: 欄位標題
     ///   - text: 文字內容
     ///   - prompt: 無輸入時顯示的提示文字
     ///   - axis: 輸入軸向，`nil` 為單行
     ///   - focus: 呼叫端的焦點列舉狀態
     ///   - equals: 此欄位對應的焦點值
     init(
-        _ titleKey: LocalizedStringKey,
+        _ title: LocalizedStringResource,
         text: Binding<String>,
         prompt: Text? = nil,
         axis: Axis? = nil,
@@ -88,7 +88,7 @@ struct BLTextField<FocusValue: Hashable>: View {
         self.focus = focus
         focusMatch = equals
         self.prompt = prompt
-        self.titleKey = titleKey
+        self.title = title
     }
 
     // MARK: - Body
@@ -119,7 +119,7 @@ private extension BLTextField {
     /// 系統文字欄位，文字與選取都經追蹤用的綁定
     var inputField: some View {
         TextField(
-            titleKey,
+            title,
             text: trackedText,
             selection: trackedSelection,
             prompt: prompt,

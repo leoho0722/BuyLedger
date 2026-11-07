@@ -73,7 +73,7 @@ extension InsightsFormatters {
     /// - Parameters:
     ///   - rank: 名次，由 1 起算
     ///   - name: 類別或開團名稱
-    /// - Returns: 例如 `1. 美妝保養` 的標題
+    /// - Returns: 例如「1. 美妝保養」的標題
     static func rankTitle(rank: Int, name: String) -> String {
         "\(rank). \(name)"
     }
@@ -87,7 +87,7 @@ extension InsightsFormatters {
     static func costDonutSlices(_ segments: [InsightsCostSegment], locale: Locale) -> [CostSlice] {
         segments.map {
             CostSlice(
-                label: $0.label,
+                label: $0.label.key,
                 value: NSDecimalNumber(decimal: $0.value).doubleValue,
                 valueDescription: BLFormatters.twd($0.value, locale: locale),
                 tone: $0.tone

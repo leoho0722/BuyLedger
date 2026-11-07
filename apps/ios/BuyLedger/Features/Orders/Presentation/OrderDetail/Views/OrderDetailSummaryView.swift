@@ -33,6 +33,34 @@ struct OrderDetailSummaryView: View {
 
 private extension OrderDetailSummaryView {
 
+    /// 收款、成本與獲利摘要卡片
+    var profitCard: some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                profitSummary
+
+                Divider()
+
+                financialMetrics
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 獲利與毛利率，無障礙字級下改為直排
+    @ViewBuilder
+    var profitSummary: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                profitValues
+            }
+        } else {
+            HStack(alignment: .bottom) {
+                profitValues
+            }
+        }
+    }
+
     /// 獲利與毛利率共用的文字內容
     @ViewBuilder
     var profitValues: some View {
@@ -73,16 +101,16 @@ private extension OrderDetailSummaryView {
         .accessibilityElement(children: .combine)
     }
 
-    /// 獲利與毛利率，無障礙字級下改為直排
+    /// 收款、成本與手續費，無障礙字級下改為直排
     @ViewBuilder
-    var profitSummary: some View {
+    var financialMetrics: some View {
         if dynamicTypeSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                profitValues
+                metricValues
             }
         } else {
-            HStack(alignment: .bottom) {
-                profitValues
+            HStack {
+                metricValues
             }
         }
     }
@@ -116,34 +144,6 @@ private extension OrderDetailSummaryView {
             .accessibilityElement(children: .combine)
     }
 
-    /// 收款、成本與手續費，無障礙字級下改為直排
-    @ViewBuilder
-    var financialMetrics: some View {
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                metricValues
-            }
-        } else {
-            HStack {
-                metricValues
-            }
-        }
-    }
-
-    /// 收款、成本與獲利摘要卡片
-    var profitCard: some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.large) {
-                profitSummary
-
-                Divider()
-
-                financialMetrics
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     /// 顯示單一財務指標
     ///
     /// - Parameters:
@@ -151,9 +151,9 @@ private extension OrderDetailSummaryView {
     ///   - value: 指標值
     /// - Returns: 指標 view
     @ViewBuilder
-    func metric(_ title: String, value: String) -> some View {
+    func metric(_ title: LocalizedStringResource, value: String) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text(LocalizedStringKey(title))
+            Text(title)
                 .blTextStyle(.caption)
                 .foregroundStyle(.blSecondaryLabel)
 

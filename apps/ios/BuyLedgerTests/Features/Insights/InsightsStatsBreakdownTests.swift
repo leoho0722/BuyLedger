@@ -53,7 +53,7 @@ struct InsightsStatsBreakdownTests {
 
         // Then
         #expect(stats.totalCost == 800)
-        #expect(stats.costSegments.map(\.label) == ["orders.detail.label.itemCost"])
+        #expect(stats.costSegments.map(\.label.key) == ["orders.detail.label.itemCost"])
         #expect(stats.costSegments.first?.value == 800)
     }
 
@@ -84,7 +84,7 @@ struct InsightsStatsBreakdownTests {
 
         // Then
         #expect(
-            stats.costSegments.map(\.label) == [
+            stats.costSegments.map(\.label.key) == [
                 "orders.detail.label.itemCost",
                 "orders.detail.label.localShipping",
                 "orders.detail.label.internationalShipping",

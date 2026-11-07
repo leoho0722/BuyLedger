@@ -127,25 +127,30 @@ private extension BLButtonStyle {
 // MARK: - Preview
 
 #Preview("按鈕樣式") {
+    let primaryTitle = "主要操作"
+    let secondaryTitle = "次要操作"
+    let textTitle = "純文字操作"
+    let destructiveTitle = "刪除資料"
+    let disabledTitle = "停用中"
     VStack(spacing: BLSpacing.medium) {
-        Button("common.ui.label.primaryAction", systemImage: "plus") {
+        Button(primaryTitle, systemImage: "plus") {
         }
             .buttonStyle(.blPrimary)
 
-        Button("common.ui.label.secondaryAction", systemImage: "square.and.pencil") {
+        Button(secondaryTitle, systemImage: "square.and.pencil") {
         }
             .buttonStyle(.blSecondary)
 
-        Button("common.ui.label.textAction", systemImage: "arrow.clockwise") {
+        Button(textTitle, systemImage: "arrow.clockwise") {
         }
             .buttonStyle(.blPlain)
 
         // 破壞性語意由 `role` 表達，樣式端不再提供破壞性變體
-        Button("campaigns.general.label.deleteData", systemImage: "trash", role: .destructive) {
+        Button(destructiveTitle, systemImage: "trash", role: .destructive) {
         }
             .buttonStyle(.blPlain)
 
-        Button("common.ui.label.disabled", systemImage: "plus") {
+        Button(disabledTitle, systemImage: "plus") {
         }
             .buttonStyle(.blPrimary)
             .disabled(true)

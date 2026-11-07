@@ -106,18 +106,19 @@ extension View {
 // MARK: - Preview
 
 #Preview("閱讀版面自適應") {
+    let placeholder = "輸入文字"
     VStack(spacing: BLSpacing.large) {
-        Text("這是一段套用文字偏好 (基準上限 640 pt) 的長段落示範文字，隨 DynamicType 與安全區域自動退讓置中。")
+        Text(verbatim: "這是一段套用文字偏好 (基準上限 640 pt) 的長段落示範文字，隨 DynamicType 與安全區域自動退讓置中。")
             .padding(BLSpacing.medium)
             .blReadableContent(.text)
             .blTextStyle(.body)
             .background(.blSurface)
 
         HStack(spacing: BLSpacing.medium) {
-            Text("表單欄位")
+            Text(verbatim: "表單欄位")
                 .blTextStyle(.headline)
 
-            TextField("輸入文字", text: .constant("示範內容"))
+            TextField(placeholder, text: .constant("示範內容"))
                 .textFieldStyle(.roundedBorder)
         }
         .padding(BLSpacing.medium)

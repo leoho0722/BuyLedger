@@ -36,11 +36,11 @@ struct LookupNameEditorSheet: View {
     /// - Note: 為 `true` 時阻擋下滑，並讓取消鍵改以彈窗確認
     private let isDirty: Bool
 
-    /// 表單下方顯示的說明；空字串時不顯示
-    private let message: String
+    /// 表單下方顯示的說明；`nil` 時不顯示
+    private let message: LocalizedStringResource?
 
     /// 名稱欄位尚未輸入時顯示的提示
-    private let namePlaceholder: String
+    private let namePlaceholder: LocalizedStringResource
 
     /// 取消鍵的處理
     ///
@@ -69,7 +69,7 @@ struct LookupNameEditorSheet: View {
     ///
     /// - Parameters:
     ///   - title: 導覽列顯示的表單標題
-    ///   - message: 表單下方顯示的說明；空字串時不顯示
+    ///   - message: 表單下方顯示的說明；`nil` 時不顯示
     ///   - namePlaceholder: 名稱欄位尚未輸入時顯示的提示
     ///   - submitTitle: 提交按鈕顯示的文字
     ///   - draftName: 名稱輸入草稿
@@ -82,8 +82,8 @@ struct LookupNameEditorSheet: View {
     ///   - onSubmit: 使用者提交時執行
     init(
         title: LocalizedStringKey,
-        message: String,
-        namePlaceholder: String,
+        message: LocalizedStringResource?,
+        namePlaceholder: LocalizedStringResource,
         submitTitle: String,
         draftName: Binding<String>,
         isNameFieldFocused: Binding<Bool>,
@@ -112,15 +112,15 @@ struct LookupNameEditorSheet: View {
     ///
     /// - Parameters:
     ///   - title: 導覽列顯示的表單標題
-    ///   - message: 表單下方顯示的說明；空字串時不顯示
+    ///   - message: 表單下方顯示的說明；`nil` 時不顯示
     ///   - namePlaceholder: 名稱欄位尚未輸入時顯示的提示
     ///   - submitTitle: 提交按鈕顯示的文字
     ///   - initialName: 固定的名稱草稿，同時作為原名稱
     ///   - onSubmit: 提交時收到固定草稿名稱的回呼
     init(
         title: LocalizedStringKey,
-        message: String,
-        namePlaceholder: String,
+        message: LocalizedStringResource?,
+        namePlaceholder: LocalizedStringResource,
         submitTitle: String,
         initialName: String = "",
         onSubmit: @escaping (_ name: String) -> Void
@@ -155,6 +155,7 @@ struct LookupNameEditorSheet: View {
         .interactiveDismissDisabled(isDirty)
         .alert("orders.list.label.discardChanges", isPresented: $isDiscardConfirmationPresented) {
             discardChangesButton
+
             continueEditingButton
         } message: {
             discardConfirmationMessage
@@ -171,18 +172,14 @@ private extension LookupNameEditorSheet {
     var formContent: some View {
         Form {
             Section {
-                BLTextField(
-                    LocalizedStringKey(namePlaceholder),
-                    text: $draftName,
-                    focus: $isNameFieldKeyboardFocused
-                )
+                BLTextField(namePlaceholder, text: $draftName, focus: $isNameFieldKeyboardFocused)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .textContentType(nil)
                 .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
             } footer: {
-                if !message.isEmpty {
-                    Text(LocalizedStringKey(message))
+                if let message {
+                    Text(message)
                         .blTextStyle(.footnote)
                         .foregroundStyle(.blSecondaryLabel)
                 }
@@ -265,7 +262,7 @@ private extension LookupNameEditorSheet {
 #Preview("主檔名稱表單") {
     LookupNameEditorSheet(
         title: "orders.edit.label.addOrderSource",
-        message: "輸入新的訂單來源名稱，加入後會立即套用。",
+        message: "orders.edit.message.enterNewOrder",
         namePlaceholder: "orders.edit.label.sourceName",
         submitTitle: "orders.list.button.add"
     ) { _ in

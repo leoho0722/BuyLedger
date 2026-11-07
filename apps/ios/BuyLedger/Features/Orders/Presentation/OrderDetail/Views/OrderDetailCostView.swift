@@ -86,7 +86,7 @@ private extension OrderDetailCostView {
                     .foregroundStyle(costColor(for: component.tone))
                     .accessibilityHidden(true)
 
-                Text(LocalizedStringKey(component.title))
+                Text(component.title)
                     .blTextStyle(.footnote)
                     .foregroundStyle(.blSecondaryLabel)
             }

@@ -26,30 +26,30 @@ struct OptionPickerSheet: View {
     /// 可用的新增入口
     ///
     /// - Note: `nil` 時隱藏新增按鈕
-    let addition: Addition?
+    private let addition: Addition?
 
     /// 沒有符合選項時顯示的文案
-    let emptyState: EmptyState
+    private let emptyState: EmptyState
 
     /// 是否沿用宿主的導覽堆疊
-    let isEmbedded: Bool
+    private let isEmbedded: Bool
 
     /// 是否顯示搜尋欄
-    let isSearchEnabled: Bool
+    private let isSearchEnabled: Bool
 
     /// 自訂顯示名稱與搜尋補充文字
     ///
     /// - Note: `nil` 時使用原值
-    let labeling: Labeling?
+    private let labeling: Labeling?
 
     /// 尚未套用搜尋的完整選項清單
-    let options: [String]
+    private let options: [String]
 
     /// 單選或多選的目前值與操作回呼
-    let selection: Selection
+    private let selection: Selection
 
     /// 導覽列顯示的標題
-    let title: String
+    private let title: LocalizedStringResource
 
     // MARK: - Init
 
@@ -65,7 +65,7 @@ struct OptionPickerSheet: View {
     ///   - isSearchEnabled: 是否顯示搜尋欄，預設 `false`
     ///   - isEmbedded: 是否嵌入既有導覽堆疊，預設 `false`
     init(
-        title: String,
+        title: LocalizedStringResource,
         options: [String],
         selection: Selection,
         addition: Addition? = nil,
@@ -119,7 +119,8 @@ private extension OptionPickerSheet {
     @ViewBuilder
     var searchableContent: some View {
         if isSearchEnabled {
-            listContent.blSearchable(text: $searchText, prompt: Text("common.action.action.search"))
+            listContent
+                .blSearchable(text: $searchText, prompt: Text("common.action.action.search"))
         } else {
             listContent
         }
@@ -143,7 +144,7 @@ private extension OptionPickerSheet {
         }
         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.root)
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(Text(LocalizedStringKey(title)))
+        .navigationTitle(Text(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if case .multiple = selection {
@@ -292,11 +293,8 @@ private extension OptionPickerSheet {
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: ["3C", "美妝", "精品", "食品"],
-        selection: .single(
-            selected: "美妝",
-            onSelect: { _ in
-            }
-        ),
+        selection: .single(selected: "美妝") { _ in
+        },
         addition: .prompt(
             .init(
                 buttonTitle: "orders.edit.label.addCategory",
@@ -317,14 +315,11 @@ private extension OptionPickerSheet {
     OptionPickerSheet(
         title: "orders.edit.label.selectCurrency",
         options: ["TWD", "USD", "JPY", "KRW", "EUR", "CNY"],
-        selection: .single(
-            selected: "TWD",
-            onSelect: { _ in
-            }
-        ),
+        selection: .single(selected: "TWD") { _ in
+        },
         emptyState: .init(
             title: "orders.edit.label.currenciesAvailable",
-            description: "需要網路連線載入幣別清單，請稍後再試。"
+            description: "orders.edit.message.internetConnectionRequired"
         ),
         labeling: CurrencyDisplayName.optionLabeling(locale: AppLanguage.traditionalChinese.locale),
         isSearchEnabled: true
@@ -332,6 +327,7 @@ private extension OptionPickerSheet {
 }
 
 #Preview("類別篩選 (含清除選項、未選任何類別)") {
+    let emptyDescription = "試試其他搜尋關鍵字。"
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
@@ -344,13 +340,14 @@ private extension OptionPickerSheet {
         ),
         emptyState: .init(
             title: "orders.list.label.matchingCategories",
-            description: "orders.list.message.tryAnotherSearch"
+            description: LocalizedStringResource(String.LocalizationValue(emptyDescription))
         ),
         isSearchEnabled: true
     )
 }
 
 #Preview("類別篩選 (含清除選項、已選美妝)") {
+    let emptyDescription = "試試其他搜尋關鍵字。"
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
@@ -363,7 +360,7 @@ private extension OptionPickerSheet {
         ),
         emptyState: .init(
             title: "orders.list.label.matchingCategories",
-            description: "orders.list.message.tryAnotherSearch"
+            description: LocalizedStringResource(String.LocalizationValue(emptyDescription))
         ),
         isSearchEnabled: true
     )
@@ -402,12 +399,12 @@ private extension OptionPickerSheet {
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: [],
-        selection: .single(
-            selected: "",
-            onSelect: { _ in
-            }
-        ),
-        emptyState: .init(title: "尚無商品類別", description: "尚未建立任何商品類別。")
+        selection: .single(selected: "") { _ in
+        },
+        emptyState: .init(
+            title: "orders.edit.label.categories",
+            description: "orders.edit.message.addFirstCategory"
+        )
     )
 }
 
@@ -415,23 +412,20 @@ private extension OptionPickerSheet {
     OptionPickerSheet(
         title: "orders.list.label.selectPaymentMethod",
         options: ["現金", "信用卡"],
-        selection: .single(
-            selected: "現金",
-            onSelect: { _ in
-            }
-        ),
+        selection: .single(selected: "現金") { _ in
+        },
         addition: .paymentMethod(
             .init(
                 buttonTitle: "orders.edit.label.addPaymentMethod",
                 title: "orders.edit.label.addPaymentMethod",
-                message: "輸入新的付款方式名稱。",
+                message: "orders.edit.message.enterNewPayment",
                 placeholder: "orders.detail.label.paymentMethodName"
             )
         ) { _, _, _, _ in
         },
         emptyState: .init(
             title: "orders.edit.label.paymentMethods",
-            description: "透過上方「新增付款方式」建立第一個付款方式。"
+            description: "orders.edit.message.addFirstPayment"
         )
     )
 }

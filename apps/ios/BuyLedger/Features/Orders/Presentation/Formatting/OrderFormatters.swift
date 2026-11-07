@@ -16,6 +16,26 @@ enum OrderFormatters {
 
 extension OrderFormatters {
 
+    /// 提供手續費費率輸入說明，數字依 App 語言格式化
+    ///
+    /// - Parameter locale: App 選定、用於數字呈現的 locale
+    /// - Returns: 依 App 語言呈現的手續費輸入說明
+    static func feeRateInputMessage(locale: Locale) -> String {
+        let exampleValue = 1.5.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
+        let examplePercent = 0.015.formatted(.percentUpToOneFractionDigit(locale: locale))
+        let minimumPercent = 0.0.formatted(.percentUpToOneFractionDigit(locale: locale))
+        let maximumPercent = 1.0.formatted(.percentUpToOneFractionDigit(locale: locale))
+
+        return AppLanguage.format(
+            "orders.edit.message.feeRateInputNotice",
+            exampleValue,
+            examplePercent,
+            minimumPercent,
+            maximumPercent,
+            locale: locale
+        )
+    }
+
     /// 組合收款與帶正負號獲利的文字，供訂單列的無障礙值朗讀
     ///
     /// - Parameters:

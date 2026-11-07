@@ -49,6 +49,16 @@ private extension InsightsCostStructureCard {
             .foregroundStyle(.blLabel)
     }
 
+    /// 圈狀圖與圖例上下排列
+    var breakdown: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.large) {
+            donut
+
+            legend
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     /// 成本結構圈狀圖，中央顯示總成本，圖表標題隨 App 內選用的語言翻譯
     var donut: some View {
         BLDonutChart(
@@ -72,16 +82,6 @@ private extension InsightsCostStructureCard {
         }
     }
 
-    /// 圈狀圖與圖例上下排列
-    var breakdown: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.large) {
-            donut
-
-            legend
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
     /// 組出圖例單列，依序為色塊、區塊名稱與金額
     ///
     /// - Parameter segment: 成本區塊
@@ -93,7 +93,7 @@ private extension InsightsCostStructureCard {
                 .foregroundStyle(color(for: segment.tone))
                 .accessibilityHidden(true)
 
-            Text(LocalizedStringKey(segment.label))
+            Text(segment.label)
                 .blTextStyle(.caption)
                 .foregroundStyle(.blSecondaryLabel)
 

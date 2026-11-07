@@ -113,7 +113,7 @@ struct OrderDetailFeatureTests {
 
         // Then
         #expect(
-            components.map(\.title) == [
+            components.map(\.title.key) == [
                 "orders.detail.label.itemCost",
                 "orders.detail.label.cardFee",
                 "orders.detail.label.platformFee",

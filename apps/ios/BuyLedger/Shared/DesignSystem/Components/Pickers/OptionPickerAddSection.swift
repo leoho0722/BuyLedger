@@ -34,10 +34,10 @@ struct OptionPickerAddSection: View {
         Section {
             addButton
         }
-        .alert(LocalizedStringKey(prompt.title), isPresented: $isAddAlertPresented) {
+        .alert(prompt.title, isPresented: $isAddAlertPresented) {
             alertActions
         } message: {
-            Text(LocalizedStringKey(prompt.message))
+            Text(prompt.message)
         }
     }
 }
@@ -51,7 +51,7 @@ private extension OptionPickerAddSection {
         Button {
             triggerAdd()
         } label: {
-            Label(LocalizedStringKey(prompt.buttonTitle), systemImage: "plus.circle.fill")
+            Label(prompt.buttonTitle, systemImage: "plus.circle.fill")
         }
         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addButton)
     }
@@ -59,7 +59,7 @@ private extension OptionPickerAddSection {
     /// 新增名稱的輸入欄、確認與取消操作
     @ViewBuilder
     var alertActions: some View {
-        TextField(LocalizedStringKey(prompt.placeholder), text: $draft)
+        TextField(prompt.placeholder, text: $draft)
             .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertNameField)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()

@@ -11,96 +11,48 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderEditFeature` 的單元測試，涵蓋開團顯示文字與可選清單，以及選擇器的選取、切換與推入
+/// `OrderEditFeature` 的單元測試，涵蓋開團呈現資料與可選清單，以及選擇器的選取、切換與推入
 struct OrderEditFeatureCampaignsTests {
 
-    /// 驗證未選任何開團時，開團文字沿用既有的未歸團本地化鍵，繁體中文顯示為未歸團
-    ///
-    /// - Throws: 繁體中文資源目錄不存在時由 `#require` 丟出
+    /// 驗證未選任何開團時，開團呈現資料為未歸團，由畫面以本地化鍵顯示
     @Test
-    func campaignsDisplayText_未選開團且使用繁體中文_顯示未歸團() throws {
+    func campaignsDisplayText_未選開團_呈現為未歸團() {
         // Given
         let state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
 
         // When
-        let text = try localizedCampaignText(
-            state.campaignsDisplayText,
-            language: .traditionalChinese
-        )
+        let display = state.campaignsDisplayText
 
         // Then
-        #expect(state.campaignsDisplayText.key == "orders.detail.label.unassigned")
-        #expect(text == "未歸團")
+        #expect(display == .unassigned)
     }
 
-    /// 驗證未選任何開團時，開團文字沿用既有的未歸團本地化鍵，英文顯示為 Unassigned
-    ///
-    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    /// 驗證已選多個開團時，開團呈現資料原樣保留名稱並以頓號串接
     @Test
-    func campaignsDisplayText_未選開團且使用英文_顯示英文未歸團() throws {
-        // Given
-        let state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-
-        // When
-        let text = try localizedCampaignText(state.campaignsDisplayText, language: .english)
-
-        // Then
-        #expect(state.campaignsDisplayText.key == "orders.detail.label.unassigned")
-        #expect(text == "Unassigned")
-    }
-
-    /// 驗證已選多個開團時，繁體中文原樣顯示開團名稱並以頓號串接
-    ///
-    /// - Throws: 繁體中文資源目錄不存在時由 `#require` 丟出
-    @Test
-    func campaignsDisplayText_已選開團且使用繁體中文_保留名稱與頓號() throws {
+    func campaignsDisplayText_已選多個開團_保留名稱並以頓號串接() {
         // Given
         var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         state.draft.campaignNames = ["三月日本團", "四月韓國團"]
 
         // When
-        let text = try localizedCampaignText(
-            state.campaignsDisplayText,
-            language: .traditionalChinese
-        )
+        let display = state.campaignsDisplayText
 
         // Then
-        #expect(state.campaignsDisplayText.key == "%@")
-        #expect(text == "三月日本團、四月韓國團")
+        #expect(display == .names("三月日本團、四月韓國團"))
     }
 
-    /// 驗證已選多個開團時，英文仍原樣顯示開團名稱，並以頓號而非英文逗號串接
-    ///
-    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    /// 驗證開團名稱與本地化鍵相同時，開團呈現資料仍帶原始名稱，畫面不會把它當成鍵值翻譯
     @Test
-    func campaignsDisplayText_已選開團且使用英文_保留名稱與頓號() throws {
-        // Given
-        var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        state.draft.campaignNames = ["三月日本團", "四月韓國團"]
-
-        // When
-        let text = try localizedCampaignText(state.campaignsDisplayText, language: .english)
-
-        // Then
-        #expect(state.campaignsDisplayText.key == "%@")
-        #expect(text == "三月日本團、四月韓國團")
-    }
-
-    /// 驗證開團名稱與本地化鍵相同時，英文仍原樣顯示名稱，不當成鍵值翻譯
-    ///
-    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
-    @Test
-    func campaignsDisplayText_英文開團名稱等於本地化鍵_保留原始名稱() throws {
+    func campaignsDisplayText_英文開團名稱等於本地化鍵_保留原始名稱() {
         // Given
         var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         state.draft.campaignNames = ["orders.detail.label.unassigned"]
 
         // When
-        let text = try localizedCampaignText(state.campaignsDisplayText, language: .english)
+        let display = state.campaignsDisplayText
 
         // Then
-        #expect(state.campaignsDisplayText.key == "%@")
-        #expect(text == "orders.detail.label.unassigned")
+        #expect(display == .names("orders.detail.label.unassigned"))
     }
 
     /// 驗證結單日與注入的現在時間同為當天的進行中開團，仍列入可選清單
@@ -298,33 +250,5 @@ extension OrderEditFeatureCampaignsTests {
 
         /// 切換後預期保留的開團
         let expected: [String]
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrderEditFeatureCampaignsTests {
-
-    /// 以指定語言的資源目錄解析本地化值與插值，不受測試程序預設語言影響
-    ///
-    /// - Parameters:
-    ///   - resource: 畫面狀態提供的本地化值
-    ///   - language: 測試指定的 App 語言
-    /// - Returns: 以指定語言解析後的開團文字
-    /// - Throws: 指定語言的資源目錄不存在時由 `#require` 丟出
-    func localizedCampaignText(
-        _ resource: LocalizedStringResource,
-        language: AppLanguage
-    ) throws -> String {
-        let bundleURL = try #require(
-            Bundle.main.url(forResource: language.localeIdentifier, withExtension: "lproj")
-        )
-        let bundle = try #require(Bundle(url: bundleURL))
-        return String(
-            localized: resource.defaultValue,
-            table: resource.table,
-            bundle: bundle,
-            locale: language.locale
-        )
     }
 }

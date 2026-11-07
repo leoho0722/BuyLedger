@@ -237,6 +237,47 @@ struct SnapshotOrderEditSectionsTests {
         }
     }
 
+    /// 驗證合併情境的開團列在草稿沒有開團名稱時，英文模式顯示翻譯後的「Unassigned」，畫面符合基準圖
+    ///
+    /// - Throws: 範例訂單沒有合併訂單或 `Asia/Taipei` 時區不存在時由 `#require` 丟出
+    @Test
+    func orderEditCampaignSection_未歸團英文模式_顯示翻譯文字() throws {
+        try TestDependencies.withFixedNow {
+            // Given
+            let store = try Self.makeMergedCampaignStore(campaignNames: [])
+
+            // When
+            let view = Self.orderEditSection(height: 200, language: .english) { _ in
+                OrderEditCampaignSection(store: store)
+            }
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// 驗證開團名稱等於本地化鍵 `orders.detail.label.unassigned` 時，英文模式的開團列以原文顯示，不翻成「Unassigned」，畫面符合基準圖
+    ///
+    /// - Throws: 範例訂單沒有合併訂單或 `Asia/Taipei` 時區不存在時由 `#require` 丟出
+    /// - Note: 守的是「開團名稱等於 key 時以原文顯示」，使用者資料不可被當成 catalog key 翻譯
+    @Test
+    func orderEditCampaignSection_開團名稱等於本地化鍵_以原文顯示() throws {
+        try TestDependencies.withFixedNow {
+            // Given
+            let store = try Self.makeMergedCampaignStore(
+                campaignNames: ["orders.detail.label.unassigned"]
+            )
+
+            // When
+            let view = Self.orderEditSection(height: 200, language: .english) { _ in
+                OrderEditCampaignSection(store: store)
+            }
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
     /// 驗證訂單編號很長時，原始訂單區段只顯示依規則截短的短識別碼 (`displayID`)，且其值為 `BL-DRAFT-000000`，畫面符合基準圖
     ///
     /// - Throws: `Asia/Taipei` 時區不存在時由 `#require` 丟出
@@ -310,17 +351,39 @@ private extension SnapshotOrderEditSectionsTests {
     ///
     /// - Parameters:
     ///   - height: 能容納整個區段的高度
+    ///   - language: 環境套用的 App 語言，預設為正體中文
     ///   - content: 以焦點綁定建立的區段
-    /// - Returns: 套用正體中文語系與固定尺寸的區段宿主
+    /// - Returns: 套用指定語系與固定尺寸的區段宿主
     /// - Note: 於 key window 渲染，離屏渲染畫不出系統分段控制等元件的選取狀態
     static func orderEditSection<Content: View>(
         height: CGFloat,
+        language: AppLanguage = .traditionalChinese,
         @ViewBuilder content: @escaping (
             FocusState<OrderEditFeature.State.Field?>.Binding
         ) -> Content
     ) -> some View {
         SnapshotSectionView(content: content)
-            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .environment(\.locale, language.locale)
             .frame(width: 393, height: height)
+    }
+
+    /// 以範例合併訂單建立訂單編輯 store，並把草稿的開團名稱換成指定值
+    ///
+    /// - Parameter campaignNames: 草稿的開團名稱，空陣列代表未歸團
+    /// - Returns: 處於合併情境、照片已載入、時間固定的訂單編輯 store
+    /// - Throws: 範例訂單沒有合併訂單或 `Asia/Taipei` 時區不存在時由 `#require` 丟出
+    static func makeMergedCampaignStore(
+        campaignNames: [String]
+    ) throws -> StoreOf<OrderEditFeature> {
+        let mergedOrder = try #require(
+            LedgerOrder.sampleOrders.first {
+                !$0.mergedSourceIDs.isEmpty
+            }
+        )
+        var state = try SnapshotTestSupport.makeOrderEditSnapshotState(original: mergedOrder)
+        state.draft.campaignNames = campaignNames
+        return Store(initialState: state) {
+            OrderEditFeature()
+        }
     }
 }
