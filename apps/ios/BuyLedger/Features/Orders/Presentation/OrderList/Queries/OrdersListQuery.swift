@@ -10,6 +10,12 @@ import Foundation
 /// 訂單清單的純篩選、日期分組與顯示資料計算
 enum OrdersListQuery {
 
+    // MARK: - Properties
+
+    /// 多選標題的 catalog key，不含筆數佔位
+    ///
+    /// - Note: 以非字面值組合標題，編譯器才不會另外抽出帶 `%lld` 的條目
+    private static let selectedCountKey = "orders.batch.message.selectedCount"
 }
 
 // MARK: - Internal Method
@@ -195,10 +201,10 @@ extension OrdersListQuery {
             return "orders.edit.label.selectOrders"
         }
         var string = String.LocalizationValue.StringInterpolation(
-            literalCapacity: 34,
+            literalCapacity: selectedCountKey.count + 1,
             interpolationCount: 1
         )
-        string.appendLiteral("orders.batch.message.selectedCount")
+        string.appendLiteral(selectedCountKey)
         string.appendLiteral(" ")
         string.appendInterpolation(count)
         return String.LocalizationValue(stringInterpolation: string)

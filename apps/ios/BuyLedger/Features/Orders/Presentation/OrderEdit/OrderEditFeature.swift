@@ -83,7 +83,7 @@ struct OrderEditFeature {
             OrderEditDraftOperations.hasRequiredFields(draft: draft)
         }
 
-        /// 草稿或照片有未儲存變更
+        /// 草稿或照片是否有未儲存變更
         var isDirty: Bool {
             draft != initialDraft || photos.hasEditedPhotos
         }
@@ -129,11 +129,11 @@ struct OrderEditFeature {
             OrderStatusRules.selectableStatuses(for: draft.status)
         }
 
-        /// 開團選擇列的本地化值；未選時使用「未歸團」的既有本地化鍵
-        var campaignsDisplayText: LocalizedStringResource {
+        /// 開團選擇列的呈現資料；未選時為未歸團，已選時帶以頓號串接的原開團名稱
+        var campaignsDisplayText: CampaignsDisplayText {
             draft.campaignNames.isEmpty
-                ? "orders.detail.label.unassigned"
-                : "\(OrderFormatters.campaignsDisplayText(draft.campaignNames))"
+                ? .unassigned
+                : .names(OrderFormatters.campaignsDisplayText(draft.campaignNames))
         }
 
         /// 依原始訂單與父層帶入的選項建立草稿狀態
@@ -180,6 +180,18 @@ struct OrderEditFeature {
 
             /// 使用者選擇保留的照片
             let keptPhotos: [Data]
+        }
+
+        /// 開團選擇列的呈現資料，區分走本地化的未歸團與維持原文的開團名稱
+        enum CampaignsDisplayText: Equatable, Sendable {
+
+            /// 尚未歸屬任何開團，由畫面以本地化鍵顯示
+            case unassigned
+
+            /// 已選開團名稱，屬使用者資料，畫面以 verbatim 顯示
+            ///
+            /// - Parameter string: 以頓號串接的開團名稱
+            case names(String)
         }
 
         /// 表單中可取得鍵盤焦點的欄位

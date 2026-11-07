@@ -138,8 +138,9 @@ private extension FxStatusBanner {
 }
 
 #Preview("載入失敗") {
+    let message = "匯率暫時無法取得，請稍後再試。"
     FxStatusBanner(
-        errorMessage: "匯率暫時無法取得，請稍後再試。",
+        errorMessage: LocalizedStringResource(String.LocalizationValue(message)),
         isLoading: false,
         onRetry: {
         },

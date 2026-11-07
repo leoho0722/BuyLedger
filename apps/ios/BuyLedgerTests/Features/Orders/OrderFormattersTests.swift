@@ -18,6 +18,30 @@ struct OrderFormattersTests {
     /// 測試固定使用的英文呈現 locale，與 `BLFormattersTests` 既有慣例一致
     private static let locale = Locale(identifier: "en")
 
+    /// 驗證手續費輸入說明依 App 語言呈現數字與百分比
+    ///
+    /// - Parameter scenario: 測試語言與預期說明
+    @Test(arguments: [
+        FeeInputMessageCase(
+            language: .traditionalChinese,
+            expected: "輸入百分比例如 1.5 表示 1.5%；超出 0% ~ 100% 範圍會自動限制。"
+        ),
+        FeeInputMessageCase(
+            language: .english,
+            expected: "Enter 1.5 for 1.5%. Values outside 0% ~ 100% are automatically limited."
+        ),
+    ])
+    func feeRateInputMessage_各語言_顯示相符說明(scenario: FeeInputMessageCase) {
+        // Given
+        let locale = scenario.language.locale
+
+        // When
+        let message = OrderFormatters.feeRateInputMessage(locale: locale)
+
+        // Then
+        #expect(message == scenario.expected)
+    }
+
     /// 驗證正數金額前面加上加號，符號與金額之間沒有空格
     @Test
     func signedTWD_正數金額_前面加上加號() {
@@ -174,5 +198,20 @@ struct OrderFormattersTests {
 
         // Then
         #expect(text == "NT$500 +NT$0")
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderFormattersTests {
+
+    /// 本地化說明測試使用的語言與預期字串
+    struct FeeInputMessageCase: Sendable {
+
+        /// 測試使用的 App 語言
+        let language: AppLanguage
+
+        /// 該語言的完整預期說明
+        let expected: String
     }
 }

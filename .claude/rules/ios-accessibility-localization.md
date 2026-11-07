@@ -49,13 +49,27 @@ paths:
   含兩個 (含) 以上參數之格式字串，強制使用 `%1$lld`、`%2$@` 位置標記，避免不同語言詞序調換造成型別混淆。
 - **單複數宣告走 String Catalog Substitutions**：
   英文單複數差異交由 `.xcstrings` 的 `plural` 屬性定義，禁止在業務邏輯中以 `if count == 1` 條件分支切換文案。
-- **`Text(someString)` (型別 `String`) 走 verbatim、不會本地化**：固定詞經 `String` 變數傳進 `Text`／`Label`／`navigationTitle` 時包 `LocalizedStringKey(...)`，或把參數型別宣告為 `LocalizedStringKey` (參考 `DashboardKPITile` 的 `delta` 參數)。
+- **`Text(someString)` (型別 `String`) 走 verbatim、不會本地化**：固定詞經 `String` 變數傳進 `Text`／`Label`／`navigationTitle` 時包 `LocalizedStringKey(...)`；元件參數依下一條宣告為 `LocalizedStringResource`。
   - 帶插值的文案用 `Text(LocalizedStringKey("\(count) …"))`；不用 `String(localized:locale:)`，它走系統語言 bundle、不吃 App 內語言切換。
   - 使用者資料 (主檔名稱、`customer.name`) 與格式化後的數字、日期維持 verbatim。
+- **元件參數接收 catalog key 時型別用 `LocalizedStringResource`**：字面值呼叫端才會被編譯器抽取、讓 Xcode 追蹤 key 的使用；`String` 參數收到的字面值抽不到，Xcode IDE 建置後會被標 stale。
+  - 這類元件的 `#Preview` 不傳中文示範文字 (會被抽成新條目)，改用 App 程式碼也在用的 key；沒有時用 verbatim (`Text(verbatim:)`，或以 `String` 常數建構參數)。
+  - 不為預覽新增 catalog key：只在 `#Preview` 引用的 key，即使編譯器抽得到，Xcode 仍會標 stale。
+  - `Text(resource)` 跟隨畫面的 `\.locale` (即 App 語言)；resource 要轉成 `String` (如圖表無障礙描述) 時經 `AppLanguage` 解析，不用 `String(localized:)`。
+  - 只有無參數、預設 table 與 bundle 的 resource 可以取 `.key` 交 `localizedString(forKey:)`：`.key` 不含插值引數與 table、bundle，帶參數的 resource 要連同引數交給 `AppLanguage` 解析。
+  - `LocalizedStringResource` 的相等比較含 table 與 bundle，識別值與測試一律比對 `.key`。
+- **編譯器抽不到的 key 在 catalog 標 `"extractionState" : "manual"`**：以 `String` 傳遞的 key (經 `AppLanguage` 解析、存在 State 或由函式回傳) 與只在 `#if DEBUG` 編譯的 key 都屬此類；沒標時 Xcode 會標 stale，它提供的「Remove from catalog」會刪掉仍在使用的翻譯。
+  - 以 `LocalizedStringResource` 字面值建構後存進 State 或由函式回傳的 key 會被抽取，不標 manual；是否抽得到以 `.stringsdata` 為準，不以引用位置判斷。
+  - 判斷是否被抽取看 DerivedData 的 `.stringsdata`，排除 `GeneratedStringSymbols_*` 來源：manual 條目會產生符號再被抽一次。
+  - 只有 Xcode IDE 建置會依抽取結果改寫 catalog，命令列 (`mobilebuildmcp`) 建置不會；IDE 建置後 catalog 出現變動代表抽取狀態不一致，修正程式碼或條目，不整檔還原。
+  - `LocalizationCatalogTests` 守門 catalog 不得有 stale 條目。
+- **翻譯值不寫死百分比數字**：各語言的百分比格式不同，數字以 `FormatStyle` 依 App 語言的 locale 格式化後，經 `AppLanguage.format` 帶入位置參數；`LocalizationCatalogTests` 守門。
+  - 不用 `Text("key \(value, format: .percent)")`：編譯器會抽出帶空白的 key，違反結構化 key 規範。
 - **根分頁標題用 `rootNavigationTitle(_:language:)`**：`navigationTitle` 不會隨 `\.locale` 可靠地重新解析 String Catalog，改由 `AppLanguage.localized(_:)` 先解析。
   - Orders 的多選三態標題由 `OrderListFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
 - **新增任何 UI 字串 (含 `AlertState`／`TextState`、`accessibilityLabel`) 都補 `Localizable.xcstrings` 的 `en`**，否則英文模式露出中文。
   - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
+  - 插入的條目依 key 字母序放在正確位置：位置不對時 Xcode IDE 建置會重排條目。
   - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogLiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
   - 直接作為型別呼叫引數的多行 `"""` 字面值掃描抓不到，要人工確認已進 catalog。
   - 回傳 `LocalizedStringKey`／`LocalizedStringResource` 的函式與屬性，本體內的字面值 (含插值) 都會被當成目錄 key 檢查：組出 verbatim 文字 (金額、百分比、`MoM` 等) 的格式化函式回傳 `String`，由呼叫端包 `LocalizedStringKey` (參考 `DashboardFormatters.percentDelta`)。

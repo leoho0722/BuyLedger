@@ -141,7 +141,7 @@ private extension QuoteView {
                 .blTextStyle(.footnote)
 
             case .marginTooHigh:
-                Text("quote.calculator.message.targetMarginMust")
+                Text(verbatim: QuoteFormatters.targetMarginLimitMessage(locale: locale))
                     .blTextStyle(.footnote)
             }
         }

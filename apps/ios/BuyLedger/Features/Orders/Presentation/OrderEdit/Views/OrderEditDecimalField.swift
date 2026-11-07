@@ -16,19 +16,19 @@ struct OrderEditDecimalField: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// 對應的表單焦點欄位
-    let field: OrderEditFeature.State.Field
+    private let field: OrderEditFeature.State.Field
 
     /// 表單共用的鍵盤焦點綁定
-    let focusedField: FocusState<OrderEditFeature.State.Field?>.Binding
+    private let focusedField: FocusState<OrderEditFeature.State.Field?>.Binding
 
     /// UI 測試定位用的識別碼，未指定時沿用空值
-    let identifier: String?
+    private let identifier: String?
 
     /// 欄位的本地化標題
-    let title: String
+    private let title: LocalizedStringResource
 
     /// 金額的雙向綁定
-    let value: Binding<Decimal>
+    private let value: Binding<Decimal>
 
     // MARK: - Init
 
@@ -41,7 +41,7 @@ struct OrderEditDecimalField: View {
     ///   - focusedField: 表單共用的焦點綁定
     ///   - identifier: UI 測試使用的識別碼
     init(
-        title: String,
+        title: LocalizedStringResource,
         value: Binding<Decimal>,
         field: OrderEditFeature.State.Field,
         focusedField: FocusState<OrderEditFeature.State.Field?>.Binding,
@@ -82,14 +82,13 @@ private extension OrderEditDecimalField {
 
     /// 長標題換行並撐高整列
     var fieldTitle: some View {
-        Text(LocalizedStringKey(title))
+        Text(title)
             .fixedSize(horizontal: false, vertical: true)
     }
 
     /// 整數數值輸入，保留鍵盤、對齊、焦點與命中區
     var numberField: some View {
         BLNumberField(
-            "",
             value: value,
             format: .number.precision(.fractionLength(0)).grouping(.never),
             focus: focusedField,

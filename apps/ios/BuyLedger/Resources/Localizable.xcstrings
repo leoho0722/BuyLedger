@@ -406,7 +406,7 @@
       }
     },
     "campaigns.detail.label.quantityWithAmount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -568,7 +568,7 @@
       }
     },
     "campaigns.edit.message.anotherCampaignAlready" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -628,23 +628,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法使用行事曆"
-          }
-        }
-      }
-    },
-    "campaigns.general.label.deleteData" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Delete Data"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "刪除資料"
           }
         }
       }
@@ -1054,7 +1037,7 @@
       }
     },
     "campaigns.list.message.campaignsLoadedTry" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1135,7 +1118,7 @@
       }
     },
     "common.action.button.clear" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1231,23 +1214,6 @@
         }
       }
     },
-    "common.action.confirm" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Confirm"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "確認"
-          }
-        }
-      }
-    },
     "common.action.label.all" : {
       "localizations" : {
         "en" : {
@@ -1308,38 +1274,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更多"
-          }
-        }
-      }
-    },
-    "common.navigation.detailEmptyState" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Selection"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未選取項目"
-          }
-        }
-      }
-    },
-    "common.navigation.selectItemPrompt" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select an item from the list"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "請從清單中選取項目"
           }
         }
       }
@@ -1476,7 +1410,7 @@
       }
     },
     "common.general.label.ldOrders2" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1493,7 +1427,7 @@
       }
     },
     "common.general.label.ldProgress" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1544,7 +1478,7 @@
       }
     },
     "common.general.label.pointLd" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1589,22 +1523,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "資料無法開啟"
-          }
-        }
-      }
-    },
-    "common.general.label.workspace" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Workspace"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "工作區"
           }
         }
       }
@@ -1674,8 +1592,40 @@
         }
       }
     },
+    "common.navigation.detailEmptyState" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Selection"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未選取項目"
+          }
+        }
+      }
+    },
+    "common.navigation.selectItemPrompt" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select an item from the list"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請從清單中選取項目"
+          }
+        }
+      }
+    },
     "common.ui.accessibility.barChartSummary" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1692,7 +1642,7 @@
       }
     },
     "common.ui.accessibility.donutChartSummary" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1740,23 +1690,6 @@
         }
       }
     },
-    "common.ui.label.disabled" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Disabled"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "停用中"
-          }
-        }
-      }
-    },
     "common.ui.label.donutChartData" : {
       "localizations" : {
         "en" : {
@@ -1769,23 +1702,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "圈狀圖，目前沒有資料"
-          }
-        }
-      }
-    },
-    "common.ui.label.eightLowerThan" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "8% Lower Than Last Month"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "較上月減少 8%"
           }
         }
       }
@@ -1850,108 +1766,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法顯示的照片"
-          }
-        }
-      }
-    },
-    "common.ui.label.primaryAction" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Primary Action"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主要操作"
-          }
-        }
-      }
-    },
-    "common.ui.label.raisedCardShadow" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raised Card Shadow"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "浮層卡片陰影"
-          }
-        }
-      }
-    },
-    "common.ui.label.secondaryAction" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Secondary Action"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次要操作"
-          }
-        }
-      }
-    },
-    "common.ui.label.spendingMonth" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Spending This Month"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "本月支出"
-          }
-        }
-      }
-    },
-    "common.ui.label.standardCardShadow" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Standard Card Shadow"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "標準卡片陰影"
-          }
-        }
-      }
-    },
-    "common.ui.label.textAction" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Text Action"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "純文字操作"
           }
         }
       }
@@ -2037,7 +1851,7 @@
       }
     },
     "customers.list.accessibility.viewOrders" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2070,7 +1884,7 @@
       }
     },
     "customers.list.label.customerCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2120,7 +1934,7 @@
       }
     },
     "customers.list.label.orderCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2187,6 +2001,7 @@
       }
     },
     "customers.list.label.topCount" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2235,7 +2050,7 @@
       }
     },
     "dashboard.overview.accessibility.trendDown" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2252,7 +2067,7 @@
       }
     },
     "dashboard.overview.accessibility.trendFlat" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2269,7 +2084,7 @@
       }
     },
     "dashboard.overview.accessibility.trendUp" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2302,7 +2117,7 @@
       }
     },
     "dashboard.overview.label.activeCountInProgress" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2319,7 +2134,6 @@
       }
     },
     "dashboard.overview.label.activeOrders" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2336,6 +2150,7 @@
       }
     },
     "dashboard.overview.label.campaignOrderSummary" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2416,7 +2231,7 @@
       }
     },
     "dashboard.overview.label.orderCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2465,7 +2280,6 @@
       }
     },
     "dashboard.overview.label.revenue" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2759,7 +2573,7 @@
       }
     },
     "fx.rates.message.connectedTimestamp" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2803,23 +2617,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "匯率資料格式異常；無法顯示即時匯率。"
-          }
-        }
-      }
-    },
-    "fx.rates.message.exchangeRatesLoaded" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exchange rates could not be loaded. Try again later."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "匯率載入失敗，請稍後再試。"
           }
         }
       }
@@ -2873,7 +2670,7 @@
       }
     },
     "insights.chart.accessibility.heatmapSummary" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2890,7 +2687,7 @@
       }
     },
     "insights.chart.accessibility.orderCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2907,7 +2704,7 @@
       }
     },
     "insights.chart.accessibility.viewDetails" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2924,7 +2721,7 @@
       }
     },
     "insights.chart.accessibility.viewOrders" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -2941,7 +2738,7 @@
       }
     },
     "insights.chart.accessibility.weekdayWeek" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3071,7 +2868,7 @@
       }
     },
     "insights.chart.label.heatmapPastWeeks" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3189,7 +2986,7 @@
       }
     },
     "orders.batch.message.selectedCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -3283,7 +3080,6 @@
       }
     },
     "orders.detail.label.cardless" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3382,7 +3178,6 @@
       }
     },
     "orders.detail.label.cost" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3463,7 +3258,7 @@
       }
     },
     "orders.detail.label.editOrder" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3480,7 +3275,6 @@
       }
     },
     "orders.detail.label.fees" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3497,7 +3291,6 @@
       }
     },
     "orders.detail.label.foreignLocalShipping" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3596,7 +3389,6 @@
       }
     },
     "orders.detail.label.localShipping" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3793,7 +3585,7 @@
       }
     },
     "orders.detail.label.quantity" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3842,7 +3634,6 @@
       }
     },
     "orders.detail.label.totalPayment" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -3950,23 +3741,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "儲存"
-          }
-        }
-      }
-    },
-    "orders.edit.button.saveAndContinue" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Save and Continue"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "儲存並繼續新增"
           }
         }
       }
@@ -4122,7 +3896,6 @@
       }
     },
     "orders.edit.label.bankTransfer" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4187,7 +3960,6 @@
       }
     },
     "orders.edit.label.cardFee" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4254,7 +4026,6 @@
       }
     },
     "orders.edit.label.currenciesAvailable" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4335,7 +4106,6 @@
       }
     },
     "orders.edit.label.itemCost" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4352,7 +4122,7 @@
       }
     },
     "orders.edit.label.itemDetailsCurrency" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4416,6 +4186,23 @@
         }
       }
     },
+    "orders.edit.label.orderDateTimestamp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Date: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂購日期：%@"
+          }
+        }
+      }
+    },
     "orders.edit.label.orderPhotos" : {
       "localizations" : {
         "en" : {
@@ -4432,24 +4219,8 @@
         }
       }
     },
-    "orders.edit.label.orderDateTimestamp" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Order Date: %@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "訂購日期：%@"
-          }
-        }
-      }
-    },
     "orders.edit.label.orderPhotosCount" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4515,7 +4286,6 @@
       }
     },
     "orders.edit.label.paymentProcessingFee" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4548,7 +4318,6 @@
       }
     },
     "orders.edit.label.platformFee" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4647,7 +4416,6 @@
       }
     },
     "orders.edit.label.selectCampaigns" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4681,7 +4449,6 @@
       }
     },
     "orders.edit.label.selectCurrency" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4814,7 +4581,6 @@
       }
     },
     "orders.edit.message.addFirstCategory" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4831,7 +4597,6 @@
       }
     },
     "orders.edit.message.addFirstOrder" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4848,7 +4613,6 @@
       }
     },
     "orders.edit.message.addFirstPayment" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4865,7 +4629,6 @@
       }
     },
     "orders.edit.message.addFirstReconciliation" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4914,7 +4677,6 @@
       }
     },
     "orders.edit.message.createCampaignCampaigns" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -4946,22 +4708,6 @@
         }
       }
     },
-    "orders.edit.message.enter1515" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enter 1.5 for 1.5%. Values outside 0% ~ 100% are automatically limited."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "輸入百分比例如 1.5 表示 1.5%；超出 0% ~ 100% 範圍會自動限制。"
-          }
-        }
-      }
-    },
     "orders.edit.message.enterNewOrder" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4980,7 +4726,6 @@
       }
     },
     "orders.edit.message.enterNewPayment" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5014,7 +4759,6 @@
       }
     },
     "orders.edit.message.enterNewReconciliation" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5030,8 +4774,24 @@
         }
       }
     },
+    "orders.edit.message.feeRateInputNotice" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter %1$@ for %2$@. Values outside %3$@ ~ %4$@ are automatically limited."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入百分比例如 %1$@ 表示 %2$@；超出 %3$@ ~ %4$@ 範圍會自動限制。"
+          }
+        }
+      }
+    },
     "orders.edit.message.internetConnectionRequired" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5096,7 +4856,7 @@
       }
     },
     "orders.edit.message.photoImportFailedNotice" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5113,7 +4873,7 @@
       }
     },
     "orders.edit.message.photoLimitNotice" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5303,7 +5063,7 @@
       }
     },
     "orders.filter.label.categoryFormat" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5315,23 +5075,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "類別：%@"
-          }
-        }
-      }
-    },
-    "orders.filter.label.filterSummary" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Filter: %@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "篩選：%@"
           }
         }
       }
@@ -5349,6 +5092,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "篩選條件"
+          }
+        }
+      }
+    },
+    "orders.filter.label.filterSummary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選：%@"
           }
         }
       }
@@ -5405,7 +5165,7 @@
       }
     },
     "orders.filter.label.paymentMethodFormat" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5634,7 +5394,7 @@
       }
     },
     "orders.general.label.model" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5699,7 +5459,7 @@
       }
     },
     "orders.general.message.batchStatusUpdate" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5716,7 +5476,7 @@
       }
     },
     "orders.general.message.categoryAddedTry" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5749,7 +5509,7 @@
       }
     },
     "orders.general.message.mergedOrderSaved" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5766,7 +5526,7 @@
       }
     },
     "orders.general.message.orderDeletedTry" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5783,7 +5543,7 @@
       }
     },
     "orders.general.message.orderSavedTry" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5800,7 +5560,7 @@
       }
     },
     "orders.general.message.ordersLoadedTry" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5817,7 +5577,7 @@
       }
     },
     "orders.general.message.orderSourceAdded" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5834,7 +5594,7 @@
       }
     },
     "orders.general.message.orderStatusUpdated" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5851,7 +5611,7 @@
       }
     },
     "orders.general.message.paymentMethodAdded" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5868,7 +5628,7 @@
       }
     },
     "orders.general.message.receiptStatusUpdated" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5885,7 +5645,7 @@
       }
     },
     "orders.general.message.reconciliationStatusAdded" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -5983,7 +5743,6 @@
       }
     },
     "orders.list.label.cashDelivery" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6061,23 +5820,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "客戶名稱"
-          }
-        }
-      }
-    },
-    "orders.list.label.date" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Date"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "日期"
           }
         }
       }
@@ -6309,7 +6051,7 @@
       }
     },
     "orders.list.label.newOrder" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6390,7 +6132,7 @@
       }
     },
     "orders.list.label.selectAll" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -6536,23 +6278,6 @@
         }
       }
     },
-    "orders.list.message.tryAnotherSearch" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try another search term."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "試試其他搜尋關鍵字。"
-          }
-        }
-      }
-    },
     "orders.list.message.tryChangingSearch" : {
       "localizations" : {
         "en" : {
@@ -6654,7 +6379,7 @@
       }
     },
     "orders.lookup.label.itemsCreated" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7050,7 +6775,6 @@
       }
     },
     "orders.lookup.message.ordersReferencingName" : {
-      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7233,6 +6957,7 @@
       }
     },
     "orders.merge.message.candidateFilterNotice" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7281,7 +7006,7 @@
       }
     },
     "orders.merge.message.photoLimitNotice" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7574,18 +7299,19 @@
         }
       }
     },
-    "quote.calculator.message.targetMarginMust" : {
+    "quote.calculator.message.targetMarginLimitNotice" : {
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The target margin must be below 100% to calculate a suggested price."
+            "value" : "The target margin must be below %@ to calculate a suggested price."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目標毛利需低於 100% 才能計算建議售價。"
+            "value" : "目標毛利需低於 %@ 才能計算建議售價。"
           }
         }
       }
@@ -7719,7 +7445,7 @@
       }
     },
     "settings.preference.label.customAiModel" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7736,7 +7462,7 @@
       }
     },
     "settings.preference.label.customModel" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7769,7 +7495,7 @@
       }
     },
     "settings.preference.label.modelsAvailable" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -7996,7 +7722,7 @@
       }
     },
     "settings.preference.message.enterCustomModel" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8013,7 +7739,7 @@
       }
     },
     "settings.preference.message.enterModelName" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -8030,7 +7756,7 @@
       }
     },
     "settings.preference.message.modelNameFor" : {
-      "extractionState" : "stale",
+      "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {

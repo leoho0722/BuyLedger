@@ -16,7 +16,7 @@ struct BLCardShadow {
     @Environment(\.colorScheme) private var colorScheme
 
     /// 指示是否使用浮層陰影
-    let floating: Bool
+    let isFloating: Bool
 }
 
 // MARK: - ViewModifier
@@ -24,25 +24,28 @@ struct BLCardShadow {
 extension BLCardShadow: ViewModifier {
 
     /// 回傳套用陰影後的內容
+    ///
     /// - Parameter content: 要套用陰影的內容
     /// - Returns: 套用陰影後的 view
     func body(content: Content) -> some View {
         if colorScheme == .dark {
             content
-        } else if floating {
-            content.shadow(
-                color: .black.opacity(0.18),
-                radius: 32,
-                x: 0,
-                y: 12
-            )
+        } else if isFloating {
+            content
+                .shadow(
+                    color: .black.opacity(0.18),
+                    radius: 32,
+                    x: 0,
+                    y: 12
+                )
         } else {
-            content.shadow(
-                color: .black.opacity(0.06),
-                radius: 3,
-                x: 0,
-                y: 1
-            )
+            content
+                .shadow(
+                    color: .black.opacity(0.06),
+                    radius: 3,
+                    x: 0,
+                    y: 1
+                )
         }
     }
 }
@@ -52,10 +55,11 @@ extension BLCardShadow: ViewModifier {
 extension View {
 
     /// 套用 BuyLedger 卡片陰影
-    /// - Parameter floating: 傳入 `true` 時使用較高的浮層陰影
+    ///
+    /// - Parameter isFloating: 傳入 `true` 時使用較高的浮層陰影
     /// - Returns: 套用陰影後的 view
-    func blCardShadow(floating: Bool = false) -> some View {
-        modifier(BLCardShadow(floating: floating))
+    func blCardShadow(isFloating: Bool = false) -> some View {
+        modifier(BLCardShadow(isFloating: isFloating))
     }
 }
 
@@ -63,29 +67,19 @@ extension View {
 
 #Preview("卡片陰影") {
     VStack(alignment: .leading, spacing: BLSpacing.large) {
-        Text("common.ui.label.standardCardShadow")
+        Text(verbatim: "標準卡片陰影")
             .padding()
             .frame(maxWidth: .infinity)
             .background(.background)
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: BLRadius.large,
-                    style: .continuous
-                )
-            )
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
             .blCardShadow()
 
-        Text("common.ui.label.raisedCardShadow")
+        Text(verbatim: "浮層卡片陰影")
             .padding()
             .frame(maxWidth: .infinity)
             .background(.background)
-            .clipShape(
-                RoundedRectangle(
-                    cornerRadius: BLRadius.large,
-                    style: .continuous
-                )
-            )
-            .blCardShadow(floating: true)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
+            .blCardShadow(isFloating: true)
     }
     .padding()
 }

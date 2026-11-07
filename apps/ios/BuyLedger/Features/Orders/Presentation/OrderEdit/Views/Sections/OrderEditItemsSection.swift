@@ -103,7 +103,6 @@ private extension OrderEditItemsSection {
                         .foregroundStyle(.blSecondaryLabel)
 
                     BLNumberField(
-                        "",
                         value: item.unitPrice,
                         format: .number.precision(.fractionLength(0)).grouping(.never),
                         focus: focusedField,

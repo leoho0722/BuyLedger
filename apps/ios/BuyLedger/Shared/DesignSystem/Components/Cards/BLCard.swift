@@ -60,14 +60,14 @@ struct BLCard<Content: View>: View {
 #Preview("卡片") {
     BLCard {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("common.ui.label.spendingMonth")
+            Text(verbatim: "本月支出")
                 .blTextStyle(.headline)
 
             Text(verbatim: "$12,480")
                 .blTextStyle(.title2)
                 .monospacedDigit()
 
-            Text("common.ui.label.eightLowerThan")
+            Text(verbatim: "較上月減少 8%")
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blSecondaryLabel)
         }

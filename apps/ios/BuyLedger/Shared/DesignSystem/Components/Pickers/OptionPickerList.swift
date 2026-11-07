@@ -40,11 +40,7 @@ struct OptionPickerList: View {
             }
 
             if options.isEmpty {
-                ContentUnavailableView(
-                    LocalizedStringKey(emptyState.title),
-                    systemImage: "tray",
-                    description: Text(LocalizedStringKey(emptyState.description))
-                )
+                emptyPlaceholder
             } else {
                 ForEach(options, id: \.self) {
                     listOptionRow($0)
@@ -70,7 +66,7 @@ private extension OptionPickerList {
             dismiss()
         } label: {
             HStack(alignment: .firstTextBaseline) {
-                Text(LocalizedStringKey(clearOption.title))
+                Text(clearOption.title)
                     .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
@@ -87,6 +83,15 @@ private extension OptionPickerList {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// 沒有符合選項時顯示的空狀態
+    var emptyPlaceholder: some View {
+        ContentUnavailableView {
+            Label(emptyState.title, systemImage: "tray")
+        } description: {
+            Text(emptyState.description)
+        }
     }
 
     /// 可選的選項列，依選取模式顯示勾選
@@ -171,11 +176,8 @@ private extension OptionPickerList {
                 description: "orders.edit.message.addFirstCategory"
             ),
             options: ["3C", "美妝", "食品"],
-            selection: .single(
-                selected: "美妝",
-                onSelect: { _ in
-                }
-            )
+            selection: .single(selected: "美妝") { _ in
+            }
         )
     }
 }

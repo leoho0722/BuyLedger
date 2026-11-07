@@ -157,6 +157,12 @@ struct InsightsFormattersTests {
         let slices = InsightsFormatters.costDonutSlices(segments, locale: Self.english)
 
         // Then
+        #expect(
+            segments.map(\.label.key) == [
+                "orders.detail.label.itemCost",
+                "orders.detail.label.fees",
+            ]
+        )
         #expect(slices.map(\.label) == ["orders.detail.label.itemCost", "orders.detail.label.fees"])
         #expect(slices.map(\.value) == [300, 1_000])
         #expect(slices.map(\.valueDescription) == ["NT$300", "NT$1,000"])

@@ -380,8 +380,12 @@ extension LocalizationCatalogAppLanguageTests {
         static let examples = [
             Self(language: .english, key: "common.action.cancel", expectedValue: "Cancel"),
             Self(language: .traditionalChinese, key: "common.action.cancel", expectedValue: "取消"),
-            Self(language: .english, key: "common.action.confirm", expectedValue: "Confirm"),
-            Self(language: .traditionalChinese, key: "common.action.confirm", expectedValue: "確認"),
+            Self(language: .english, key: "common.action.button.done", expectedValue: "Done"),
+            Self(
+                language: .traditionalChinese,
+                key: "common.action.button.done",
+                expectedValue: "完成"
+            ),
             Self(language: .english, key: "common.date.today", expectedValue: "Today"),
             Self(language: .traditionalChinese, key: "common.date.today", expectedValue: "今天"),
             Self(language: .english, key: "common.date.yesterday", expectedValue: "Yesterday"),
@@ -394,15 +398,11 @@ extension LocalizationCatalogAppLanguageTests {
                 key: "orders.edit.button.save",
                 expectedValue: "儲存"
             ),
-            Self(
-                language: .english,
-                key: "orders.edit.button.saveAndContinue",
-                expectedValue: "Save and Continue"
-            ),
+            Self(language: .english, key: "common.action.button.retry", expectedValue: "Retry"),
             Self(
                 language: .traditionalChinese,
-                key: "orders.edit.button.saveAndContinue",
-                expectedValue: "儲存並繼續新增"
+                key: "common.action.button.retry",
+                expectedValue: "重試"
             ),
             Self(
                 language: .english,

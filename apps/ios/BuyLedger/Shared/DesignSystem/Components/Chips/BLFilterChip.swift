@@ -13,28 +13,28 @@ struct BLFilterChip: View {
     // MARK: - Properties
 
     /// 點擊時的動作
-    let action: () -> Void
+    private let action: () -> Void
 
     /// 選用的前綴 SF Symbol 名稱
-    var icon: String?
+    private var icon: String?
 
     /// 是否撐滿可用寬度並允許換行 (trigger 類膠囊使用)
-    var isExpanded: Bool
+    private var isExpanded: Bool
 
     /// 是否為選取狀態
-    let isSelected: Bool
+    private let isSelected: Bool
 
     /// 字級與水平內距的尺寸
-    var size: Size
+    private var size: Size
 
     /// 選取態的語意配色
-    var style: Style
+    private var style: Style
 
     /// 膠囊顯示的文字
-    let title: LocalizedStringKey
+    private let title: LocalizedStringKey
 
     /// 選用的尾端 SF Symbol 名稱
-    var trailingIcon: String?
+    private var trailingIcon: String?
 
     // MARK: - Init
 
@@ -120,6 +120,7 @@ extension BLFilterChip {
 // MARK: - Preview
 
 #Preview("篩選膠囊") {
+    let filterTitle = "篩選: 全部"
     VStack(alignment: .leading, spacing: BLSpacing.medium) {
         HStack(spacing: BLSpacing.small) {
             BLFilterChip(isSelected: true, title: "common.action.label.all") {
@@ -143,7 +144,7 @@ extension BLFilterChip {
             isSelected: false,
             size: .large,
             style: .purple,
-            title: "篩選: 全部",
+            title: LocalizedStringKey(filterTitle),
             trailingIcon: "chevron.down"
         ) {
         }

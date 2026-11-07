@@ -118,13 +118,14 @@ private extension InsightsTrendCard {
 // MARK: - Preview
 
 #Preview("走勢") {
+    let delta = "↑ 18.5%"
     InsightsTrendCard(
         bars: [
             BLBarChartValue(label: "4 月", value: 1_200, valueDescription: "NT$1,200"),
             BLBarChartValue(label: "5 月", value: 2_800, valueDescription: "NT$2,800"),
             BLBarChartValue(label: "6 月", value: 1_900, valueDescription: "NT$1,900"),
         ],
-        delta: "↑ 18.5%",
+        delta: LocalizedStringKey(delta),
         language: .traditionalChinese,
         range: .sixMonths,
         totalProfit: 5_900,

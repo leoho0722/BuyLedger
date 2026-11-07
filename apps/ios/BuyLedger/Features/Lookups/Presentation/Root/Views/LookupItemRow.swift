@@ -59,22 +59,22 @@ private extension LookupItemRow {
         .accessibilityElement(children: .combine)
     }
 
-    /// 只顯示名稱的主檔項目列
-    var plainRow: some View {
-        Text(name)
-    }
-
     /// 組出付款方式分類的膠囊徽章
     ///
     /// - Parameter title: 徽章文字
     /// - Returns: 分類徽章
-    func classificationBadge(_ title: String) -> some View {
-        Text(LocalizedStringKey(title))
+    func classificationBadge(_ title: LocalizedStringResource) -> some View {
+        Text(title)
             .padding(.horizontal, BLSpacing.small)
             .padding(.vertical, 2)
             .font(BLTypographyStyle.caption.font.weight(.semibold))
             .foregroundStyle(.blAccent)
             .background(Capsule().fill(.blAccent.opacity(0.12)))
+    }
+
+    /// 只顯示名稱的主檔項目列
+    var plainRow: some View {
+        Text(name)
     }
 }
 

@@ -65,8 +65,20 @@ private extension OrderEditCampaignSection {
         ) {
             pickerStore.send(.view(.campaignPickerTapped))
         } value: {
-            Text(store.campaignsDisplayText)
+            campaignsValue
                 .multilineTextAlignment(.trailing)
+        }
+    }
+
+    /// 開團列的值：未歸團走本地化，已選開團名稱以 verbatim 顯示
+    @ViewBuilder
+    var campaignsValue: some View {
+        switch store.campaignsDisplayText {
+        case .unassigned:
+            Text("orders.detail.label.unassigned")
+
+        case .names(let text):
+            Text(verbatim: text)
         }
     }
 }

@@ -5,6 +5,8 @@
 //  Created by Leo Ho on 2026/10/17.
 //
 
+import Foundation
+
 // MARK: - Nested Types
 
 extension OptionPickerSheet {
@@ -50,23 +52,23 @@ extension OptionPickerSheet {
     struct AddPrompt {
 
         /// 選擇器新增按鈕的標題
-        let buttonTitle: String
+        let buttonTitle: LocalizedStringResource
 
         /// 輸入畫面的標題
-        let title: String
+        let title: LocalizedStringResource
 
         /// 說明新增項目方式的訊息
-        let message: String
+        let message: LocalizedStringResource
 
         /// 名稱輸入欄的提示文字
-        let placeholder: String
+        let placeholder: LocalizedStringResource
     }
 
     /// 清除目前選擇的列，操作完成後關閉選擇器
     struct ClearOption {
 
         /// 清除選項列的顯示文字
-        let title: String
+        let title: LocalizedStringResource
 
         /// 點擊清除選項列時執行的回呼
         let onClear: () -> Void
@@ -76,10 +78,10 @@ extension OptionPickerSheet {
     struct EmptyState {
 
         /// 空狀態的標題
-        let title: String
+        let title: LocalizedStringResource
 
         /// 說明沒有選項的原因或後續操作
-        let description: String
+        let description: LocalizedStringResource
     }
 
     /// 選項顯示名稱與搜尋補充文字的轉換方式

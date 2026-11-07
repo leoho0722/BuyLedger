@@ -32,8 +32,8 @@ struct BLNumberField<FocusValue: Hashable>: View {
     /// 草稿為空時顯示的提示文字
     private let prompt: Text?
 
-    /// 欄位標題，同時作為無障礙名稱
-    private let titleKey: LocalizedStringKey
+    /// 欄位標題；沒有標題時由呼叫端提供無障礙名稱
+    private let titleKey: LocalizedStringKey?
 
     // MARK: - Init
 
@@ -54,6 +54,28 @@ struct BLNumberField<FocusValue: Hashable>: View {
     ) where FocusValue == Bool {
         self.init(
             titleKey,
+            value: value,
+            format: format,
+            prompt: prompt,
+            focus: focus,
+            equals: true
+        )
+    }
+
+    /// 建立以布林值表示焦點、沒有內建標題的數字欄位，首幀即顯示格式化金額
+    ///
+    /// - Parameters:
+    ///   - value: 呼叫端持有的金額
+    ///   - format: 顯示與解析金額的格式
+    ///   - prompt: 草稿為空時的提示文字
+    ///   - focus: 呼叫端的布林焦點狀態
+    init(
+        value: Binding<Decimal>,
+        format: Decimal.FormatStyle,
+        prompt: Text? = nil,
+        focus: FocusState<FocusValue>.Binding
+    ) where FocusValue == Bool {
+        self.init(
             value: value,
             format: format,
             prompt: prompt,
@@ -88,6 +110,30 @@ struct BLNumberField<FocusValue: Hashable>: View {
         self.titleKey = titleKey
     }
 
+    /// 建立以列舉表示焦點、沒有內建標題的數字欄位，首幀即顯示格式化金額
+    ///
+    /// - Parameters:
+    ///   - value: 呼叫端持有的金額
+    ///   - format: 顯示與解析金額的格式
+    ///   - prompt: 草稿為空時的提示文字
+    ///   - focus: 呼叫端的焦點列舉狀態
+    ///   - equals: 此欄位對應的焦點值
+    init(
+        value: Binding<Decimal>,
+        format: Decimal.FormatStyle,
+        prompt: Text? = nil,
+        focus: FocusState<FocusValue>.Binding,
+        equals: FocusValue
+    ) {
+        _draft = State(initialValue: BLNumberFieldDraft(value: value.wrappedValue, format: format))
+        _value = value
+        self.focus = focus
+        focusMatch = equals
+        self.format = format
+        self.prompt = prompt
+        titleKey = nil
+    }
+
     // MARK: - Body
 
     /// 輸入欄骨架，只將焦點與外部金額變動交給草稿處理
@@ -107,9 +153,17 @@ struct BLNumberField<FocusValue: Hashable>: View {
 private extension BLNumberField {
 
     /// 系統數字輸入欄，保留呼叫端提供的鍵盤與外觀修飾器
+    @ViewBuilder
     var inputField: some View {
-        TextField(titleKey, text: trackedText, prompt: prompt)
+        if let titleKey {
+            TextField(titleKey, text: trackedText, prompt: prompt)
+                .focused(focus, equals: focusMatch)
+        } else {
+            TextField(text: trackedText, prompt: prompt) {
+                EmptyView()
+            }
             .focused(focus, equals: focusMatch)
+        }
     }
 }
 

@@ -63,17 +63,11 @@ extension View {
 
     /// 依內容類型限制捲動容器內容的閱讀寬度
     ///
-    /// 窄區沿用系統預設邊距，寬區依容器寬度限寬並在安全區內置中
-    ///
     /// - Parameter type: 內容類型偏好，預設為 `.text`
     /// - Returns: 套用閱讀寬度邊距的視圖
+    /// - Note: 窄區沿用系統預設邊距，寬區依容器寬度限寬並在安全區內置中
     func blReadableScrollContent(_ type: BLReadableContentType = .text) -> some View {
-        modifier(
-            BLReadableScrollContentLayout(
-                type: type,
-                marginMode: .scrollView
-            )
-        )
+        modifier(BLReadableScrollContentLayout(type: type, marginMode: .scrollView))
     }
 }
 
@@ -84,12 +78,7 @@ extension List {
     /// - Parameter type: 內容類型偏好，預設為 `.text`
     /// - Returns: 套用閱讀寬度邊距的清單
     func blReadableScrollContent(_ type: BLReadableContentType = .text) -> some View {
-        modifier(
-            BLReadableScrollContentLayout(
-                type: type,
-                marginMode: .safeAreaAware
-            )
-        )
+        modifier(BLReadableScrollContentLayout(type: type, marginMode: .safeAreaAware))
     }
 }
 
@@ -100,12 +89,7 @@ extension Form {
     /// - Parameter type: 內容類型偏好，預設為 `.text`
     /// - Returns: 套用閱讀寬度邊距的表單
     func blReadableScrollContent(_ type: BLReadableContentType = .text) -> some View {
-        modifier(
-            BLReadableScrollContentLayout(
-                type: type,
-                marginMode: .safeAreaAware
-            )
-        )
+        modifier(BLReadableScrollContentLayout(type: type, marginMode: .safeAreaAware))
     }
 }
 
@@ -154,7 +138,8 @@ private extension BLReadableScrollContentLayout {
     func contentWithMargins(_ content: Content) -> some View {
         switch marginMode {
         case .scrollView:
-            content.contentMargins(.horizontal, horizontalMargin, for: .scrollContent)
+            content
+                .contentMargins(.horizontal, horizontalMargin, for: .scrollContent)
 
         case .safeAreaAware:
             contentWithSafeAreaAwareMargins(content)
@@ -183,7 +168,7 @@ private extension BLReadableScrollContentLayout {
 
 #Preview("捲動內容閱讀寬度") {
     ScrollView {
-        Text("這是一段套用捲動內容閱讀寬度的長段落示範文字，寬區時內容自動限寬並置中。")
+        Text(verbatim: "這是一段套用捲動內容閱讀寬度的長段落示範文字，寬區時內容自動限寬並置中。")
             .padding(BLSpacing.medium)
             .blTextStyle(.body)
             .background(.blSurface)
