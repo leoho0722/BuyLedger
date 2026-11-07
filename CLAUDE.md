@@ -79,8 +79,9 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **agent 只改檔案，不 build、不跑測試、不做 git 寫入**：Codex 只允許語法檢查 (Swift 為 `swiftc -parse`)；建置、測試與勾選 task 由主對話依序執行，同一時間只跑一組測試。
 - **同時進行的任務改的檔案不可重疊**：每次派工前後比對 `git status --short`，確認改動歸屬。
   - 會自動接受修改的 agent 做唯讀審查時，前後另比對檔案雜湊，確認沒被改。
-- **審查不交給實作者本人**：由另一個 agent 唯讀審查，主對話同時自行審查架構、正確性、測試與風格，再合併取捨。
-  - style 閘門交給未參與實作的 `haiku-max-implementer` 子代理逐檔逐條審查。
+- **審查 (含 style 閘門) 交給未參與該次實作的 agent，主對話同時審查**：審查者唯讀檢查並逐檔逐條做 style 閘門，主對話自行審查架構、正確性、測試與風格，再合併取捨。
+  - 審查者依當下 `hc ls` 挑選：有標示為審查用的終端就用它；沒有時改派未參與實作的其他 agent；都沒有時由主對話獨自審查，並在紀錄寫明。
+  - 參與實作的 agent 不算獨立審查者，與它同一個 agent 定義的子代理也不算 (例如實作終端本身就是 `haiku-max-implementer` 時，不再另開 `haiku-max-implementer` 子代理做 style 閘門)。
 - **規劃 change 時切出可平行的任務** (`/spectra-propose`、`/spectra-ingest`)：
   - 每個 `[after:]` 都寫明理由 (真依賴或改同一檔)；會被多數任務改到的熱點檔集中在少數任務先改完。
   - `tasks.md` 開頭寫明平行組、各組改的檔案與實作分工 (誰實作、誰審查)，實作者依當下查詢結果指派。
