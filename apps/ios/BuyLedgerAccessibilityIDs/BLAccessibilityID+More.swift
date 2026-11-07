@@ -95,6 +95,14 @@ extension BLAccessibilityID {
 
         /// 換算後金額
         static let convertedValue = "fx.convertedValue"
+
+        /// 取得快捷金額按鈕的識別碼，以未格式化的金額字串識別
+        ///
+        /// - Parameter amount: 不含千分位與小數點的金額字串
+        /// - Returns: 對應快捷金額按鈕的 accessibility identifier
+        static func presetAmountButton(amount: String) -> String {
+            BLAccessibilityID.row("fx.presetAmountButton", key: amount)
+        }
     }
 
     /// 報價試算
@@ -108,6 +116,24 @@ extension BLAccessibilityID {
 
         /// 本金輸入欄位
         static let principalField = "quote.principalField"
+
+        /// 當地運費輸入欄位
+        static let localShippingField = "quote.localShippingField"
+
+        /// 國際運費輸入欄位
+        static let internationalShippingField = "quote.internationalShippingField"
+
+        /// 刷卡手續費輸入欄位
+        static let cardFeeField = "quote.cardFeeField"
+
+        /// 支付手續費輸入欄位
+        static let paymentFeeField = "quote.paymentFeeField"
+
+        /// 平台手續費輸入欄位
+        static let platformFeeField = "quote.platformFeeField"
+
+        /// 目標毛利率輸入欄位
+        static let targetMarginField = "quote.targetMarginField"
 
         /// 建議售價
         static let suggestedPriceValue = "quote.suggestedPriceValue"

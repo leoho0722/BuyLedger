@@ -48,12 +48,15 @@ extension OrderCategoryFilterRows {
                     .foregroundStyle(.blSecondaryLabel)
                     .accessibilityHidden(true)
 
-                TextField("orders.filter.placeholder.searchCategories", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .focused($isFieldFocused)
-                    .submitLabel(.search)
-                    .onSubmit(onSubmit)
-                    .accessibilityIdentifier(fieldIdentifier)
+                BLTextField(
+                    "orders.filter.placeholder.searchCategories",
+                    text: $searchText,
+                    focus: $isFieldFocused
+                )
+                .textFieldStyle(.plain)
+                .submitLabel(.search)
+                .onSubmit(onSubmit)
+                .accessibilityIdentifier(fieldIdentifier)
 
                 if !searchText.isEmpty {
                     clearButton
@@ -139,5 +142,38 @@ extension OrderCategoryFilterRows {
                 )
             }
         }
+    }
+}
+
+// MARK: - Preview
+
+#Preview("搜尋列") {
+    @Previewable @State var searchText = "保養"
+    @Previewable @State var isSearchFieldFocused = false
+
+    List {
+        OrderCategoryFilterRows.SearchRow(
+            isSearchFieldFocused: $isSearchFieldFocused,
+            searchText: $searchText,
+            clearIdentifier: "preview.clearSearch",
+            fieldIdentifier: "preview.searchField",
+            onClear: {
+                searchText = ""
+            },
+            onSubmit: {
+            }
+        )
+    }
+}
+
+#Preview("全部與空狀態列") {
+    List {
+        OrderCategoryFilterRows.AllAndEmptyRows(
+            allIdentifier: "preview.all",
+            isAllSelected: true,
+            isEmpty: false,
+            onAllTapped: {
+            }
+        )
     }
 }

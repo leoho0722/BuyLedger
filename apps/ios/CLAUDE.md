@@ -72,6 +72,7 @@
 
 - **不用 `type-text` 輸入**：它走 Mac 當前輸入法，注音模式會轉換數字與英文字母，中文字直接被拒絕 (只支援美式鍵盤字元)。
   - 數字改點軟體數字鍵盤的按鍵元素；UI 測試碼內的輸入用 `XCUIElement.typeText`。
+  - iPad 的數字鍵盤按鍵不在 `snapshot-ui` 內，也不可改用 `key-press`／`key-sequence`：硬體按鍵會讓模擬器進入硬體鍵盤狀態，軟體鍵盤不再出現，鍵盤相關 UI 測試整批失敗；到 Device Hub 切換 Simulate Hardware Keyboard 可恢復，重開模擬器後又會回來。iPad 上需要輸入數字的實測改寫成量完即刪的暫時 XCUITest。
 - **`simulator launch-app` 會結束並重開 App**，不會把背景中的 App 帶回前景：驗證背景與前景改按 `ui-automation button --button-type lock`，再按兩次 `home` 喚醒並解鎖。
   - 一閃即過的畫面 (如自動解鎖) 用 `simulator record-video` 錄影逐格確認。
 - **`--launch-args` 的純數字值會驗證失敗**，改用 `--json '{"launchArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。

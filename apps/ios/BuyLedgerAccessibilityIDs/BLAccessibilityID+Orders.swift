@@ -142,7 +142,7 @@ extension BLAccessibilityID {
             case profit
         }
 
-        /// 狀態瀏覽膠囊，key 取 ``OrderStatusFilter`` 的 `id` (`all` 或狀態 `rawValue`)
+        /// 取得狀態瀏覽膠囊的識別碼，以 ``OrderStatusFilter`` 的 `id` 識別 (`all` 或狀態 `rawValue`)
         ///
         /// - Parameter filterID: 訂單狀態篩選識別值
         /// - Returns: 對應狀態膠囊的 accessibility identifier
@@ -150,7 +150,7 @@ extension BLAccessibilityID {
             option("orders.list.statusChip", key: filterID)
         }
 
-        /// 日期瀏覽膠囊，key 取 ``OrderDatePeriod`` 的 `id`
+        /// 取得日期瀏覽膠囊的識別碼，以 ``OrderDatePeriod`` 的 `id` 識別
         ///
         /// - Parameter periodID: 日期期間識別值
         /// - Returns: 對應日期膠囊的 accessibility identifier
@@ -158,7 +158,7 @@ extension BLAccessibilityID {
             option("orders.list.dateChip", key: periodID)
         }
 
-        /// 訂單列，key 取訂單編號
+        /// 取得訂單列的識別碼，以訂單編號識別
         ///
         /// - Parameter orderID: 訂單編號
         /// - Returns: 對應訂單列的 accessibility identifier
@@ -166,7 +166,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("orders.list.row", key: orderID)
         }
 
-        /// 篩選 sheet 的日期選單選項，key 取 ``OrderDatePeriod`` 的 `id`
+        /// 取得篩選 sheet 日期選單選項的識別碼，以 ``OrderDatePeriod`` 的 `id` 識別
         ///
         /// - Parameter periodID: 日期期間識別值
         /// - Returns: 對應日期選單選項的 accessibility identifier
@@ -174,7 +174,7 @@ extension BLAccessibilityID {
             option("orders.filterSheet.datePeriod", key: periodID)
         }
 
-        /// 寬版付款方式篩選選單的選項，key 取付款方式名稱
+        /// 取得寬版付款方式篩選選單選項的識別碼，以付款方式名稱識別
         ///
         /// - Parameter name: 付款方式名稱
         /// - Returns: 對應付款方式選項的 accessibility identifier
@@ -182,7 +182,7 @@ extension BLAccessibilityID {
             option("orders.list.paymentMethodMenu.option", key: name)
         }
 
-        /// 篩選 sheet 的付款方式選項，key 取付款方式名稱
+        /// 取得篩選 sheet 付款方式選項的識別碼，以付款方式名稱識別
         ///
         /// - Parameter name: 付款方式名稱
         /// - Returns: 對應付款方式選項的 accessibility identifier
@@ -190,7 +190,7 @@ extension BLAccessibilityID {
             option("orders.filterSheet.paymentMethodMenu.option", key: name)
         }
 
-        /// 類別分組的組標題，key 取組別種類的識別值
+        /// 取得類別分組組標題的識別碼，以組別種類的識別值識別
         ///
         /// - Parameter kindID: 組別種類的識別值
         /// - Returns: 對應組標題的 accessibility identifier
@@ -198,7 +198,7 @@ extension BLAccessibilityID {
             option("orders.filter.categoryGroup", key: kindID)
         }
 
-        /// 類別格，key 取類別名稱
+        /// 取得類別格的識別碼，以類別名稱識別
         ///
         /// - Parameter name: 類別名稱
         /// - Returns: 對應類別格的 accessibility identifier
@@ -206,7 +206,7 @@ extension BLAccessibilityID {
             option("orders.filter.category", key: name)
         }
 
-        /// 詳情獲利摘要卡，主要數值放各卡的 accessibility value
+        /// 取得詳情獲利摘要卡的識別碼，主要數值放在各卡的 accessibility value
         ///
         /// - Parameter kind: 財務摘要卡種類
         /// - Returns: 對應摘要卡的 accessibility identifier
@@ -251,13 +251,43 @@ extension BLAccessibilityID {
         /// 收款金額欄位
         static let chargedAmountField = "orderEdit.chargedAmountField"
 
+        /// 刷卡手續費率欄位
+        static let cardFeeRateField = "orderEdit.cardFeeRateField"
+
+        /// 平台手續費率欄位
+        static let platformFeeRateField = "orderEdit.platformFeeRateField"
+
+        /// 支付手續費率欄位
+        static let paymentFeeRateField = "orderEdit.paymentFeeRateField"
+
+        /// 品項名稱欄位
+        static let itemNameField = "orderEdit.itemNameField"
+
+        /// 品項單價欄位
+        static let itemUnitPriceField = "orderEdit.itemUnitPriceField"
+
+        /// 訂單備註欄位
+        static let notesField = "orderEdit.notesField"
+
+        /// 無卡折抵欄位
+        static let cardlessDeductionField = "orderEdit.cardlessDeductionField"
+
+        /// 無卡折抵超過實付金額時的紅字提示
+        static let cardlessDeductionExceededMessage = "orderEdit.cardlessDeductionExceededMessage"
+
+        /// 無卡付款時收款區段底部的計算方式說明，與紅字檢核訊息分開定位
+        static let cardlessPaymentNote = "orderEdit.cardlessPaymentNote"
+
+        /// 無卡補款金額 (TWD) 的輸入欄位
+        static let cardlessSupplementField = "orderEdit.cardlessSupplementField"
+
         /// 儲存訂單按鈕
         static let saveButton = "orderEdit.saveButton"
 
         /// 取消編輯按鈕
         static let cancelButton = "orderEdit.cancelButton"
 
-        /// 照片縮圖，key 取序位 (0 起算)
+        /// 取得照片縮圖的識別碼，以序位 (0 起算) 識別
         ///
         /// - Parameter index: 照片序位
         /// - Returns: 對應照片縮圖的 accessibility identifier
@@ -281,7 +311,7 @@ extension BLAccessibilityID {
         /// 照片挑選步驟的繼續按鈕
         static let photoContinueButton = "orderMerge.photoStep.continueButton"
 
-        /// 候選訂單列，key 取訂單編號
+        /// 取得候選訂單列的識別碼，以訂單編號識別
         ///
         /// - Parameter orderID: 訂單編號
         /// - Returns: 對應候選訂單列的 accessibility identifier
@@ -289,7 +319,7 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("orderMerge.candidateList.row", key: orderID)
         }
 
-        /// 照片挑選步驟的單格縮圖，key 取序位 (0 起算)
+        /// 取得照片挑選步驟單格縮圖的識別碼，以序位 (0 起算) 識別
         ///
         /// - Parameter index: 照片格序位
         /// - Returns: 對應照片格的 accessibility identifier

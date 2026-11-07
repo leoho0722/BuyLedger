@@ -166,7 +166,7 @@ apps/ios/
 ├── BuyLedgerUITests/             # XCUITest
 │   ├── Support/                  # 共用 helper 平放：自有型別一型一檔，系統型別擴充為 <Type>+<Feature>.swift (操作、等待、斷言、版面、開團流程與種子固定值)
 │   ├── Screens/                  # Page Object，依區域分 App、Orders、Campaigns、Dashboard、Insights、Customers、More、Tools，跨區共用的放 Shared
-│   └── Tests/                    # 流程、冒煙 (Smoke) 與效能 (Performance) 測試，依功能分組 (Orders 再分 Filters、Regular、Edit、Detail；跨功能的導覽連續性與版面檢查放 Navigation)
+│   └── Tests/                    # 流程、冒煙 (Smoke) 與效能 (Performance) 測試，依功能分組 (Orders 再分 Filters、Regular、Edit、Detail；跨功能的導覽連續性與版面檢查放 Navigation，跨功能的輸入欄焦點放 Forms)
 ├── scripts/                      # upload-testflight.sh (Release 打包並上傳 TestFlight)
 ├── BuyLedger.xctestplan          # 單元測試計畫
 ├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫

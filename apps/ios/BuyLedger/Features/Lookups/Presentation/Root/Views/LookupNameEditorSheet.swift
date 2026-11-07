@@ -16,8 +16,8 @@ struct LookupNameEditorSheet: View {
     /// 關閉目前的表單
     @Environment(\.dismiss) private var dismiss
 
-    /// 名稱欄位的鍵盤焦點，與 `isNameFieldFocused` 同步
-    @FocusState private var nameFieldFocused: Bool
+    /// 名稱欄位是否持有鍵盤焦點，與 `isNameFieldFocused` 同步
+    @FocusState private var isNameFieldKeyboardFocused: Bool
 
     /// 名稱輸入草稿
     @Binding private var draftName: String
@@ -28,10 +28,12 @@ struct LookupNameEditorSheet: View {
     /// 名稱欄位是否持有焦點，重新呈現時依此還原焦點
     @Binding private var isNameFieldFocused: Bool
 
-    /// 草稿去除空白後可以送出時為 `true`
+    /// 草稿去除空白後是否可以送出
     private let canSubmit: Bool
 
-    /// 草稿有未儲存的變更時為 `true`，阻擋下滑並讓取消鍵改以彈窗確認
+    /// 草稿是否有未儲存的變更
+    ///
+    /// - Note: 為 `true` 時阻擋下滑，並讓取消鍵改以彈窗確認
     private let isDirty: Bool
 
     /// 表單下方顯示的說明；空字串時不顯示
@@ -40,13 +42,19 @@ struct LookupNameEditorSheet: View {
     /// 名稱欄位尚未輸入時顯示的提示
     private let namePlaceholder: String
 
-    /// 取消鍵的處理，由呼叫端決定；`nil` 時由 `View` 依未儲存變更決定顯示捨棄確認或直接關閉
+    /// 取消鍵的處理
+    ///
+    /// - Note: 由呼叫端決定；`nil` 時由 `View` 依未儲存變更決定顯示捨棄確認或直接關閉
     private let onCancel: (() -> Void)?
 
-    /// 捨棄確認選擇捨棄後的處理，由呼叫端決定；`nil` 時由 `View` 直接關閉
+    /// 捨棄確認選擇捨棄後的處理
+    ///
+    /// - Note: 由呼叫端決定；`nil` 時由 `View` 直接關閉
     private let onDiscardChanges: (() -> Void)?
 
-    /// 使用者提交有效名稱後執行的處理，名稱由呼叫端的 `State` 讀取
+    /// 使用者提交有效名稱時的回呼
+    ///
+    /// - Note: 名稱由呼叫端的 `State` 讀取
     private let onSubmit: () -> Void
 
     /// 提交按鈕顯示的文字
@@ -163,12 +171,15 @@ private extension LookupNameEditorSheet {
     var formContent: some View {
         Form {
             Section {
-                TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
-                    .focused($nameFieldFocused)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .textContentType(nil)
-                    .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
+                BLTextField(
+                    LocalizedStringKey(namePlaceholder),
+                    text: $draftName,
+                    focus: $isNameFieldKeyboardFocused
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .textContentType(nil)
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
             } footer: {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
@@ -180,7 +191,7 @@ private extension LookupNameEditorSheet {
         .blReadableScrollContent(.form)
         .formStyle(.grouped)
         .scrollDismissesKeyboard(.interactively)
-        .bind($isNameFieldFocused, to: $nameFieldFocused)
+        .bind($isNameFieldFocused, to: $isNameFieldKeyboardFocused)
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameEditorRoot)
         .navigationTitle(Text(title))
         .navigationBarTitleDisplayMode(.inline)
@@ -205,20 +216,20 @@ private extension LookupNameEditorSheet {
         }
     }
 
-    /// 確認捨棄目前尚未儲存的內容
+    /// 捨棄未儲存內容的按鈕
     var discardChangesButton: some View {
         Button("orders.list.label.discardChanges", role: .destructive) {
             discardChanges()
         }
     }
 
-    /// 保留內容並繼續編輯
+    /// 繼續編輯的按鈕
     var continueEditingButton: some View {
         Button("orders.list.label.keepEditing", role: .cancel) {
         }
     }
 
-    /// 說明離開表單後尚未儲存的內容會被清除
+    /// 未儲存內容將被清除的說明文字
     var discardConfirmationMessage: some View {
         Text("orders.lookup.message.itemHasUnsaved")
     }
@@ -228,7 +239,7 @@ private extension LookupNameEditorSheet {
 
 private extension LookupNameEditorSheet {
 
-    /// 取消鍵的處理：有外部處理時交給呼叫端，否則依未儲存變更決定顯示捨棄確認或直接關閉
+    /// 決定取消鍵的去向：有外部處理時交給呼叫端，否則依未儲存變更決定顯示捨棄確認或直接關閉
     func cancelEditing() {
         if let onCancel {
             onCancel()
@@ -239,7 +250,7 @@ private extension LookupNameEditorSheet {
         }
     }
 
-    /// 捨棄變更：有外部處理時交給呼叫端，否則直接關閉表單
+    /// 執行捨棄：有外部處理時交給呼叫端，否則直接關閉表單
     func discardChanges() {
         if let onDiscardChanges {
             onDiscardChanges()

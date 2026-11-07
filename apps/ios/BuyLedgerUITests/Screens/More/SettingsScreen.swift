@@ -30,6 +30,11 @@ extension SettingsScreen {
         return row.combinedText
     }
 
+    /// 每月目標金額欄位
+    var monthlyGoalField: XCUIElement {
+        app.textFields[BLAccessibilityID.Settings.monthlyGoalField].firstMatch
+    }
+
     /// 每月目標金額欄目前的文字值
     ///
     /// - Returns: 目標金額欄的文字值；元素不存在或值不是字串時為 `nil`
@@ -170,6 +175,32 @@ extension SettingsScreen {
     func appendMonthlyGoal(_ text: String) {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
         field.typeText(text)
+    }
+
+    /// 捲動露出每月目標欄後點欄位左側取得焦點，等鍵盤就位
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 目標金額欄是否已從左側點擊取得焦點且鍵盤就緒
+    @discardableResult
+    func focusMonthlyGoalFromLeft(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+        let field = monthlyGoalField
+        if !field.isHittableOnScreen, !app.scrollToHittable(field, within: rootElement) {
+            app.failWithDiagnostics("捲動後目標金額欄位仍未穩定或不可點", file: file, line: line)
+            return false
+        }
+        return field.tapLeftToFocus(in: app, file: file, line: line)
+    }
+
+    /// 點返回鍵回到上一層畫面
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func goBack(file: StaticString = #filePath, line: UInt = #line) {
+        let back = app.buttons[BLAccessibilityID.Common.backButton].firstMatch
+        back.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 判定每月目標金額欄是否取得鍵盤焦點

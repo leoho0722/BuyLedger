@@ -34,10 +34,16 @@ private extension CampaignEditNotesSection {
 
     /// 可輸入二至五行的選填備註
     var notesField: some View {
-        TextField("orders.edit.label.optional", text: $notes, axis: .vertical)
-            .lineLimit(2...5)
-            .textContentType(nil)
-            .focused(focusedField, equals: .notes)
+        BLTextField(
+            "orders.edit.label.optional",
+            text: $notes,
+            axis: .vertical,
+            focus: focusedField,
+            equals: .notes
+        )
+        .lineLimit(2...5)
+        .textContentType(nil)
+        .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.notesField)
     }
 }
 

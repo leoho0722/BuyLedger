@@ -43,6 +43,7 @@ private extension OrderEditFeesSection {
         OrderEditPercentField(
             field: .cardFeeRate,
             focusedField: focusedField,
+            identifier: BLAccessibilityID.OrderEdit.cardFeeRateField,
             title: "orders.edit.label.cardFee",
             value: $store.draft.cardFeeRate
         )
@@ -50,6 +51,7 @@ private extension OrderEditFeesSection {
         OrderEditPercentField(
             field: .platformFeeRate,
             focusedField: focusedField,
+            identifier: BLAccessibilityID.OrderEdit.platformFeeRateField,
             title: "orders.edit.label.platformFee",
             value: $store.draft.platformFeeRate
         )
@@ -57,6 +59,7 @@ private extension OrderEditFeesSection {
         OrderEditPercentField(
             field: .paymentFeeRate,
             focusedField: focusedField,
+            identifier: BLAccessibilityID.OrderEdit.paymentFeeRateField,
             title: "orders.edit.label.paymentProcessingFee",
             value: $store.draft.paymentFeeRate
         )

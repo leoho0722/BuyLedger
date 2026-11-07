@@ -160,6 +160,46 @@ struct OrderSaveGuardTests {
         #expect(dismissCount.value == 0)
     }
 
+    /// 驗證必填完整但無卡折抵超過實付時，按儲存不送請求也不關閉表單
+    @Test
+    func saveTapped_必填齊全但無卡折抵超額_保留表單且不送存檔請求() async {
+        // Given
+        var initial = Self.makeEditState()
+        initial.pickers.options.paymentMethods = [
+            PaymentMethodInfo(
+                name: "無卡",
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            ),
+        ]
+        initial.draft.paymentMethod = "無卡"
+        initial.draft.chargedAmount = 1_000
+        initial.draft.cardlessDeductionAmount = 1_500
+        initial.focusedField = .cardlessDeduction
+        let dismissCount = LockIsolated(0)
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect {
+                dismissCount.withValue {
+                    $0 += 1
+                }
+            }
+        }
+
+        // When
+        await store.send(.view(.saveTapped))
+
+        // Then
+        await store.finish()
+        #expect(store.state == initial)
+        #expect(store.state.hasRequiredFields)
+        #expect(store.state.isCardlessDeductionExceeded)
+        #expect(!store.state.canSave)
+        #expect(dismissCount.value == 0)
+    }
+
     /// 驗證必填欄位含前後空白時仍視為完整，存檔後清除焦點、送出存檔請求通知 並關閉表單，草稿內容維持含空白的原始輸入
     @Test
     func saveTapped_必填含前後空白_送出存檔請求並關閉() async {

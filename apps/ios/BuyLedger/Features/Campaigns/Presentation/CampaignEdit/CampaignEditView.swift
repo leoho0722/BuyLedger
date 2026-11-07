@@ -57,10 +57,14 @@ private extension CampaignEditView {
     /// 開團名稱、日期、狀態與訂購提醒的輸入欄位
     var campaignInfoSection: some View {
         Section("campaigns.detail.label.campaignInformation") {
-            TextField("orders.detail.label.campaignName", text: $store.draftName)
-                .textContentType(nil)
-                .focused($focusedField, equals: .name)
-                .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
+            BLTextField(
+                "orders.detail.label.campaignName",
+                text: $store.draftName,
+                focus: $focusedField,
+                equals: .name
+            )
+            .textContentType(nil)
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
 
             if let nameConflictMessage = store.nameConflictMessage {
                 Text(LocalizedStringKey(nameConflictMessage))

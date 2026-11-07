@@ -66,24 +66,24 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **`CLAUDE.md` 與 `.claude/rules/` 只寫現行規則與理由**：事件經過、日期、實測數字、「曾經／先前／已推翻」的沿革不寫進來，沿革留在 commit 與 openspec。
   - 新增條目前先確認刪掉它會讓 Claude 出錯；讀程式碼就能知道的事不寫。
 
-## 平行開發 (herdr)
+## 平行開發 (Herdr)
 
-在 herdr 內 (`HERDR_ENV=1`) 由主對話把實作與唯讀審查分派給 `claude-impl`、`codex-impl`、`gemini-impl` 三個 agent。
+在 Herdr 內 (`HC_TERMINAL_ID` 有值) 由主對話把實作與唯讀審查分派給其他 agent 終端。
 
-- **這三個是 herdr 的 agent，`ListAgents`／`SendMessage` 看不到**：一律用 `herdr agent prompt`／`wait`／`read` 操作，細節以 `herdr --skill` 輸出為準。
-  - 名稱會在 agent 重啟或開始新工作時被清掉：先 `herdr agent list`，依種類補名 (claude → `claude-impl`、codex → `codex-impl`、agy → `gemini-impl`)；`wait` 一律用 pane id。
-  - 長任務以背景 Bash 執行 `wait`，完成時會收到通知，不輪詢。
-  - codex 提出選擇題時狀態為 blocked，`prompt` 送不進去：用 `send-keys` 開啟題目並選定後再補充。
-  - `claude-impl` 只讀得到可見畫面，完整回報請它寫進檔案。
+- **開始實作前先以 `hc ls` 查詢目前可用的 agent**：實作者的名稱、數量與模型會變，本檔不列，也不憑記憶假設。
+  - `herdr agent list` 與 `HERDR_ENV` 看不到這些終端，不能據此判定沒有 agent。
+- **一律用 `hc` 操作，細節以 `hc --skill` 輸出為準**：`hc send` 派工、`hc wait` 等待、`hc read` 讀結果，不輪詢。
+  - 派工時要求對方完成或卡住時以 `hc send $HC_TERMINAL_ID` 回報，完整內容寫進檔案、只回傳路徑。
+  - agent 停在選擇題時 (狀態為 blocked) 以 `hc read` 看畫面、`hc keys` 選定後再補充。
   - agent 回報 API 或網路等環境錯誤時告知使用者，不反覆重派。
-- **agent 只改檔案，不 build、不跑測試、不做 git 寫入**：codex 只允許語法檢查 (Swift 為 `swiftc -parse`)；建置、測試與勾選 task 由主對話依序執行，同一時間只跑一組測試。
+- **agent 只改檔案，不 build、不跑測試、不做 git 寫入**：Codex 只允許語法檢查 (Swift 為 `swiftc -parse`)；建置、測試與勾選 task 由主對話依序執行，同一時間只跑一組測試。
 - **同時進行的任務改的檔案不可重疊**：每次派工前後比對 `git status --short`，確認改動歸屬。
-  - `gemini-impl` 為自動接受修改模式，唯讀審查前後另比對檔案雜湊，確認沒被改。
+  - 會自動接受修改的 agent 做唯讀審查時，前後另比對檔案雜湊，確認沒被改。
 - **審查不交給實作者本人**：由另一個 agent 唯讀審查，主對話同時自行審查架構、正確性、測試與風格，再合併取捨。
   - style 閘門交給未參與實作的 `haiku-max-implementer` 子代理逐檔逐條審查。
 - **規劃 change 時切出可平行的任務** (`/spectra-propose`、`/spectra-ingest`)：
   - 每個 `[after:]` 都寫明理由 (真依賴或改同一檔)；會被多數任務改到的熱點檔集中在少數任務先改完。
-  - `tasks.md` 開頭寫明平行組、各組改的檔案與實作分工 (誰實作、誰審查)。
+  - `tasks.md` 開頭寫明平行組、各組改的檔案與實作分工 (誰實作、誰審查)，實作者依當下查詢結果指派。
 - **紀錄寫明決策來源**：agent 選定寫該 agent，主對話代選寫主對話，使用者明確回覆才寫使用者；agent 回報裡的「使用者選擇」不照抄。
 
 ## 產品政策 (跨平台)

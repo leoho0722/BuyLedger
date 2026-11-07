@@ -173,14 +173,14 @@ private extension SettingsView {
     /// 月度淨獲利目標設定區段
     var monthlyGoalSection: some View {
         Section {
-            TextField(
+            BLNumberField(
                 "dashboard.overview.label.goalAmount",
                 value: $store.monthlyProfitGoalTWD,
-                format: .number.precision(.fractionLength(0)).grouping(.never)
+                format: .number.precision(.fractionLength(0)).grouping(.never),
+                focus: $isGoalFieldFocused
             )
             .accessibilityIdentifier(BLAccessibilityID.Settings.monthlyGoalField)
             .keyboardType(.numberPad)
-            .focused($isGoalFieldFocused)
         } header: {
             Text("settings.preference.label.monthlyNetProfit")
         } footer: {

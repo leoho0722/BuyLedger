@@ -44,37 +44,6 @@ struct OrderMergeCandidateSheet: View {
 
 private extension OrderMergeCandidateSheet {
 
-    /// 關閉整個合併流程的工具列按鈕
-    var cancelButton: some View {
-        Button {
-            store.send(.view(.cancelTapped))
-        } label: {
-            Image(systemName: "xmark")
-        }
-        .accessibilityLabel(Text("common.action.cancel"))
-        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.cancelButton)
-    }
-
-    /// 確認目前保留照片的工具列按鈕
-    var continueButton: some View {
-        Button("orders.list.button.continue") {
-            store.send(.view(.photoStepConfirmTapped))
-        }
-        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoContinueButton)
-    }
-
-    /// 照片挑選步驟；返回由系統導覽處理
-    var photoSelectionStep: some View {
-        MergePhotoPickerSheet(store: store)
-            .navigationTitle(Text("orders.merge.label.keepPhotos"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    continueButton
-                }
-            }
-    }
-
     /// 候選訂單清單，依日期分組並支援搜尋
     @ViewBuilder
     var candidateList: some View {
@@ -98,17 +67,14 @@ private extension OrderMergeCandidateSheet {
                         } header: {
                             Text(LocalizedStringKey(section.title))
                         } footer: {
-                            if section.id == sections.last?.id {
-                                Text(
-                                    AppLanguage.format(
-                                        "orders.merge.message.candidateFilterNotice",
-                                        store.primary.currency.rawValue,
-                                        store.primary.customer.name,
-                                        locale: locale
-                                    )
-                                )
-                                .blTextStyle(.footnote)
-                                .foregroundStyle(.blSecondaryLabel)
+                            if let notice = store.state.candidateFilterNotice(
+                                for: section,
+                                in: sections,
+                                locale: locale
+                            ) {
+                                Text(notice)
+                                    .blTextStyle(.footnote)
+                                    .foregroundStyle(.blSecondaryLabel)
                             }
                         }
                     }
@@ -116,11 +82,7 @@ private extension OrderMergeCandidateSheet {
                 .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateListRoot)
             }
         }
-        .searchable(
-            text: $store.searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text("common.action.action.search")
-        )
+        .blSearchable(text: $store.searchText, prompt: Text("common.action.action.search"))
     }
 
     /// 顯示候選訂單列，並列出客戶實付
@@ -136,6 +98,37 @@ private extension OrderMergeCandidateSheet {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateRow(orderID: order.id))
+    }
+
+    /// 關閉整個合併流程的工具列按鈕
+    var cancelButton: some View {
+        Button {
+            store.send(.view(.cancelTapped))
+        } label: {
+            Image(systemName: "xmark")
+        }
+        .accessibilityLabel(Text("common.action.cancel"))
+        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.cancelButton)
+    }
+
+    /// 照片挑選步驟；返回由系統導覽處理
+    var photoSelectionStep: some View {
+        MergePhotoPickerSheet(store: store)
+            .navigationTitle(Text("orders.merge.label.keepPhotos"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    continueButton
+                }
+            }
+    }
+
+    /// 確認目前保留照片的工具列按鈕
+    var continueButton: some View {
+        Button("orders.list.button.continue") {
+            store.send(.view(.photoStepConfirmTapped))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoContinueButton)
     }
 }
 

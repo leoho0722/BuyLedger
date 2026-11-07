@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Internal Method
+// MARK: - 文字輸入與數字鍵盤收起
 
 @MainActor
 extension XCUIElement {
@@ -21,8 +21,7 @@ extension XCUIElement {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Note: 以欄位本身取得鍵盤焦點為準，畫面上有鍵盤不代表輸入會落在此欄位
-    /// - Note: 非搜尋欄有內容時，聚焦後再點右端把游標移到文字末端
-    /// - Note: 數字 Popover 會吃掉右端的點擊，點擊前先換成完整鍵盤
+    /// - Note: 只有未聚焦時才點擊，App 在聚焦時清空數字草稿或把文字游標放在尾端
     /// - Note: 輸入前等鍵盤就位
     /// - Note: 輸入後等欄位框線穩定
     /// - Note: 涵蓋鍵盤在打字後才升起、表單隨之上移的情況
@@ -43,7 +42,7 @@ extension XCUIElement {
         )
     }
 
-    /// 保留欄位既有內容，把游標移到文字末端後接續輸入
+    /// 依 App 的聚焦行為接續輸入文字
     ///
     /// - Parameters:
     ///   - text: 要接續輸入的文字
@@ -51,7 +50,9 @@ extension XCUIElement {
     ///   - timeout: 等待欄位可互動的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Note: 與 `clearAndType` 共用聚焦與游標處理，差別只在不清除既有文字
+    /// - Note: 文字欄由 App 在聚焦時把游標放在尾端，已聚焦時沿用目前游標而不再點擊
+    /// - Note: 數字欄只有已聚焦時才接續輸入，未聚焦時 App 會先清空草稿
+    /// - Note: 與 `clearAndType` 共用焦點確認與鍵盤等待，差別只在不主動刪除既有文字
     func appendText(
         _ text: String,
         in app: XCUIApplication,
@@ -75,13 +76,11 @@ extension XCUIElement {
     ///   - app: 受測 App
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Note: 完成鍵可點時直接點
-    /// - Note: 完整鍵盤的完成鍵存在但不可點時點其框線中心
-    /// - Note: 點兩下換成完整鍵盤後同樣處理
-    /// - Note: 浮動面板或 Popover 收不掉時，在本欄位點兩下換成完整鍵盤後再點完成鍵
-    /// - Note: 完整鍵盤收不掉則直接附診斷失敗
+    /// - Note: 呈現方式連續取樣都是完整鍵盤時才點完成鍵
+    /// - Note: 浮動面板與 Popover 先在本欄位點兩下換成完整鍵盤
+    /// - Note: 完整鍵盤點過完成鍵仍收不掉則直接附診斷失敗
     /// - Note: 不送 return
-    /// - Note: 不依輸入模式分支
+    /// - Note: 依畫面元素分流，不依裝置或系統版本分支
     func dismissNumericKeyboard(
         in app: XCUIApplication,
         file: StaticString = #filePath,
@@ -101,15 +100,11 @@ extension XCUIElement {
         }
 
         let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
-        if doneButton.waitUntilHittable(timeout: 1.5) {
-            doneButton.tap()
-        } else if app.numericKeyboardPresentation == .fullKeyboard, doneButton.exists {
-            doneButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-        }
+        let hasTappedDone = doneButton.tapDoneIfFullKeyboard(in: app, timeout: 1.5)
 
-        if !app.waitForNumericKeyboardDismissal(timeout: 3) {
+        if !app.waitForNumericKeyboardDismissal(timeout: hasTappedDone ? 3 : 0) {
             let presentation = app.numericKeyboardPresentation
-            guard presentation != .fullKeyboard else {
+            guard !hasTappedDone || presentation != .fullKeyboard else {
                 app.failWithDiagnostics(
                     "數字鍵盤工具列的完成鍵未能收起鍵盤 (呈現方式：\(presentation.diagnosticName))",
                     file: file,
@@ -117,13 +112,11 @@ extension XCUIElement {
                 )
                 return
             }
-            // 浮動面板或 Popover：在本欄位點兩下換成完整鍵盤，再點完成鍵
-            coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).doubleTap()
-            if doneButton.waitUntilHittable(timeout: 3) {
-                doneButton.tap()
-            } else if app.numericKeyboardPresentation == .fullKeyboard, doneButton.exists {
-                doneButton.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            if presentation == .floatingPad || presentation == .popover {
+                coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).doubleTap()
+                _ = app.waitForFullKeyboard(timeout: 3)
             }
+            doneButton.tapDoneIfFullKeyboard(in: app, timeout: 3)
         }
 
         guard app.waitForNumericKeyboardDismissal(timeout: 5) else {
@@ -144,7 +137,7 @@ extension XCUIElement {
     }
 }
 
-// MARK: - Private Method
+// MARK: - 輸入流程與鍵盤狀態
 
 @MainActor
 private extension XCUIElement {
@@ -154,7 +147,7 @@ private extension XCUIElement {
         exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: self)
     }
 
-    /// 聚焦欄位、必要時把游標移到末端，並輸入文字
+    /// 必要時聚焦欄位，確認焦點與鍵盤就緒後輸入文字
     ///
     /// - Parameters:
     ///   - text: 要輸入的文字
@@ -181,11 +174,13 @@ private extension XCUIElement {
         }
         // 表單 sheet 升起時會整個上移，點擊前等框線穩定
         _ = waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.2, requiredSamples: 3)
-        tap()
+        if !isKeyboardFocused {
+            tap()
+        }
         var isFocused = waitUntilKeyboardFocused(in: app, timeout: 2)
         var focusAttempts = 0
         while !isFocused && focusAttempts < 3 {
-            if isHittableOnScreen {
+            if !isKeyboardFocused, isHittableOnScreen {
                 tap()
             }
             focusAttempts += 1
@@ -214,11 +209,6 @@ private extension XCUIElement {
                 file: file,
                 line: line
             ) else {
-                return
-            }
-        }
-        if !isSearchField, !existing.isEmpty {
-            guard moveCursorToTextEnd(in: app, file: file, line: line) else {
                 return
             }
         }
@@ -282,7 +272,7 @@ private extension XCUIElement {
     /// 用搜尋欄內建清除鈕清空文字，並恢復鍵盤焦點
     ///
     /// - Parameters:
-    ///   - placeholder: 搜尋欄的 placeholderValue
+    ///   - placeholder: 搜尋欄的 `placeholderValue`
     ///   - timeout: 等待清除鈕可互動及欄位更新的秒數
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -337,68 +327,24 @@ private extension XCUIElement {
         return true
     }
 
-    /// 把非搜尋欄的游標移到文字末端，避開數字鍵盤完成鍵
+    /// 呈現方式連續取樣都是完整鍵盤時點完成鍵
     ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 失敗時回報的來源檔案
-    ///   - line: 失敗時回報的來源行號
-    /// - Returns: 游標是否在欄位仍取得鍵盤焦點時移到文字末端
-    func moveCursorToTextEnd(in app: XCUIApplication, file: StaticString, line: UInt) -> Bool {
-        // 剛取得焦點時鍵盤可能仍在升起或切換樣式，先等框線穩定再判斷呈現方式
-        _ = pollFrameStable(requiredSamples: 3, sampleInterval: 0.1, timeout: 3) {
-            app.presentedKeyboardFrame
-        }
-        let presentation = app.numericKeyboardPresentation
-        if presentation == .popover || presentation == .floatingPad {
-            // Popover 的關閉區域會吃掉點擊，浮動數字面板點右端也不會移動游標；點兩下換成完整鍵盤後再點右端
-            coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).doubleTap()
-            guard app.waitForFullKeyboard(timeout: 3) else {
-                let message = """
-                數字鍵盤未能換成完整鍵盤，無法點欄位右端移動游標 \
-                (呈現方式：\(app.numericKeyboardPresentation.diagnosticName))
-                """
-                app.failWithDiagnostics(message, file: file, line: line)
-                return false
-            }
-        }
-
-        _ = waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.2, requiredSamples: 2)
-        var cursorOffset = CGVector(dx: 0.98, dy: 0.5)
-        let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
-        if doneButton.exists && doneButton.isHittableOnScreen {
-            guard let fieldFrame = snapshotFrame, let doneFrame = doneButton.snapshotFrame else {
-                app.failWithDiagnostics("欄位或數字鍵盤完成鍵框線不可用，無法安全定位游標", file: file, line: line)
-                return false
-            }
-            let originalCursorPoint = CGPoint(
-                x: fieldFrame.minX + fieldFrame.width * 0.98,
-                y: fieldFrame.midY
-            )
-            if doneFrame.contains(originalCursorPoint) {
-                let cursorX = doneFrame.minX - 8
-                guard cursorX > fieldFrame.minX && cursorX < fieldFrame.maxX else {
-                    app.failWithDiagnostics(
-                        """
-                        完成鍵左側 8 pt 的游標定位點不在欄位框線內
-                        欄位 \(fieldFrame)，完成鍵 \(doneFrame)，定位 x \(cursorX)
-                        """,
-                        file: file,
-                        line: line
-                    )
-                    return false
-                }
-                cursorOffset = CGVector(dx: (cursorX - fieldFrame.minX) / fieldFrame.width, dy: 0.5)
-            }
-        }
-        coordinate(withNormalizedOffset: cursorOffset).tap()
-        guard waitUntilKeyboardFocused(in: app, timeout: 2) else {
-            app.failWithDiagnostics(
-                "點擊欄位右端後未取得鍵盤焦點，\(keyboardFocusSummary(in: app))",
-                file: file,
-                line: line
-            )
+    ///   - timeout: 等待完成鍵可點與呈現方式穩定的秒數
+    /// - Returns: 是否已送出點擊
+    /// - Note: 浮動面板上 XCUI 仍回報完成鍵可點，但點擊到不了按鈕，只會換成完整鍵盤
+    /// - Note: 完成鍵存在但不可點時點其框線中心
+    @discardableResult
+    func tapDoneIfFullKeyboard(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        _ = waitUntilHittable(timeout: timeout)
+        guard app.waitForStableFullKeyboard(timeout: timeout), exists else {
             return false
+        }
+        if isHittableOnScreen {
+            tap()
+        } else {
+            coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         return true
     }

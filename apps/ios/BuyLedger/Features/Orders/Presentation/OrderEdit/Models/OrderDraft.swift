@@ -32,7 +32,7 @@ struct OrderDraft: Equatable, Sendable {
     /// 客戶收款金額草稿 (新台幣)
     var chargedAmount: Decimal
 
-    /// 無卡折抵金額；不可超過實付金額
+    /// 無卡折抵草稿，超額時保留輸入供使用者調整
     var cardlessDeductionAmount: Decimal
 
     /// 無卡補款金額草稿 (TWD)
@@ -95,12 +95,7 @@ struct OrderDraft: Equatable, Sendable {
         self.status = original?.status ?? .quoting
         self.currency = original?.currency ?? defaultCurrency
         self.chargedAmount = original?.chargedAmount ?? 0
-        // 載入時把折抵金額限制在實付金額內
-        let originalCardlessDeduction = original?.cardlessDeductionAmount ?? 0
-        self.cardlessDeductionAmount = min(
-            originalCardlessDeduction,
-            max(0, original?.chargedAmount ?? 0)
-        )
+        self.cardlessDeductionAmount = original?.cardlessDeductionAmount ?? 0
         self.cardlessSupplementAmount = original?.cardlessSupplementAmount ?? 0
         self.itemCost = original?.itemCost ?? 0
         self.domesticShipping = original?.domesticShipping ?? 0

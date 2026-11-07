@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Nested Types
+// MARK: - 數字鍵盤呈現方式
 
 @MainActor
 extension XCUIApplication {
@@ -46,7 +46,7 @@ extension XCUIApplication {
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - 鍵盤狀態讀取
 
 @MainActor
 extension XCUIApplication {
@@ -99,7 +99,7 @@ extension XCUIApplication {
     }
 }
 
-// MARK: - Internal Method
+// MARK: - 等待鍵盤狀態
 
 @MainActor
 extension XCUIApplication {
@@ -133,6 +133,19 @@ extension XCUIApplication {
             numericKeyboardPresentation == .fullKeyboard
         }
     }
+
+    /// 等待呈現方式連續取樣都是完整鍵盤到逾時
+    ///
+    /// - Parameter timeout: 等待的秒數
+    /// - Returns: 是否在逾時前連續取樣都是完整鍵盤
+    /// - Note: 呈現方式會在輸入前後轉換，單次讀取可能正在轉換中
+    func waitForStableFullKeyboard(timeout: TimeInterval) -> Bool {
+        var streak = 0
+        return pollUntil(timeout: timeout) {
+            streak = numericKeyboardPresentation == .fullKeyboard ? streak + 1 : 0
+            return streak >= 3
+        }
+    }
 }
 
 /// 以短間隔輪詢條件到成立或逾時
@@ -153,7 +166,7 @@ func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
     return true
 }
 
-// MARK: - Private Method
+// MARK: - 浮動面板與 Popover 判定
 
 @MainActor
 private extension XCUIApplication {

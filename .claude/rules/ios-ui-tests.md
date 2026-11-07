@@ -38,6 +38,7 @@ paths:
     - `Picker(.segmented)` 的選項：identifier 掛在 `Picker`，以 `segmentedControls.buttons` 依宣告順序 `boundBy` 取。
     - `.searchable` 的搜尋欄與其內建清除鈕：搜尋欄用 `OrdersScreen.hittableSearchField()` (見下方 sheet 疊搜尋欄一條)，清除鈕取該搜尋欄的 `buttons.firstMatch` (標籤隨系統語言變動)。
     - `.searchable` 的系統結束鈕：窄版出現在導覽列，帶不出 identifier，以 label 字面值 `關閉` 比對 (計畫已鎖語言)。
+    - 系統注音鍵盤的按鍵與候選字帶不出 identifier，以顯示文字定位 (計畫已鎖語言)，參考 `OrderEditInputFocusUITests` 的注音組字測試。
 - **`Menu` 的 identifier 掛在 `Menu` 本身，不是 label 內的 `Label`**：選單項目掛在各 `Button`，測試以 `tapMenuItem` 先展開再點。
     - iPadOS 27 的 `Menu` 內 `Picker(.inline)` 選項帶不出 identifier，呼叫 `tapMenuItem` 一律傳可見標籤作回退 (計畫已鎖語言)。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。
@@ -54,6 +55,7 @@ paths:
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。
+    - iPadOS 數字 Popover 的關閉區域會攔截再次點同一欄位的點擊：驗證再次點擊的測試在 Popover 呈現時可明確 skip，並寫明原因。
 - **版面差異由 `AppNavigator` 吸收**：`rootLayout` 只依側邊欄標記與五個根分頁的位置判定 (側邊欄或頂部分頁列為 `.regular`，底部分頁列為 `.compact`)，不以裝置類型或系統版本推測；compact 含 iPhone 任何方向與 iPad 窄視窗。
     - `selectTab` 只做點擊：已選取即返回，否則經 `tapRootTab` 點擊。目標不在頂部分頁列上時由側邊欄點選，點選後側邊欄仍開著就收回。需要單獨叫出側邊欄時用 `revealSidebarIfCollapsed()` 點系統切換鈕；分頁列溢出時它不可用，因為它要求五個根分頁同時可見。
     - 根分頁列在直向且英文語系可能溢出，More 被收進系統「下一頁」箭頭 (該按鈕無 identifier、標籤隨語言變)。切根分頁只走 `AppNavigator` 或 `RootNavigationScreen`，不直接點分頁列或「下一頁」。
@@ -83,20 +85,26 @@ paths:
 - **`scrollDismissesKeyboard(.interactively)` 無法以 XCUITest 合成手勢觸發，不寫 UI 測試守它 (產品端仍保留)**：`KeyboardDismissTests` 只覆蓋 return 鍵與數字鍵盤完成鍵兩條路徑。
 - **iPadOS 27 的數字鍵盤可能是浮動面板，或貼在欄位旁的 Popover，兩者都沒有工具列完成鍵**：收數字鍵盤一律走 `dismissNumericKeyboard`，依畫面元素分流，不依裝置或系統版本。
     - 浮動面板以鍵盤高度低於完整鍵盤 (`floatingPadMaximumHeight`) 判定；Popover 以 `Popover` 與 `PopoverDismissRegion` 判定，沒有 `Keyboard` 元素。
-    - 模擬器開著 Simulate Hardware Keyboard 時軟體鍵盤不出現，`Keyboard` 只剩全寬、高約 64 的工具列，同樣會判成浮動面板，失敗訊息為「數字鍵盤未能換成完整鍵盤」：屬環境狀態，不改 helper，到 Device Hub 的 Device 選單對該台取消勾選。重開模擬器不會清除，`toggle-connect-hardware-keyboard` 回報成功也不一定生效，以重跑 `KeyboardDismissTests` 判定。
-    - 完成鍵可點時直接點；完整鍵盤的完成鍵存在但不可點時點其 frame 中心。
-    - 浮動面板或 Popover 收不掉時，在本欄位點兩下換成完整鍵盤再點完成鍵。收起的判斷涵蓋鍵盤與 Popover 消失，並確認欄位已失去鍵盤焦點。
-- **iPadOS 27 的右對齊欄位游標不會因聚焦點擊就移到文字末端**：`clearAndType` 先點欄位中央取得焦點；欄位已有內容且非搜尋欄時，再點欄位右端把游標移到末端，刪除鍵才刪得到原值。
-    - 在既有內容後續打用 `appendText`，與 `clearAndType` 共用同一套聚焦與移游標步驟，只是不刪原值；不用「點欄位再 `typeText`」。
-    - 數字 Popover 的關閉區域會吃掉右端的點擊，浮動數字面板點右端也不會移動游標：點右端前若呈現兩者之一，先在欄位點兩下換成完整鍵盤，等完整鍵盤出現才點右端。
-    - 搜尋欄不點右端，也不送刪除鍵：聚焦中點擊會把游標移到點擊處，已有內容時改點其內建清除鈕清空。
-- **表單 sheet 在鍵盤升起時會整個上移，點擊要等框線穩定**：`tapAfterWaiting` 與 `clearAndType` 的每次點擊 (中央、右端) 都會在可點後等框線連續取樣相同，逾時仍不穩時照樣點擊。
+    - 模擬器處於硬體鍵盤狀態時軟體鍵盤不出現：數字欄的 `Keyboard` 只剩全寬、高約 64 的工具列，同樣會判成浮動面板；文字欄與搜尋欄的 `Keyboard` 高度為 0。失敗訊息為「數字鍵盤未呈現，無法收起」、「數字鍵盤或 Popover 未能收起 (呈現方式：浮動數字面板)」或「點欄位左側後，未取得鍵盤焦點或鍵盤與數字 Popover 框線未穩定」。
+        - 先在該台 Safari 聚焦網址列：同樣沒有軟體鍵盤就屬環境狀態，不改 helper 也不改 App。
+        - 到 Device Hub 的 Device 選單處理：Simulate Hardware Keyboard 有勾就取消，沒勾也先勾上再取消 (顯示未勾不代表已生效)，仍沒有鍵盤再切換軟體鍵盤。
+        - 重開模擬器不會清除；`toggle-connect-hardware-keyboard`、`toggle-software-keyboard` 需要輔助使用權限，回報成功也不一定生效。以 Safari 出現軟體鍵盤且重跑 `KeyboardDismissTests` 通過判定。
+    - 只在呈現方式連續取樣都是完整鍵盤時點完成鍵：呈現方式會在輸入前後轉換，浮動面板上 XCUI 仍回報完成鍵可點，但點擊到不了按鈕，只會把鍵盤換成完整鍵盤。完成鍵存在但不可點時點其 frame 中心。
+    - 浮動面板或 Popover 先在本欄位點兩下換成完整鍵盤再點完成鍵；完整鍵盤點過完成鍵仍收不掉才失敗。收起的判斷涵蓋鍵盤與 Popover 消失，並確認欄位已失去鍵盤焦點。
+- **輸入 helper 依賴 App 的聚焦行為**：App 保證數字欄焦點由無到有時清空草稿、文字欄聚焦時游標在尾端。`clearAndType`／`appendText` 只在欄位未取得鍵盤焦點時點擊，已聚焦時沿用目前游標。
+    - `clearAndType` 在確認焦點後讀取既有文字，非搜尋欄依字元數從尾端送刪除鍵再輸入；數字欄聚焦後已清空，多送刪除鍵仍是空操作。
+    - `appendText` 不主動刪除原文，文字欄由 App 在聚焦時把游標放在尾端；數字欄只有已聚焦時才接續輸入，未聚焦時 App 會先清空草稿。
+    - 接續輸入用 `appendText`，不用「點欄位再 `typeText`」：已聚焦時再次點擊會把游標移到點擊位置，可能把文字插進中間。
+    - 驗證聚焦落點的測試例外：用 `tapLeftToFocus` 點欄位左側再 `typeText`，不經這兩個 helper，游標沒放到尾端時字才會插在前面，測試才守得住。
+    - 搜尋欄清空用內建清除鈕，不送刪除鍵；聚焦中再次點擊會移動游標，清空後需確認焦點仍在該欄。
+- **表單 sheet 在鍵盤升起時會整個上移，點擊要等框線穩定**：`tapAfterWaiting` 的點擊與輸入 helper 的初次聚焦點擊，都會在可點後等框線連續取樣相同，逾時仍不穩時照樣點擊。
     - 只用座標或快取 frame 的點擊不經此等待，要自行處理。
     - 自訂 `.alert` 在輸入後鍵盤升起時同樣會上移：`tapAlertButton` 點擊前等框線穩定，點擊後按鈕仍在且位置改變時重試一次。
 - **鍵盤常在打字後才升起，表單隨之上移，輸入前後都要等**：`clearAndType` 在輸入前後各等一次，且每段等待都有上限。
     - 輸入前等鍵盤就位：完整鍵盤框線落在視窗內且連續不變，或浮動面板、數字 Popover 連續不變。逾時照樣輸入，並附上鍵盤狀態供失敗時判讀。
     - 輸入後等欄位框線連續相同才返回。
 - **iPad 模擬器上 XCUITest 可能多次等滿 60 秒閒置 (log 出現 `App animations complete notification not received`)，步驟多的旅程可能因此超過 10 分鐘執行上限**：App CPU 接近 0、主執行緒停在 run loop，不是 App 空轉；同一條測試每次碰到的次數不同。
+    - 同一台模擬器長時間連續執行後，這類等待會變多；單獨重跑前先依「轉向測試」一節的重開機方式重開模擬器。
     - 判讀：逾時前沒有斷言失敗且 log 有這段訊息時單獨重跑，至多兩次，完整走完才算通過；兩次都走不完、有斷言失敗或 CPU 持續偏高就當問題回報，不繼續重跑。
 
 ## 轉向測試

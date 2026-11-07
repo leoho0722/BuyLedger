@@ -42,8 +42,8 @@ struct QuoteFeature {
         /// 目標毛利 %
         var targetMarginPercent: Decimal = 0
 
-        /// 金額欄位是否取得鍵盤焦點
-        var isAmountFieldFocused: Bool = false
+        /// 目前持有鍵盤焦點的數字欄位，缺值代表鍵盤已收起
+        var focusedField: Field?
 
         /// 商品本金折合 TWD
         var itemTWD: Decimal {
@@ -93,7 +93,12 @@ struct QuoteFeature {
             let raw = costTWD / (1 - targetMarginPercent / 100)
             var rounded = Decimal()
             var source = raw / 10
-            NSDecimalRound(&rounded, &source, 0, .up)
+            NSDecimalRound(
+                &rounded,
+                &source,
+                0,
+                .up
+            )
             return rounded * 10
         }
 
@@ -129,10 +134,32 @@ struct QuoteFeature {
             guard let estimatedProfitTWD, let estimatedMarginPercent else {
                 return .marginTooHigh
             }
-            return .estimate(
-                profitTWD: estimatedProfitTWD,
-                marginPercent: estimatedMarginPercent
-            )
+            return .estimate(profitTWD: estimatedProfitTWD, marginPercent: estimatedMarginPercent)
+        }
+
+        /// 報價輸入欄的焦點識別值，依畫面由上而下排列
+        enum Field: Hashable, Sendable {
+
+            /// 商品本金
+            case itemPrice
+
+            /// 當地運費
+            case domesticShipping
+
+            /// 國際運費
+            case internationalShippingTWD
+
+            /// 刷卡費率
+            case cardFeePercent
+
+            /// 金流費率
+            case paymentFeePercent
+
+            /// 平台費率
+            case platformFeePercent
+
+            /// 目標毛利率
+            case targetMarginPercent
         }
     }
 
@@ -244,7 +271,7 @@ private extension QuoteFeature {
         case .view(.currencyPickerTapped):
             return .send(.rateSource(.pickerTapped))
 
-        case let .view(.currencySelected(code)):
+        case .view(.currencySelected(let code)):
             return .send(.rateSource(.currencySelected(code)))
 
         case .rateSource:

@@ -42,25 +42,24 @@ private extension OrdersRegularListContent {
             selectedOrderID: store.selectedOrderID,
             selection: selection
         )
-        .background(.blBackground)
-        .task {
-            listStore.send(.view(.task))
-        }
-        .searchable(
-            text: $listStore.searchText.sending(\.view.searchTextChanged),
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text("orders.list.placeholder.searchCustomersOrder")
-        )
-        .rootNavigationTitle("orders.list.title", language: language)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            OrdersToolbarContent(
-                isAllFilteredSelected: snapshot.isAllSelected,
-                filteredIDs: snapshot.ids,
-                store: listStore
+            .background(.blBackground)
+            .task {
+                listStore.send(.view(.task))
+            }
+            .blSearchable(
+                text: $listStore.searchText.sending(\.view.searchTextChanged),
+                prompt: Text("orders.list.placeholder.searchCustomersOrder")
             )
-        }
-        .alert(OrdersView.alertBinding(store: store, isDetail: false))
+            .rootNavigationTitle("orders.list.title", language: language)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                OrdersToolbarContent(
+                    isAllFilteredSelected: snapshot.isAllSelected,
+                    filteredIDs: snapshot.ids,
+                    store: listStore
+                )
+            }
+            .alert(OrdersView.alertBinding(store: store, isDetail: false))
     }
 }
 

@@ -17,8 +17,8 @@ struct PaymentMethodEditorSheet: View {
     /// 由 sheet 環境注入的 `dismiss` action
     @Environment(\.dismiss) private var dismiss
 
-    /// 名稱欄位的鍵盤焦點，與 `isNameFieldFocused` 同步
-    @FocusState private var nameFieldFocused: Bool
+    /// 名稱欄位是否持有鍵盤焦點，與 `isNameFieldFocused` 同步
+    @FocusState private var isNameFieldKeyboardFocused: Bool
 
     /// 名稱輸入草稿
     @Binding private var draftName: String
@@ -38,10 +38,12 @@ struct PaymentMethodEditorSheet: View {
     /// 名稱欄位是否持有焦點，重新呈現時依此還原焦點
     @Binding private var isNameFieldFocused: Bool
 
-    /// 草稿去除空白後可以送出時為 `true`
+    /// 草稿去除空白後是否可以送出
     private let canSubmit: Bool
 
-    /// 草稿有未儲存的變更時為 `true`，阻擋下滑並讓取消鍵改以彈窗確認
+    /// 草稿是否有未儲存的變更
+    ///
+    /// - Note: 為 `true` 時阻擋下滑，並讓取消鍵改以彈窗確認
     private let isDirty: Bool
 
     /// 是否嵌入既有導覽堆疊；預設 `false` 為獨立 sheet
@@ -53,13 +55,19 @@ struct PaymentMethodEditorSheet: View {
     /// 名稱 `TextField` 的 placeholder
     private let namePlaceholder: String
 
-    /// 取消鍵的處理，由呼叫端決定；`nil` 時由 `View` 依未儲存變更決定顯示捨棄確認或直接關閉
+    /// 取消鍵的處理
+    ///
+    /// - Note: 由呼叫端決定；`nil` 時由 `View` 依未儲存變更決定顯示捨棄確認或直接關閉
     private let onCancel: (() -> Void)?
 
-    /// 捨棄確認選擇捨棄後的處理，由呼叫端決定；`nil` 時由 `View` 直接關閉
+    /// 捨棄確認選擇捨棄後的處理
+    ///
+    /// - Note: 由呼叫端決定；`nil` 時由 `View` 直接關閉
     private let onDiscardChanges: (() -> Void)?
 
-    /// 提交付款方式時執行，名稱與旗標由呼叫端的 `State` 讀取
+    /// 提交付款方式時的回呼
+    ///
+    /// - Note: 名稱與旗標由呼叫端的 `State` 讀取
     private let onSubmit: () -> Void
 
     /// 提交按鈕的文字
@@ -214,13 +222,14 @@ private extension PaymentMethodEditorSheet {
     var formContent: some View {
         Form {
             Section {
-                TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
-                    .focused($nameFieldFocused)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .accessibilityIdentifier(
-                        BLAccessibilityID.LookupManagement.paymentMethodNameField
-                    )
+                BLTextField(
+                    LocalizedStringKey(namePlaceholder),
+                    text: $draftName,
+                    focus: $isNameFieldKeyboardFocused
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodNameField)
             } header: {
                 Text("orders.detail.label.paymentMethodName")
             } footer: {
@@ -268,19 +277,19 @@ private extension PaymentMethodEditorSheet {
         .scrollDismissesKeyboard(.interactively)
         .onAppear {
             // 重新呈現時依草稿還原焦點，與 `SwiftNavigation` 的 `bind` 語意相同
-            nameFieldFocused = isNameFieldFocused
+            isNameFieldKeyboardFocused = isNameFieldFocused
         }
-        .onChange(of: nameFieldFocused) { _, newValue in
+        .onChange(of: isNameFieldKeyboardFocused) { _, newValue in
             guard newValue != isNameFieldFocused else {
                 return
             }
             isNameFieldFocused = newValue
         }
         .onChange(of: isNameFieldFocused) { _, newValue in
-            guard newValue != nameFieldFocused else {
+            guard newValue != isNameFieldKeyboardFocused else {
                 return
             }
-            nameFieldFocused = newValue
+            isNameFieldKeyboardFocused = newValue
         }
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
@@ -331,7 +340,7 @@ extension PaymentMethodEditorSheet {
 
 private extension PaymentMethodEditorSheet {
 
-    /// 捨棄變更：有外部處理時交給呼叫端，否則直接關閉表單
+    /// 執行捨棄：有外部處理時交給呼叫端，否則直接關閉表單
     func discardChanges() {
         if let onDiscardChanges {
             onDiscardChanges()
@@ -340,7 +349,7 @@ private extension PaymentMethodEditorSheet {
         }
     }
 
-    /// 取消鍵的處理：有外部處理時交給呼叫端，否則依未儲存變更決定顯示捨棄確認或直接關閉
+    /// 決定取消鍵的去向：有外部處理時交給呼叫端，否則依未儲存變更決定顯示捨棄確認或直接關閉
     func cancelEditing() {
         if let onCancel {
             onCancel()

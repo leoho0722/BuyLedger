@@ -49,7 +49,7 @@ struct QuoteInputsCard: View {
     let currencyCode: String
 
     /// 數值欄位的鍵盤焦點，由宿主畫面持有
-    var focus: FocusState<Bool>.Binding
+    let focus: FocusState<QuoteFeature.State.Field?>.Binding
 
     /// 使用者點擊來源幣別列時呼叫
     let onCurrencyPickerTapped: () -> Void
@@ -68,6 +68,7 @@ struct QuoteInputsCard: View {
                     "quote.calculator.label.itemPrice",
                     $itemPrice,
                     currencyCode,
+                    field: .itemPrice,
                     isDecimalEntryAllowed: true,
                     identifier: BLAccessibilityID.Quote.principalField
                 )
@@ -76,37 +77,53 @@ struct QuoteInputsCard: View {
                     "quote.calculator.label.localShipping",
                     $domesticShipping,
                     currencyCode,
-                    isDecimalEntryAllowed: true
+                    field: .domesticShipping,
+                    isDecimalEntryAllowed: true,
+                    identifier: BLAccessibilityID.Quote.localShippingField
                 )
 
                 numberField(
                     "orders.detail.label.internationalShipping",
                     $internationalShippingTWD,
-                    "quote.calculator.label.twdItem"
+                    "quote.calculator.label.twdItem",
+                    field: .internationalShippingTWD,
+                    identifier: BLAccessibilityID.Quote.internationalShippingField
                 )
 
                 numberField(
                     "orders.detail.label.cardFee",
                     $cardFeePercent,
                     "%",
-                    fractionDigits: 1
+                    field: .cardFeePercent,
+                    fractionDigits: 1,
+                    identifier: BLAccessibilityID.Quote.cardFeeField
                 )
 
                 numberField(
                     "orders.detail.label.paymentProcessingFee",
                     $paymentFeePercent,
                     "%",
-                    fractionDigits: 1
+                    field: .paymentFeePercent,
+                    fractionDigits: 1,
+                    identifier: BLAccessibilityID.Quote.paymentFeeField
                 )
 
                 numberField(
                     "orders.detail.label.platformFee",
                     $platformFeePercent,
                     "%",
-                    fractionDigits: 1
+                    field: .platformFeePercent,
+                    fractionDigits: 1,
+                    identifier: BLAccessibilityID.Quote.platformFeeField
                 )
 
-                numberField("quote.calculator.label.targetMargin", $targetMarginPercent, "%")
+                numberField(
+                    "quote.calculator.label.targetMargin",
+                    $targetMarginPercent,
+                    "%",
+                    field: .targetMarginPercent,
+                    identifier: BLAccessibilityID.Quote.targetMarginField
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -167,6 +184,7 @@ private extension QuoteInputsCard {
     ///   - label: 欄位名稱
     ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數
     ///   - unit: 顯示在輸入框右側的單位字串
+    ///   - field: 此輸入列對應的焦點欄位
     ///   - fractionDigits: 顯示的小數位數
     ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
@@ -175,6 +193,7 @@ private extension QuoteInputsCard {
         _ label: String,
         _ value: Binding<Decimal>,
         _ unit: String,
+        field: QuoteFeature.State.Field,
         fractionDigits: Int = 0,
         isDecimalEntryAllowed: Bool = false,
         identifier: String? = nil
@@ -190,6 +209,7 @@ private extension QuoteInputsCard {
                 label: label,
                 value: value,
                 unit: unit,
+                field: field,
                 fractionDigits: fractionDigits,
                 isDecimalEntryAllowed: isDecimalEntryAllowed,
                 identifier: identifier
@@ -215,6 +235,7 @@ private extension QuoteInputsCard {
     ///   - label: 輸入框提示鍵值
     ///   - value: 雙向繫結的值
     ///   - unit: 單位字串
+    ///   - field: 此輸入列對應的焦點欄位
     ///   - fractionDigits: 顯示的小數位數
     ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
@@ -223,6 +244,7 @@ private extension QuoteInputsCard {
         label: String,
         value: Binding<Decimal>,
         unit: String,
+        field: QuoteFeature.State.Field,
         fractionDigits: Int,
         isDecimalEntryAllowed: Bool,
         identifier: String?
@@ -231,6 +253,7 @@ private extension QuoteInputsCard {
             inputField(
                 label: label,
                 value: value,
+                field: field,
                 fractionDigits: fractionDigits,
                 isDecimalEntryAllowed: isDecimalEntryAllowed,
                 identifier: identifier
@@ -245,6 +268,7 @@ private extension QuoteInputsCard {
     /// - Parameters:
     ///   - label: 輸入框的提示鍵值
     ///   - value: 雙向繫結的值
+    ///   - field: 此輸入框對應的焦點欄位
     ///   - fractionDigits: 顯示的小數位數
     ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
@@ -252,18 +276,21 @@ private extension QuoteInputsCard {
     func inputField(
         label: String,
         value: Binding<Decimal>,
+        field: QuoteFeature.State.Field,
         fractionDigits: Int,
         isDecimalEntryAllowed: Bool,
         identifier: String?
     ) -> some View {
-        TextField(
+        BLNumberField(
             LocalizedStringKey(label),
             value: value,
             format: .number.precision(
                 isDecimalEntryAllowed ? .fractionLength(0...2) : .fractionLength(fractionDigits)
             )
                 .grouping(.never),
-            prompt: Text(verbatim: "0")
+            prompt: Text(verbatim: "0"),
+            focus: focus,
+            equals: field
         )
         .frame(width: dynamicTypeSize.isAccessibilitySize ? nil : inputFieldWidth)
         .frame(maxWidth: dynamicTypeSize.isAccessibilitySize ? .infinity : nil)
@@ -271,7 +298,6 @@ private extension QuoteInputsCard {
         .multilineTextAlignment(.trailing)
         .monospacedDigit()
         .keyboardType(isDecimalEntryAllowed || fractionDigits > 0 ? .decimalPad : .numberPad)
-        .focused(focus)
         .accessibilityIdentifier(identifier ?? "")
     }
 
@@ -295,7 +321,7 @@ private extension QuoteInputsCard {
 // MARK: - Preview
 
 #Preview("輸入卡") {
-    @Previewable @FocusState var isFocused: Bool
+    @Previewable @FocusState var focusedField: QuoteFeature.State.Field?
 
     QuoteInputsCard(
         cardFeePercent: .constant(2.5),
@@ -306,7 +332,7 @@ private extension QuoteInputsCard {
         platformFeePercent: .constant(1),
         targetMarginPercent: .constant(25),
         currencyCode: "KRW",
-        focus: $isFocused,
+        focus: $focusedField,
         onCurrencyPickerTapped: {
         }
     )
