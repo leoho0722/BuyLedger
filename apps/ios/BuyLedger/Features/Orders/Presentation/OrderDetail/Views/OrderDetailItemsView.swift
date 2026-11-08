@@ -80,10 +80,9 @@ private extension OrderDetailItemsView {
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
 
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "orders.detail.label.quantity",
-                        item.quantity,
-                        locale: locale
+                        defaultValue: "\(item.quantity)"
                     )
                 )
                 .blTextStyle(.caption)

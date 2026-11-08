@@ -61,11 +61,11 @@ private extension CustomerListRow {
 
             HStack(spacing: BLSpacing.extraSmall) {
                 if customer.tier == .vip {
-                    Text(verbatim: "VIP")
+                    Text(verbatim: tierTitle)
                         .blTextStyle(.caption)
                         .foregroundStyle(.blOrange)
                 } else {
-                    Text(LocalizedStringKey(customer.tier.title))
+                    Text(verbatim: tierTitle)
                         .blTextStyle(.caption)
                         .foregroundStyle(.blSecondaryLabel)
                 }
@@ -74,10 +74,9 @@ private extension CustomerListRow {
                     .foregroundStyle(.blSecondaryLabel)
 
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "customers.list.label.orderCount",
-                        customer.orderCount,
-                        locale: locale
+                        defaultValue: "\(customer.orderCount)"
                     )
                 )
                     .blTextStyle(.caption)
@@ -113,6 +112,16 @@ extension CustomerListRow {
     /// - Returns: 分隔線的左側縮排
     static func dividerInset(avatarSize: CGFloat) -> CGFloat {
         BLSpacing.large + avatarSize + BLSpacing.small
+    }
+}
+
+// MARK: - Private Method
+
+private extension CustomerListRow {
+
+    /// 依 App 語言解析的客戶分級名稱
+    var tierTitle: String {
+        CustomerFormatters.tierTitle(customer.tier, locale: locale)
     }
 }
 

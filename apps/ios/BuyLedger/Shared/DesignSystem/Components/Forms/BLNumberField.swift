@@ -33,7 +33,7 @@ struct BLNumberField<FocusValue: Hashable>: View {
     private let prompt: Text?
 
     /// 欄位標題；沒有標題時由呼叫端提供無障礙名稱
-    private let titleKey: LocalizedStringKey?
+    private let titleKey: LocalizedStringResource?
 
     // MARK: - Init
 
@@ -46,7 +46,7 @@ struct BLNumberField<FocusValue: Hashable>: View {
     ///   - prompt: 草稿為空時的提示文字
     ///   - focus: 呼叫端的布林焦點狀態
     init(
-        _ titleKey: LocalizedStringKey,
+        _ titleKey: LocalizedStringResource,
         value: Binding<Decimal>,
         format: Decimal.FormatStyle,
         prompt: Text? = nil,
@@ -94,7 +94,7 @@ struct BLNumberField<FocusValue: Hashable>: View {
     ///   - focus: 呼叫端的焦點列舉狀態
     ///   - equals: 此欄位對應的焦點值
     init(
-        _ titleKey: LocalizedStringKey,
+        _ titleKey: LocalizedStringResource,
         value: Binding<Decimal>,
         format: Decimal.FormatStyle,
         prompt: Text? = nil,

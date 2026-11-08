@@ -15,7 +15,7 @@ struct InsightsCostStructureCard: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// App 目前選用的顯示語系，用於圖表的無障礙標題
+    /// App 目前選用的顯示語系，用於成本切片標籤
     let language: AppLanguage
 
     /// 成本結構的各個區塊
@@ -59,15 +59,12 @@ private extension InsightsCostStructureCard {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 成本結構圈狀圖，中央顯示總成本，圖表標題隨 App 內選用的語言翻譯
+    /// 成本結構圈狀圖，中央顯示總成本，圖表標題由元件依環境 `locale` 解析預設文字
     var donut: some View {
         BLDonutChart(
-            axisXTitle: language.localized("orders.list.label.category2"),
-            axisYTitle: language.localized("orders.detail.label.share"),
             centerTitle: "orders.detail.label.totalCost",
             centerValue: BLFormatters.twd(totalCost, locale: locale),
-            segments: donutSegments,
-            seriesName: language.localized("orders.detail.label.donutChart")
+            segments: donutSegments
         )
         .frame(maxWidth: .infinity)
         .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
@@ -116,7 +113,7 @@ private extension InsightsCostStructureCard {
     var donutSegments: [BLDonutSegment] {
         InsightsFormatters.costDonutSlices(segments, locale: locale).map {
             BLDonutSegment(
-                label: language.localizedString(forKey: $0.label),
+                label: language.resolve($0.label),
                 value: $0.value,
                 color: color(for: $0.tone),
                 valueDescription: $0.valueDescription

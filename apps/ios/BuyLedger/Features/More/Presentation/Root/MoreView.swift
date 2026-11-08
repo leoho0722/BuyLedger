@@ -85,7 +85,7 @@ private extension MoreView {
             HStack {
                 // 標題不指定前景色，讓選取列由系統套用對應的單色前景
                 Label {
-                    Text(LocalizedStringKey(entryTitle(for: entry)))
+                    Text(entryTitle(for: entry))
                         .font(BLTypographyStyle.body.font.weight(.medium))
                 } icon: {
                     Image(systemName: entrySystemImage(for: entry))
@@ -196,7 +196,7 @@ private extension MoreView {
     ///
     /// - Parameter entry: 更多頁目的地
     /// - Returns: 目的地標題
-    func entryTitle(for entry: MoreFeature.Entry) -> String {
+    func entryTitle(for entry: MoreFeature.Entry) -> LocalizedStringResource {
         switch entry {
         case .fx:
             return "settings.more.label.exchangeRates"

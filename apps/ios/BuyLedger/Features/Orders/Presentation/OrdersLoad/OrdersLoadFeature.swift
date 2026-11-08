@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// 只讀取訂單，提供容器與畫面共用的載入狀態
 @Reducer
@@ -27,7 +28,7 @@ struct OrdersLoadFeature {
         @Shared var hasLoaded: Bool
 
         /// 持續顯示的訂單讀取失敗訊息
-        @Shared var errorMessage: String?
+        @Shared var errorMessage: LocalizedStringResource?
 
         /// 建立訂單引用與獨立的載入狀態
         ///

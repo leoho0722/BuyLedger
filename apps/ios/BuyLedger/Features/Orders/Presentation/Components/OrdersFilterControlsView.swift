@@ -70,7 +70,7 @@ private extension OrdersFilterControlsView {
         BLFilterChip(
             isSelected: store.selectedStatus == filter,
             size: statusChipSize,
-            title: LocalizedStringKey(filter.title)
+            title: filter.title
         ) {
             store.send(.view(.statusFilterSelected(filter)))
         }
@@ -82,9 +82,9 @@ private extension OrdersFilterControlsView {
     var unifiedFilterTrigger: some View {
         let language = AppLanguage(locale: locale)
         let summaryText = store.state.filterSummary(language: language)
-        let formattedTitle = language.localizedString(
-            forKey: "orders.filter.label.filterSummary",
-            summaryText
+        let formattedTitle = LocalizedStringResource(
+            "orders.filter.label.filterSummary",
+            defaultValue: "\(summaryText)"
         )
 
         BLFilterChip(
@@ -93,7 +93,7 @@ private extension OrdersFilterControlsView {
             isSelected: store.committedFilterSelection.isActive,
             size: .large,
             style: .purple,
-            title: LocalizedStringKey(formattedTitle),
+            title: formattedTitle,
             trailingIcon: "chevron.down"
         ) {
             store.send(.view(.filterSheetTapped))

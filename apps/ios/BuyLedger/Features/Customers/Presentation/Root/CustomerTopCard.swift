@@ -63,11 +63,11 @@ private extension CustomerTopCard {
 
                 HStack(spacing: BLSpacing.extraSmall) {
                     if customer.tier == .vip {
-                        Text(verbatim: "★ VIP")
+                        Text(verbatim: "★ \(tierTitle)")
                             .font(BLTypographyStyle.caption.font.weight(.semibold))
                             .foregroundStyle(.blOrange)
                     } else {
-                        Text(LocalizedStringKey(customer.tier.title))
+                        Text(verbatim: tierTitle)
                             .blTextStyle(.caption)
                             .foregroundStyle(.blSecondaryLabel)
                     }
@@ -76,10 +76,9 @@ private extension CustomerTopCard {
                         .foregroundStyle(.blSecondaryLabel)
 
                     Text(
-                        AppLanguage.format(
+                        LocalizedStringResource(
                             "customers.list.label.orderCount",
-                            customer.orderCount,
-                            locale: locale
+                            defaultValue: "\(customer.orderCount)"
                         )
                     )
                         .blTextStyle(.caption)
@@ -91,6 +90,19 @@ private extension CustomerTopCard {
 
             rankBadge
         }
+    }
+
+    /// 名次膠囊，配色依名次決定
+    var rankBadge: some View {
+        let style = CustomerRankBadgeStyle.style(forRank: rank)
+
+        return Text(verbatim: CustomerFormatters.rankLabel(rank))
+            .padding(.horizontal, BLSpacing.small)
+            .padding(.vertical, 2)
+            .font(BLTypographyStyle.caption.font.weight(.bold))
+            .foregroundStyle(style.numeral)
+            .background(style.background)
+            .clipShape(Capsule())
     }
 
     /// 累計消費與最近訂單日期
@@ -124,18 +136,15 @@ private extension CustomerTopCard {
             }
         }
     }
+}
 
-    /// 名次膠囊，配色依名次決定
-    var rankBadge: some View {
-        let style = CustomerRankBadgeStyle.style(forRank: rank)
+// MARK: - Private Method
 
-        return Text(verbatim: CustomerFormatters.rankLabel(rank))
-            .padding(.horizontal, BLSpacing.small)
-            .padding(.vertical, 2)
-            .font(BLTypographyStyle.caption.font.weight(.bold))
-            .foregroundStyle(style.numeral)
-            .background(style.background)
-            .clipShape(Capsule())
+private extension CustomerTopCard {
+
+    /// 依 App 語言解析的客戶分級名稱
+    var tierTitle: String {
+        CustomerFormatters.tierTitle(customer.tier, locale: locale)
     }
 }
 

@@ -284,7 +284,6 @@ struct SnapshotInsightsTests {
             let view = InsightsTrendCard(
                 bars: bars,
                 delta: "↑ 18.5%",
-                language: .traditionalChinese,
                 range: .twelveMonths,
                 totalProfit: 5_900,
                 trend: .up

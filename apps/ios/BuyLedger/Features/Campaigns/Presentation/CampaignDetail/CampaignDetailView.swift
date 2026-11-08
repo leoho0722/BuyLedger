@@ -90,7 +90,7 @@ private extension CampaignDetailView {
                     selection: statusBinding(for: content.campaign)
                 ) {
                     ForEach(CampaignStatus.allCases) {
-                        Text(LocalizedStringKey($0.title))
+                        Text($0.title)
                             .tag($0)
                     }
                 }

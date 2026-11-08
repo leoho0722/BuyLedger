@@ -43,9 +43,26 @@ struct SnapshotSharedTests {
             }
 
             // When
-            let view = BLBarChart(data: bars, height: 200, isScrollEnabled: true)
+            let view = BLBarChart(height: 200, data: bars, isScrollEnabled: true)
                 .frame(width: 393)
                 .padding()
+
+            // Then
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
+    /// 驗證商品類別名稱是使用者資料，等於本地化鍵時在英文模式仍顯示原文
+    @Test
+    func blTagPill_英文且類別名稱等於本地化鍵_顯示原文() {
+        TestDependencies.withFixedNow {
+            // Given
+            let categoryName = "orders.list.label.merged"
+
+            // When
+            let view = BLTagPill(categoryName, systemImage: "tag")
+                .environment(\.locale, AppLanguage.english.locale)
+                .fixedSize()
 
             // Then
             assertSnapshot(of: view, as: .image)

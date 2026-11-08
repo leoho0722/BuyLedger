@@ -92,7 +92,7 @@ struct InsightsFeature {
             /// 載入失敗，顯示失敗畫面與重試鈕
             ///
             /// - Parameter message: 失敗畫面顯示的訊息
-            case failed(String)
+            case failed(LocalizedStringResource)
 
             /// 已載入但沒有訂單，顯示空狀態
             case empty

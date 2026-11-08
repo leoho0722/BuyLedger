@@ -24,7 +24,9 @@ struct OrderEditFeatureInitializationTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "orders.list.label.newOrder")
+        #expect(title.key == "orders.list.label.newOrder")
+        #expect(AppLanguage.resolve(title, locale: Locale(identifier: "zh-Hant")) == "新訂單")
+        #expect(AppLanguage.resolve(title, locale: Locale(identifier: "en")) == "New Order")
     }
 
     /// 驗證既有訂單的導覽標題鍵沿用既有的「編輯訂單」本地化鍵
@@ -41,7 +43,9 @@ struct OrderEditFeatureInitializationTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "orders.detail.label.editOrder")
+        #expect(title.key == "orders.detail.label.editOrder")
+        #expect(AppLanguage.resolve(title, locale: Locale(identifier: "zh-Hant")) == "編輯訂單")
+        #expect(AppLanguage.resolve(title, locale: Locale(identifier: "en")) == "Edit Order")
     }
 
     /// 驗證合併預填帶有來源訂單編號但沒有原始訂單時，導覽標題鍵仍是「新訂單」本地化鍵
@@ -62,7 +66,7 @@ struct OrderEditFeatureInitializationTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "orders.list.label.newOrder")
+        #expect(title.key == "orders.list.label.newOrder")
     }
 
     /// 驗證以既有訂單建立表單時，草稿的客戶、分類、狀態、幣別、金額與費率及備註都帶入原訂單的值

@@ -10,12 +10,6 @@ import Foundation
 /// 訂單清單的純篩選、日期分組與顯示資料計算
 enum OrdersListQuery {
 
-    // MARK: - Properties
-
-    /// 多選標題的 catalog key，不含筆數佔位
-    ///
-    /// - Note: 以非字面值組合標題，編譯器才不會另外抽出帶 `%lld` 的條目
-    private static let selectedCountKey = "orders.batch.message.selectedCount"
 }
 
 // MARK: - Internal Method
@@ -165,16 +159,18 @@ extension OrdersListQuery {
     static func filterSummary(selection: OrderFilterSelection, language: AppLanguage) -> String {
         var parts: [String] = []
         if selection.datePeriod != .all {
-            parts.append(language.localized(String.LocalizationValue(selection.datePeriod.title)))
+            parts.append(language.resolve(selection.datePeriod.title))
         }
         let categories = selection.categories.sorted { lhs, rhs in
             lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
         if categories.count >= 2 {
             parts.append(
-                language.localizedString(
-                    forKey: "orders.filter.label.categoryCount",
-                    categories.count
+                language.resolve(
+                    LocalizedStringResource(
+                        "orders.filter.label.categoryCount",
+                        defaultValue: "\(categories.count)"
+                    )
                 )
             )
         } else if let category = categories.first {
@@ -184,7 +180,8 @@ extension OrdersListQuery {
             parts.append(paymentMethod)
         }
         return parts.isEmpty
-            ? language.localized("common.action.label.all") : parts.joined(separator: " · ")
+            ? language.resolve(LocalizedStringResource("common.action.label.all"))
+            : parts.joined(separator: " · ")
     }
 
     /// 依多選模式與選取筆數決定清單標題
@@ -192,22 +189,18 @@ extension OrdersListQuery {
     /// - Parameters:
     ///   - isSelecting: 是否處於多選模式
     ///   - count: 選取筆數
-    /// - Returns: 導覽標題的本地化 key
-    static func navigationTitle(isSelecting: Bool, count: Int) -> String.LocalizationValue {
+    /// - Returns: 訂單清單的導覽標題 resource
+    static func navigationTitle(isSelecting: Bool, count: Int) -> LocalizedStringResource {
         guard isSelecting else {
-            return "orders.list.title"
+            return LocalizedStringResource("orders.list.title")
         }
         guard count > 0 else {
-            return "orders.edit.label.selectOrders"
+            return LocalizedStringResource("orders.edit.label.selectOrders")
         }
-        var string = String.LocalizationValue.StringInterpolation(
-            literalCapacity: selectedCountKey.count + 1,
-            interpolationCount: 1
+        return LocalizedStringResource(
+            "orders.batch.message.selectedCount",
+            defaultValue: "\(count)"
         )
-        string.appendLiteral(selectedCountKey)
-        string.appendLiteral(" ")
-        string.appendInterpolation(count)
-        return String.LocalizationValue(stringInterpolation: string)
     }
 
     /// 依已載入、錯誤、載入中順序決定呈現狀態
@@ -216,7 +209,10 @@ extension OrdersListQuery {
     ///   - hasLoaded: 是否已完成載入
     ///   - errorMessage: 載入失敗訊息
     /// - Returns: 清單要呈現的載入狀態
-    static func loadState(hasLoaded: Bool, errorMessage: String?) -> OrdersLoadState {
+    static func loadState(
+        hasLoaded: Bool,
+        errorMessage: LocalizedStringResource?
+    ) -> OrdersLoadState {
         if hasLoaded {
             return .loaded
         }

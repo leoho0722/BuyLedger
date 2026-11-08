@@ -73,31 +73,37 @@ extension BLTone {
     var onIndicator: Color {
         namedColor(role: .onIndicator)
     }
-
-    /// 此語意狀態在 asset catalog 內的資源名稱片段
-    private var resourceName: String {
-        switch self {
-        case .neutral:
-            "Neutral"
-        case .accent:
-            "Accent"
-        case .success:
-            "Success"
-        case .warning:
-            "Warning"
-        case .destructive:
-            "Destructive"
-        case .informative:
-            "Informative"
-        }
-    }
 }
 
 // MARK: - Private Method
 
 private extension BLTone {
 
+    /// 此語意狀態在 asset catalog 內的資源名稱片段
+    var resourceName: String {
+        switch self {
+        case .neutral:
+            "Neutral"
+
+        case .accent:
+            "Accent"
+
+        case .success:
+            "Success"
+
+        case .warning:
+            "Warning"
+
+        case .destructive:
+            "Destructive"
+
+        case .informative:
+            "Informative"
+        }
+    }
+
     /// 回傳指定用途的具名色彩資源
+    ///
     /// - Parameter role: 色彩用途的資源名稱片段
     /// - Returns: 由系統依當前 trait 解析的具名色彩
     func namedColor(role: Role) -> Color {
@@ -118,8 +124,8 @@ private extension BLTone {
     ]
 
     VStack(alignment: .leading, spacing: BLSpacing.small) {
-        ForEach(samples.indices, id: \.self) { index in
-            BLStatusPill(samples[index].0, tone: samples[index].1)
+        ForEach(samples.indices, id: \.self) {
+            BLStatusPill(verbatim: samples[$0].0, tone: samples[$0].1)
         }
     }
     .padding()

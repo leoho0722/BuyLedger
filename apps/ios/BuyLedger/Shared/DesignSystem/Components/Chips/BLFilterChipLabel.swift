@@ -37,7 +37,7 @@ struct BLFilterChipLabel: View {
     var style: BLFilterChip.Style = .inverted
 
     /// 膠囊顯示的文字
-    let title: LocalizedStringKey
+    let title: LocalizedStringResource
 
     /// 選用的尾端 SF Symbol 名稱
     var trailingIcon: String? = nil

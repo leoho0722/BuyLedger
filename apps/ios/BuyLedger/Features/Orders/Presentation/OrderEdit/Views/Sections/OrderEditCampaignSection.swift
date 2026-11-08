@@ -50,7 +50,7 @@ private extension OrderEditCampaignSection {
 
         Picker("orders.edit.label.paymentStatus", selection: $store.draft.paymentReceiptStatus) {
             ForEach(PaymentReceiptStatus.allCases) {
-                Text(LocalizedStringKey($0.title))
+                Text($0.title)
                     .tag($0)
             }
         }

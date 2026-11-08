@@ -95,11 +95,9 @@ private extension DashboardOngoingCampaignsSection {
                 Spacer(minLength: 0)
 
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "dashboard.overview.label.campaignOrderSummary",
-                        summary.orderCount,
-                        BLFormatters.twd(summary.receivables, locale: locale),
-                        locale: locale
+                        defaultValue: "\(summary.orderCount)\(BLFormatters.twd(summary.receivables, locale: locale))"
                     )
                 )
                 .blTextStyle(.caption)

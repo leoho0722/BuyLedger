@@ -77,10 +77,11 @@ private extension DashboardView {
             case .failed(let message):
                 BLLoadFailureView(
                     message: message,
+                    onRetry: {
+                        store.send(.view(.retryTapped))
+                    },
                     retryIdentifier: BLAccessibilityID.Dashboard.loadFailureRetryButton
-                ) {
-                    store.send(.view(.retryTapped))
-                }
+                )
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
 
             case .onboarding:
@@ -212,7 +213,7 @@ private extension DashboardView {
                 titleHeader(dateContext: dateContext)
             }
 
-            DashboardSummarySection(language: language, stats: stats)
+            DashboardSummarySection(stats: stats)
 
             DashboardOngoingCampaignsSection(store: store)
 
@@ -268,7 +269,7 @@ private extension DashboardView {
 #Preview("載入失敗") {
     let previewState: DashboardFeature.State = {
         var state = DashboardFeature.State()
-        state.loadState = .failed("訂單載入失敗，請稍後再試")
+        state.loadState = .failed("orders.general.message.ordersLoadedTry")
         return state
     }()
 

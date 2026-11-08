@@ -35,26 +35,35 @@ extension OrderStatus {
 extension OrderStatus {
 
     /// 顯示在介面中的狀態名稱
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .quoting:
             "customers.list.label.quoting"
+
         case .confirmed:
             "orders.detail.label.confirmed"
+
         case .purchased:
             "common.general.label.purchased"
+
         case .shipping:
             "orders.list.label.consolidating"
+
         case .partiallyArrived:
             "common.general.label.partiallyArrived"
+
         case .arrived:
             "campaigns.detail.status.arrived"
+
         case .delivered:
             "common.general.label.delivered"
+
         case .pickedUp:
             "common.general.label.pickedUp"
+
         case .cancelled:
             "orders.merge.label.canceled"
+
         case .merged:
             "orders.list.label.merged"
         }

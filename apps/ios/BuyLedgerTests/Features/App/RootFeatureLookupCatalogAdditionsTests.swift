@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -146,7 +146,7 @@ struct RootFeatureLookupCatalogAdditionsTests {
             _ = await iterator.next()
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "失敗"))
         }
-        let messages: [LookupKind: LocalizedStringKey] = [
+        let messages: [LookupKind: LocalizedStringResource] = [
             .orderSource: "orders.general.message.orderSourceAdded",
             .category: "orders.general.message.categoryAddedTry",
             .paymentMethod: "orders.general.message.paymentMethodAdded",

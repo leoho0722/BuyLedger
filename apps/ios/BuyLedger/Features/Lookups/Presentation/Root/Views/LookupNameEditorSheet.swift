@@ -58,10 +58,10 @@ struct LookupNameEditorSheet: View {
     private let onSubmit: () -> Void
 
     /// 提交按鈕顯示的文字
-    private let submitTitle: String
+    private let submitTitle: LocalizedStringResource
 
     /// 導覽列顯示的表單標題
-    private let title: LocalizedStringKey
+    private let title: LocalizedStringResource
 
     // MARK: - Init
 
@@ -81,10 +81,10 @@ struct LookupNameEditorSheet: View {
     ///   - onDiscardChanges: 捨棄確認選擇捨棄後的處理；`nil` 時由 `View` 直接關閉
     ///   - onSubmit: 使用者提交時執行
     init(
-        title: LocalizedStringKey,
+        title: LocalizedStringResource,
         message: LocalizedStringResource?,
         namePlaceholder: LocalizedStringResource,
-        submitTitle: String,
+        submitTitle: LocalizedStringResource,
         draftName: Binding<String>,
         isNameFieldFocused: Binding<Bool>,
         isDiscardConfirmationPresented: Binding<Bool>,
@@ -118,10 +118,10 @@ struct LookupNameEditorSheet: View {
     ///   - initialName: 固定的名稱草稿，同時作為原名稱
     ///   - onSubmit: 提交時收到固定草稿名稱的回呼
     init(
-        title: LocalizedStringKey,
+        title: LocalizedStringResource,
         message: LocalizedStringResource?,
         namePlaceholder: LocalizedStringResource,
-        submitTitle: String,
+        submitTitle: LocalizedStringResource,
         initialName: String = "",
         onSubmit: @escaping (_ name: String) -> Void
     ) {
@@ -206,7 +206,7 @@ private extension LookupNameEditorSheet {
                     Image(systemName: "checkmark")
                 }
                 .buttonStyle(.borderedProminent)
-                .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
+                .accessibilityLabel(Text(submitTitle))
                 .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameSubmitButton)
                 .disabled(!canSubmit)
             }

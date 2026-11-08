@@ -95,10 +95,9 @@ private extension FxStatusBanner {
                 .foregroundStyle(.blGreen)
 
             Text(
-                AppLanguage.format(
+                LocalizedStringResource(
                     "fx.rates.message.connectedTimestamp",
-                    FxFormatters.snapshotTimestamp(snapshotDate, locale: locale),
-                    locale: locale
+                    defaultValue: "\(FxFormatters.snapshotTimestamp(snapshotDate, locale: locale))"
                 )
             )
             .blTextStyle(.footnote)
@@ -138,9 +137,8 @@ private extension FxStatusBanner {
 }
 
 #Preview("載入失敗") {
-    let message = "匯率暫時無法取得，請稍後再試。"
     FxStatusBanner(
-        errorMessage: LocalizedStringResource(String.LocalizationValue(message)),
+        errorMessage: "fx.rates.message.networkErrorOccurred",
         isLoading: false,
         onRetry: {
         },

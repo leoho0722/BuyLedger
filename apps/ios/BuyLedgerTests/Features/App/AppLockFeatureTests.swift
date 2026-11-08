@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -65,6 +66,7 @@ struct AppLockFeatureTests {
         let store = TestStore(initialState: initial) {
             AppLockFeature()
         } withDependencies: {
+            $0.locale = Locale(identifier: "zh-Hant")
             $0.biometricAuthService.biometryType = {
                 biometryType
             }
@@ -93,6 +95,45 @@ struct AppLockFeatureTests {
         #expect(reasons.value.count == 1)
     }
 
+    /// 驗證解鎖理由依注入的系統語言解析
+    ///
+    /// - Parameter testCase: 系統語言與預期解鎖理由
+    @Test(arguments: AuthenticationReasonCase.examples)
+    func scenePhaseChanged_驗證理由_依系統語言傳入(testCase: AuthenticationReasonCase) async {
+        // Given
+        let reasons = LockIsolated<[String]>([])
+        let initial = AppLockFeature.State(isBiometricUnlockEnabled: true, isLocked: true)
+        let store = TestStore(initialState: initial) {
+            AppLockFeature()
+        } withDependencies: {
+            $0.locale = testCase.locale
+            $0.biometricAuthService.biometryType = {
+                .faceID
+            }
+            $0.biometricAuthService.authenticate = { reason in
+                reasons.withValue {
+                    $0.append(reason)
+                }
+                return .success
+            }
+        }
+
+        // When
+        await store.send(.view(.scenePhaseChanged(.active))) {
+            $0.biometryType = .faceID
+            $0.isUnlocking = true
+        }
+
+        // Then
+        await store.receive(\.delegate.didBecomeActive)
+        await store.receive(\.unlockResponse) {
+            $0.isLocked = false
+            $0.isUnlocking = false
+        }
+        await store.finish()
+        #expect(reasons.value == [testCase.expectedReason])
+    }
+
     /// 驗證鎖定中回到前景且生物辨識驗證失敗或被取消時，仍通知 Root 回到前景，內容維持鎖定並記下驗證失敗
     ///
     /// - Parameter result: 驗證失敗或取消的結果
@@ -105,6 +146,7 @@ struct AppLockFeatureTests {
         let store = TestStore(initialState: initial) {
             AppLockFeature()
         } withDependencies: {
+            $0.locale = Locale(identifier: "zh-Hant")
             $0.biometricAuthService.biometryType = {
                 .touchID
             }
@@ -183,6 +225,7 @@ struct AppLockFeatureTests {
         let store = TestStore(initialState: initial) {
             AppLockFeature()
         } withDependencies: {
+            $0.locale = Locale(identifier: "zh-Hant")
             $0.biometricAuthService.authenticate = { _ in
                 .success
             }
@@ -216,5 +259,29 @@ struct AppLockFeatureTests {
         // Then
         await store.finish()
         #expect(!store.state.isUnlocking)
+    }
+}
+
+// MARK: - Nested Types
+
+extension AppLockFeatureTests {
+
+    /// 系統語言與生物辨識解鎖理由的固定案例
+    struct AuthenticationReasonCase: Sendable {
+
+        /// 中英文系統語言的解鎖理由預期
+        static let examples = [
+            Self(locale: Locale(identifier: "zh-Hant"), expectedReason: "驗證身份以解鎖 App"),
+            Self(
+                locale: Locale(identifier: "en"),
+                expectedReason: "Authenticate to unlock the app"
+            ),
+        ]
+
+        /// 注入給 reducer 的系統語言
+        let locale: Locale
+
+        /// catalog 中該語言的理由文字
+        let expectedReason: String
     }
 }

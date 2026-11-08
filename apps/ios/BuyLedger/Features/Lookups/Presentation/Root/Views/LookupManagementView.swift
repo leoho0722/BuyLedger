@@ -38,7 +38,7 @@ struct LookupManagementView: View {
             await store.send(.view(.task)).finish()
         }
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.root)
-        .navigationTitle(Text(LocalizedStringKey(store.state.kind.title)))
+        .navigationTitle(Text(store.state.kind.title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -58,7 +58,7 @@ private extension LookupManagementView {
             store.send(.view(.addButtonTapped))
         } label: {
             // icon-only 只留 +，完整標題留作無障礙標籤、新增流程標題仍顯示於 sheet
-            Label(LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus")
+            Label(store.state.kind.addButtonTitle, systemImage: "plus")
         }
         .labelStyle(.iconOnly)
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.addButton)

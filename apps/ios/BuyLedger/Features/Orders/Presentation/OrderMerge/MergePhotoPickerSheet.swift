@@ -13,9 +13,6 @@ struct MergePhotoPickerSheet: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 `locale`
-    @Environment(\.locale) private var locale
-
     /// 縮圖格的最小欄寬，隨字級縮放
     @ScaledMetric private var photoSize: CGFloat = 96
 
@@ -43,14 +40,13 @@ private extension MergePhotoPickerSheet {
 
     /// 照片總數、上限與目前保留數量的說明
     var instructions: some View {
-        Text(
-            AppLanguage.format(
+        let totalCount = store.combinedPhotos.count
+        let maximumCount = LedgerOrder.maxPhotoCount
+        let selectedCount = store.selectedPhotoIndices.count
+        return Text(
+            LocalizedStringResource(
                 "orders.merge.message.photoLimitNotice",
-                store.combinedPhotos.count,
-                LedgerOrder.maxPhotoCount,
-                store.selectedPhotoIndices.count,
-                LedgerOrder.maxPhotoCount,
-                locale: locale
+                defaultValue: "\(totalCount)\(maximumCount)\(selectedCount)\(maximumCount)"
             )
         )
         .blTextStyle(.footnote)

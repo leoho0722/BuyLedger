@@ -31,7 +31,7 @@ struct BLFilterChip: View {
     private var style: Style
 
     /// 膠囊顯示的文字
-    private let title: LocalizedStringKey
+    private let title: LocalizedStringResource
 
     /// 選用的尾端 SF Symbol 名稱
     private var trailingIcon: String?
@@ -55,7 +55,7 @@ struct BLFilterChip: View {
         isSelected: Bool,
         size: Size = .standard,
         style: Style = .inverted,
-        title: LocalizedStringKey,
+        title: LocalizedStringResource,
         trailingIcon: String? = nil,
         action: @escaping () -> Void
     ) {
@@ -120,7 +120,6 @@ extension BLFilterChip {
 // MARK: - Preview
 
 #Preview("篩選膠囊") {
-    let filterTitle = "篩選: 全部"
     VStack(alignment: .leading, spacing: BLSpacing.medium) {
         HStack(spacing: BLSpacing.small) {
             BLFilterChip(isSelected: true, title: "common.action.label.all") {
@@ -144,7 +143,7 @@ extension BLFilterChip {
             isSelected: false,
             size: .large,
             style: .purple,
-            title: LocalizedStringKey(filterTitle),
+            title: "common.action.label.all",
             trailingIcon: "chevron.down"
         ) {
         }

@@ -31,7 +31,8 @@ struct QuoteFormattersTests {
         let message = QuoteFormatters.targetMarginLimitMessage(locale: locale)
 
         // Then
-        #expect(message == scenario.expected)
+        #expect(message.key == "quote.calculator.message.targetMarginLimitNotice")
+        #expect(scenario.language.resolve(message) == scenario.expected)
     }
 
     /// 驗證總成本大於一時，占比為項目金額除以總成本，此例 1000 除以 4000 得 0.25

@@ -12,9 +12,6 @@ struct LookupItemList: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 `locale`
-    @Environment(\.locale) private var locale
-
     /// 依名稱查詢付款方式分類
     let classificationForName: (String) -> PaymentMethodFlags?
 
@@ -58,7 +55,7 @@ private extension LookupItemList {
     /// 主檔載入失敗時顯示的訊息列
     var loadFailureSection: some View {
         Section {
-            Text(LocalizedStringKey("orders.lookup.message.masterDataLoaded"))
+            Text("orders.lookup.message.masterDataLoaded")
                 .foregroundStyle(.blRed)
                 .accessibilityIdentifier(BLAccessibilityID.LookupManagement.loadFailureMessage)
         }
@@ -68,11 +65,11 @@ private extension LookupItemList {
     var itemSection: some View {
         Section {
             if items.isEmpty {
-                ContentUnavailableView(
-                    LocalizedStringKey(kind.emptyTitle),
-                    systemImage: "tray",
-                    description: Text(LocalizedStringKey(kind.emptyDescription))
-                )
+                ContentUnavailableView {
+                    Label(kind.emptyTitle, systemImage: "tray")
+                } description: {
+                    Text(kind.emptyDescription)
+                }
             } else {
                 ForEach(items, id: \.self) { item in
                     LookupItemRow(classification: classificationForName(item), name: item)
@@ -108,7 +105,10 @@ private extension LookupItemList {
             }
         } header: {
             Text(
-                AppLanguage.format("orders.lookup.label.itemsCreated", items.count, locale: locale)
+                LocalizedStringResource(
+                    "orders.lookup.label.itemsCreated",
+                    defaultValue: "\(items.count)"
+                )
             )
             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.itemCountHeader)
         } footer: {

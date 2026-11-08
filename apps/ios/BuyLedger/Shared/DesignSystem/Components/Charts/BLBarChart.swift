@@ -20,9 +20,6 @@ struct BLBarChart: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 長條圖要呈現的資料
-    let data: [BLBarChartValue]
-
     /// 圖表高度
     @ScaledMetric var height: CGFloat = 180
 
@@ -30,20 +27,23 @@ struct BLBarChart: View {
     @ScaledMetric(relativeTo: .caption2)
     private var scaledLabelSpacing: CGFloat = Layout.minLabelSpacing
 
-    /// 圖表無障礙描述的 X 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisXTitle: String = "orders.list.label.text"
+    /// 圖表無障礙描述的 X 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisXTitle: String? = nil
 
-    /// 圖表無障礙描述的 Y 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisYTitle: String = "orders.detail.label.value"
+    /// 圖表無障礙描述的 Y 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisYTitle: String? = nil
+
+    /// 長條圖要呈現的資料
+    let data: [BLBarChartValue]
 
     /// 是否啟用水平捲動；預設關閉
     var isScrollEnabled: Bool = false
 
-    /// 圖表資料序列名稱；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var seriesName: String = "insights.chart.label.barChart"
+    /// 圖表資料序列名稱；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var seriesName: String? = nil
 
     // MARK: - Body
 
@@ -96,9 +96,10 @@ private extension BLBarChart {
             renderWidth: renderWidth,
             minLabelSpacing: labelSpacing
         )
+        let titles = resolvedTitles
 
         Chart(Array(data.enumerated()), id: \.offset) { _, item in
-            BarMark(x: .value(axisXTitle, item.label), y: .value(axisYTitle, item.value))
+            BarMark(x: .value(titles.axisX, item.label), y: .value(titles.axisY, item.value))
                 .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
                 .foregroundStyle(.blAccent.gradient)
                 .accessibilityLabel(item.label)
@@ -113,13 +114,13 @@ private extension BLBarChart {
                     .font(BLTypographyStyle.caption2.font)
             }
         }
-        .accessibilityLabel(Text(ChartAccessibilityDescriptor.summary(for: data, locale: locale)))
+        .accessibilityLabel(ChartAccessibilityDescriptor.summary(for: data, locale: locale))
         .accessibilityChartDescriptor(
             ChartAccessibilityDescriptor(
                 data: data,
-                axisXTitle: axisXTitle,
-                axisYTitle: axisYTitle,
-                seriesName: seriesName
+                axisXTitle: titles.axisX,
+                axisYTitle: titles.axisY,
+                seriesName: titles.series
             )
         )
     }
@@ -176,7 +177,7 @@ extension BLBarChart {
     }
 
     /// 長條圖的輔助技術描述
-    private struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
+    struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
 
         /// 對應圖表目前呈現的資料
         let data: [BLBarChartValue]
@@ -190,27 +191,69 @@ extension BLBarChart {
         /// 資料序列名稱
         let seriesName: String
 
+        /// 圖表無障礙描述的三個文字，已依環境 `locale` 解析
+        struct Titles {
+
+            /// X 軸標題
+            let axisX: String
+
+            /// Y 軸標題
+            let axisY: String
+
+            /// 資料序列名稱
+            let series: String
+        }
+
+        /// 解析圖表無障礙描述的三個文字；有提供時原樣使用，未提供時依 `locale` 解析預設的 catalog key
+        ///
+        /// - Parameters:
+        ///   - axisX: X 軸標題，未提供時為 `orders.list.label.text`
+        ///   - axisY: Y 軸標題，未提供時為 `orders.detail.label.value`
+        ///   - series: 資料序列名稱，未提供時為 `insights.chart.label.barChart`
+        ///   - locale: 目前的 `Locale`
+        /// - Returns: X 軸標題、Y 軸標題與資料序列名稱
+        static func titles(
+            axisX: String?,
+            axisY: String?,
+            series: String?,
+            locale: Locale
+        ) -> Titles {
+            Titles(
+                axisX: axisX ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.list.label.text"),
+                    locale: locale
+                ),
+                axisY: axisY ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.detail.label.value"),
+                    locale: locale
+                ),
+                series: series ?? AppLanguage.resolve(
+                    LocalizedStringResource("insights.chart.label.barChart"),
+                    locale: locale
+                )
+            )
+        }
+
         /// 建立圖表層級的輔助技術摘要
         ///
         /// - Parameters:
         ///   - data: 長條圖資料
         ///   - locale: 目前的 `Locale`
         /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(for data: [BLBarChartValue], locale: Locale) -> LocalizedStringKey {
+        static func summary(for data: [BLBarChartValue], locale: Locale) -> String {
             guard let highest = data.max(by: { left, right in left.value < right.value }),
                   let lowest = data.min(by: { left, right in left.value < right.value }) else {
-                return "common.ui.label.barChartData"
-            }
-            return LocalizedStringKey(
-                AppLanguage.format(
-                    "common.ui.accessibility.barChartSummary",
-                    data.count,
-                    highest.label,
-                    highest.valueDescription,
-                    lowest.label,
-                    lowest.valueDescription,
+                return AppLanguage.resolve(
+                    LocalizedStringResource("common.ui.label.barChartData"),
                     locale: locale
                 )
+            }
+            return AppLanguage.resolve(
+                LocalizedStringResource(
+                    "common.ui.accessibility.barChartSummary",
+                    defaultValue: "\(data.count)\(highest.label)\(highest.valueDescription)\(lowest.label)\(lowest.valueDescription)"
+                ),
+                locale: locale
             )
         }
 
@@ -256,6 +299,16 @@ extension BLBarChart {
 // MARK: - Private Method
 
 private extension BLBarChart {
+
+    /// 依目前的參數與環境 `locale` 解析的三個無障礙文字
+    var resolvedTitles: ChartAccessibilityDescriptor.Titles {
+        ChartAccessibilityDescriptor.titles(
+            axisX: axisXTitle,
+            axisY: axisYTitle,
+            series: seriesName,
+            locale: locale
+        )
+    }
 
     /// X 軸標籤的最小間距；無障礙字級時取放大後間距的兩倍，標準字級維持原本的間距
     var labelSpacing: CGFloat {
@@ -326,6 +379,6 @@ private extension BLBarChart {
         )
     }
 
-    BLBarChart(data: data, height: 200, isScrollEnabled: true)
+    BLBarChart(height: 200, data: data, isScrollEnabled: true)
         .padding()
 }

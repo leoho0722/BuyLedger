@@ -64,7 +64,10 @@ private extension InsightsCampaignProfitCard {
         } label: {
             BLProgressView(
                 tint: .blAccent,
-                title: InsightsFormatters.rankTitle(rank: rank.rank, name: rank.campaignName),
+                verbatimTitle: InsightsFormatters.rankTitle(
+                    rank: rank.rank,
+                    name: rank.campaignName
+                ),
                 trailingText: BLFormatters.twd(rank.profit, locale: locale),
                 value: rank.ratio
             )
@@ -73,10 +76,9 @@ private extension InsightsCampaignProfitCard {
         .buttonStyle(.plain)
         .accessibilityHint(
             Text(
-                AppLanguage.format(
+                LocalizedStringResource(
                     "insights.chart.accessibility.viewDetails",
-                    rank.campaignName,
-                    locale: locale
+                    defaultValue: "\(rank.campaignName)"
                 )
             )
         )

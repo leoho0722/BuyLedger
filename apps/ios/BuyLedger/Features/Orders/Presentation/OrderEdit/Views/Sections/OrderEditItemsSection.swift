@@ -16,9 +16,6 @@ struct OrderEditItemsSection: View {
     /// 目前的動態字級，用來在輔助字級堆疊步進器與單價
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// App 根層依語言偏好注入的 `locale`
-    @Environment(\.locale) private var locale
-
     /// 非輔助字級時單價輸入欄的寬度，隨 Dynamic Type 縮放
     @ScaledMetric private var unitPriceWidth: CGFloat = 120
 
@@ -85,12 +82,7 @@ private extension OrderEditItemsSection {
 
             itemControlsLayout {
                 Stepper(value: item.quantity, in: 1...999) {
-                    Text(
-                        store.state.itemQuantityDisplayText(
-                            item.quantity.wrappedValue,
-                            locale: locale
-                        )
-                    )
+                    Text(store.state.itemQuantityDisplayText(item.quantity.wrappedValue))
                         .blTextStyle(.footnote)
                         .foregroundStyle(.blSecondaryLabel)
                 }
@@ -128,7 +120,7 @@ private extension OrderEditItemsSection {
     /// 商品明細標題與系統清單編輯入口
     var sectionHeader: some View {
         HStack {
-            Text(store.state.itemDetailsTitle(locale: locale))
+            Text(store.state.itemDetailsTitle())
 
             Spacer()
 

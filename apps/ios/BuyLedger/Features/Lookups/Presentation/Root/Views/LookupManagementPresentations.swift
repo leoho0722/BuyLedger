@@ -38,7 +38,7 @@ struct LookupManagementPresentations: View {
             ) {
                 RenameFormSheet(
                     renameStore: $0,
-                    namePlaceholder: Self.catalogResource(store.state.kind.nameFieldPlaceholder),
+                    namePlaceholder: store.state.kind.nameFieldPlaceholder,
                     title: renameSheetTitle
                 )
             }
@@ -48,7 +48,7 @@ struct LookupManagementPresentations: View {
             ) {
                 PaymentMethodEditFormSheet(
                     editStore: $0,
-                    namePlaceholder: Self.catalogResource(store.state.kind.nameFieldPlaceholder)
+                    namePlaceholder: store.state.kind.nameFieldPlaceholder
                 )
             }
             .alert($store.scope(state: \.$destination, action: \.destination).alert)
@@ -73,11 +73,9 @@ private extension LookupManagementPresentations {
         var body: some View {
             if addStore.hasClassification {
                 PaymentMethodEditorSheet(
-                    title: LookupManagementPresentations.catalogResource(kind.addFormTitle),
-                    message: LookupManagementPresentations.catalogResource(kind.addFormMessage),
-                    namePlaceholder: LookupManagementPresentations.catalogResource(
-                        kind.nameFieldPlaceholder
-                    ),
+                    title: kind.addFormTitle,
+                    message: kind.addFormMessage,
+                    namePlaceholder: kind.nameFieldPlaceholder,
                     submitTitle: "orders.list.button.add",
                     draftName: $addStore.draftName,
                     isDraftCardless: $addStore.isDraftCardless,
@@ -103,11 +101,9 @@ private extension LookupManagementPresentations {
                 }
             } else {
                 LookupNameEditorSheet(
-                    title: LocalizedStringKey(kind.addFormTitle),
-                    message: LookupManagementPresentations.catalogResource(kind.addFormMessage),
-                    namePlaceholder: LookupManagementPresentations.catalogResource(
-                        kind.nameFieldPlaceholder
-                    ),
+                    title: kind.addFormTitle,
+                    message: kind.addFormMessage,
+                    namePlaceholder: kind.nameFieldPlaceholder,
                     submitTitle: "orders.list.button.add",
                     draftName: $addStore.draftName,
                     isNameFieldFocused: $addStore.isNameFieldFocused,
@@ -137,7 +133,7 @@ private extension LookupManagementPresentations {
         let namePlaceholder: LocalizedStringResource
 
         /// 導覽列標題，依主檔種類決定
-        let title: LocalizedStringKey
+        let title: LocalizedStringResource
 
         /// 呈現單欄名稱表單，取消、捨棄與送出都交給子 store 的 reducer 處理
         var body: some View {
@@ -192,10 +188,7 @@ private extension LookupManagementPresentations {
             } onSubmit: {
                 editStore.send(
                     .view(
-                        .saveButtonTapped(
-                            name: editStore.trimmedName,
-                            flags: editStore.draftFlags
-                        )
+                        .saveButtonTapped(name: editStore.trimmedName, flags: editStore.draftFlags)
                     )
                 )
             }
@@ -208,7 +201,7 @@ private extension LookupManagementPresentations {
 private extension LookupManagementPresentations {
 
     /// 依主檔種類回傳重新命名表單標題
-    var renameSheetTitle: LocalizedStringKey {
+    var renameSheetTitle: LocalizedStringResource {
         switch store.state.kind {
         case .orderSource:
             "orders.lookup.label.renameOrderSource"
@@ -222,15 +215,6 @@ private extension LookupManagementPresentations {
         case .reconciliationStatus:
             "orders.lookup.label.renameStatus"
         }
-    }
-
-    /// 將 `LookupKind` 提供的 catalog key 轉成資源，讓元件以 App 語言解析
-    ///
-    /// - Parameter key: `LookupKind` 提供的 catalog key
-    /// - Returns: 對應該 key 的 `LocalizedStringResource`
-    /// - Note: key 在 catalog 維持 manual，非字面值不會被編譯器抽取；只用於已知是 catalog key 的值
-    static func catalogResource(_ key: String) -> LocalizedStringResource {
-        LocalizedStringResource(String.LocalizationValue(key))
     }
 
     /// 通知 Feature 表單 sheet 關閉動畫已結束，讓暫存的提示接著顯示

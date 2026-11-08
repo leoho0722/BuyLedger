@@ -5,6 +5,8 @@
 //  Created by Leo Ho on 2026/9/29.
 //
 
+import Foundation
+
 /// 開團列表的日期分組粒度
 enum CampaignGrouping: String, CaseIterable, Sendable {
 
@@ -23,7 +25,7 @@ enum CampaignGrouping: String, CaseIterable, Sendable {
 extension CampaignGrouping {
 
     /// 顯示在選單中的名稱
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .day:
             "campaigns.general.label.groupDay"

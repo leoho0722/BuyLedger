@@ -49,9 +49,7 @@ private extension DashboardKPITiles {
     /// 營業額與相對上月的變化率
     var revenueTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(
-                DashboardFormatters.percentDelta(stats.revenueDelta, locale: locale)
-            ),
+            delta: DashboardFormatters.percentDelta(stats.revenueDelta, locale: locale),
             kpi: .revenue,
             label: "dashboard.overview.label.revenue",
             tint: .blAccent,
@@ -63,9 +61,7 @@ private extension DashboardKPITiles {
     /// 成本與相對上月的變化率
     var costTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(
-                DashboardFormatters.percentDelta(stats.costDelta, locale: locale)
-            ),
+            delta: DashboardFormatters.percentDelta(stats.costDelta, locale: locale),
             kpi: .cost,
             label: "orders.detail.label.cost",
             tint: .blOrange,
@@ -77,9 +73,7 @@ private extension DashboardKPITiles {
     /// 毛利率與相對上月的百分點差
     var grossMarginTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(
-                DashboardFormatters.marginDelta(stats.marginDelta, locale: locale)
-            ),
+            delta: DashboardFormatters.marginDelta(stats.marginDelta, locale: locale),
             kpi: .grossMargin,
             label: "orders.detail.label.grossMargin",
             tint: .blGreen,
@@ -91,12 +85,12 @@ private extension DashboardKPITiles {
     /// 進行中訂單數，沒有上月比較值，變化指標改顯示件數
     var activeOrdersTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(
-                AppLanguage.format(
+            delta: AppLanguage.resolve(
+                LocalizedStringResource(
                     "dashboard.overview.label.activeCountInProgress",
-                    stats.activeCount,
-                    locale: locale
-                )
+                    defaultValue: "\(stats.activeCount)"
+                ),
+                locale: locale
             ),
             kpi: .activeOrders,
             label: "dashboard.overview.label.activeOrders",

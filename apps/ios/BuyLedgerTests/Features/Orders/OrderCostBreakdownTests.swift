@@ -156,20 +156,21 @@ struct OrderCostBreakdownTests {
 
         // Then
         #expect(
-            slices == [
-                OrderCostBreakdown.DonutSlice(
-                    label: "orders.detail.label.itemCost",
-                    value: 1_200,
-                    valueDescription: "NT$1,200",
-                    tone: .accent
-                ),
-                OrderCostBreakdown.DonutSlice(
-                    label: "orders.detail.label.cardFee",
-                    value: 300,
-                    valueDescription: "NT$300",
-                    tone: .orange
-                ),
+            slices.map(\.label.key) == [
+                "orders.detail.label.itemCost",
+                "orders.detail.label.cardFee",
             ]
+        )
+        #expect(slices.map(\.value) == [1_200, 300])
+        #expect(slices.map(\.valueDescription) == ["NT$1,200", "NT$300"])
+        #expect(slices.map(\.tone) == [.accent, .orange])
+        #expect(
+            slices.map { AppLanguage.resolve($0.label, locale: Locale(identifier: "zh-Hant")) }
+                == ["商品金額", "刷卡手續費"]
+        )
+        #expect(
+            slices.map { AppLanguage.resolve($0.label, locale: Locale(identifier: "en")) }
+                == ["Item Cost", "Card Fee"]
         )
     }
 
@@ -203,7 +204,7 @@ struct OrderCostBreakdownTests {
         )
 
         // When
-        let title = scenario.language.localizedString(forKey: component.title.key)
+        let title = scenario.language.resolve(component.title)
 
         // Then
         #expect(title == scenario.expected)

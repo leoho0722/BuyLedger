@@ -62,8 +62,8 @@ extension OrderCostBreakdown {
     /// 圈狀圖的單一區段，金額已轉為 `Double` 並附上本地化金額描述
     struct DonutSlice: Equatable, Sendable {
 
-        /// 區段名稱，即成本項目名稱
-        let label: String
+        /// 區段名稱的本地化資源
+        let label: LocalizedStringResource
 
         /// 區段數值，供圈狀圖計算占比
         let value: Double
@@ -138,7 +138,7 @@ extension OrderCostBreakdown {
     static func donutSlices(for components: [Component], locale: Locale) -> [DonutSlice] {
         components.map {
             DonutSlice(
-                label: $0.title.key,
+                label: $0.title,
                 value: NSDecimalNumber(decimal: $0.value).doubleValue,
                 valueDescription: OrderFormatters.twd($0.value, locale: locale),
                 tone: $0.tone

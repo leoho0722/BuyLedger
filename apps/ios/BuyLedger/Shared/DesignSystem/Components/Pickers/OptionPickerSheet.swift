@@ -327,7 +327,6 @@ private extension OptionPickerSheet {
 }
 
 #Preview("類別篩選 (含清除選項、未選任何類別)") {
-    let emptyDescription = "試試其他搜尋關鍵字。"
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
@@ -340,14 +339,13 @@ private extension OptionPickerSheet {
         ),
         emptyState: .init(
             title: "orders.list.label.matchingCategories",
-            description: LocalizedStringResource(String.LocalizationValue(emptyDescription))
+            description: "orders.filter.message.tryAnotherSearch"
         ),
         isSearchEnabled: true
     )
 }
 
 #Preview("類別篩選 (含清除選項、已選美妝)") {
-    let emptyDescription = "試試其他搜尋關鍵字。"
     OptionPickerSheet(
         title: "orders.list.label.category1",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
@@ -360,7 +358,7 @@ private extension OptionPickerSheet {
         ),
         emptyState: .init(
             title: "orders.list.label.matchingCategories",
-            description: LocalizedStringResource(String.LocalizationValue(emptyDescription))
+            description: "orders.filter.message.tryAnotherSearch"
         ),
         isSearchEnabled: true
     )

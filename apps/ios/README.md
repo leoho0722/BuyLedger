@@ -153,7 +153,7 @@ apps/ios/
 │   │   ├── Media/                # PhotoDataProcessor (照片降採樣與重編碼)
 │   │   └── DesignSystem/
 │   │       ├── Foundations/      # 色彩、字級、間距等 token，BLFormatters 與 ViewModifiers/
-│   │       └── Components/       # 可重用元件，依類型分 Avatar、Badges、Buttons、Cards、Charts、Chips、Forms、Images、Pickers、Progress、States、Status、Tags
+│   │       └── Components/       # 可重用元件，依類型分 Avatar、Buttons、Cards、Charts、Chips、Forms、Images、Pickers、Progress、States、Status、Tags
 │   └── Resources/                # Info.plist、PrivacyInfo.xcprivacy、字串目錄、assets 與設定範本 (見「開發環境設定」)
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (BLAccessibilityID+<區域>.swift，同時編入 App 與 UITests)
 ├── BuyLedgerTests/               # 單元測試，鏡像正式程式碼目錄

@@ -13,12 +13,11 @@ import Testing
 /// `DashboardFormatters` 的單元測試，涵蓋獲利走勢敘述與日期子標的格式化
 struct DashboardFormattersSummaryTests {
 
-    /// 驗證少於兩個月的走勢無法比較首尾時，`sparklineSummary` 回傳無資料的標題鍵，不產生敘述
+    /// 驗證少於兩個月的走勢無法比較首尾時，`sparklineSummary` 回傳無資料的標題 key，不產生敘述
     @Test
     func sparklineSummary_不足兩點_顯示無資料的標題鍵() {
         // Given
         let points: [Double] = [100]
-        let expected = LocalizedStringKey("dashboard.overview.label.monthlyProfitTrend")
 
         // When
         let text = DashboardFormatters.sparklineSummary(
@@ -27,15 +26,14 @@ struct DashboardFormattersSummaryTests {
         )
 
         // Then
-        #expect(text == expected)
+        #expect(text.key == "dashboard.overview.label.monthlyProfitTrend")
     }
 
-    /// 驗證末點高於首點時，`sparklineSummary` 採用上升敘述，並帶入點數、最低與最高獲利
+    /// 驗證末點高於首點時，`sparklineSummary` 採用上升敘述 key，並帶入點數、最低與最高獲利
     @Test
     func sparklineSummary_末點高於首點_顯示上升敘述() {
         // Given
         let points: [Double] = [100, 300]
-        let expected = LocalizedStringKey("月獲利走勢圖，共 2 個月，整體上升，最低 $100，最高 $300")
 
         // When
         let text = DashboardFormatters.sparklineSummary(
@@ -44,31 +42,35 @@ struct DashboardFormattersSummaryTests {
         )
 
         // Then
-        #expect(text == expected)
+        #expect(text.key == "dashboard.overview.accessibility.trendUp")
+        #expect(
+            AppLanguage.traditionalChinese.resolve(text)
+                == "月獲利走勢圖，共 2 個月，整體上升，最低 $100，最高 $300"
+        )
     }
 
-    /// 驗證末點低於首點、使用英文 locale 時，`sparklineSummary` 採用下降敘述，並帶入點數與最低、最高獲利
+    /// 驗證末點低於首點、使用英文 locale 時，`sparklineSummary` 採用下降敘述 key，並帶入點數與最低、最高獲利
     @Test
     func sparklineSummary_末點低於首點_顯示下降敘述() {
         // Given
         let points: [Double] = [300, 100]
-        let expected = LocalizedStringKey(
-            "Monthly profit trend chart, 2 months in total, overall downward, lowest NT$100, highest NT$300"
-        )
 
         // When
         let text = DashboardFormatters.sparklineSummary(points, locale: AppLanguage.english.locale)
 
         // Then
-        #expect(text == expected)
+        #expect(text.key == "dashboard.overview.accessibility.trendDown")
+        #expect(
+            AppLanguage.english.resolve(text)
+                == "Monthly profit trend chart, 2 months in total, overall downward, lowest NT$100, highest NT$300"
+        )
     }
 
-    /// 驗證末點與首點相同時，`sparklineSummary` 採用持平敘述
+    /// 驗證末點與首點相同時，`sparklineSummary` 採用持平敘述 key
     @Test
     func sparklineSummary_末點等於首點_顯示持平敘述() {
         // Given
         let points: [Double] = [200, 200]
-        let expected = LocalizedStringKey("月獲利走勢圖，共 2 個月，整體持平，最低 $200，最高 $200")
 
         // When
         let text = DashboardFormatters.sparklineSummary(
@@ -77,7 +79,11 @@ struct DashboardFormattersSummaryTests {
         )
 
         // Then
-        #expect(text == expected)
+        #expect(text.key == "dashboard.overview.accessibility.trendFlat")
+        #expect(
+            AppLanguage.traditionalChinese.resolve(text)
+                == "月獲利走勢圖，共 2 個月，整體持平，最低 $200，最高 $200"
+        )
     }
 
     /// 驗證 `dateSubtitle` 依記錄的曆法與時區格式化，2026 年 4 月 30 日 (星期四) 顯示為月日加星期

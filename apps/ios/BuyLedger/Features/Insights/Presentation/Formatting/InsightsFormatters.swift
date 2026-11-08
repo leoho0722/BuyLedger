@@ -19,8 +19,8 @@ extension InsightsFormatters {
     /// 成本圈狀圖的單一區段，金額已轉為 `Double` 並附上本地化金額描述
     struct CostSlice: Equatable, Sendable {
 
-        /// 區段名稱的本地化 key
-        let label: String
+        /// 區段名稱，以 catalog key 攜帶，由畫面依環境 `locale` 呈現
+        let label: LocalizedStringResource
 
         /// 區段數值，供圈狀圖計算占比
         let value: Double
@@ -37,15 +37,15 @@ extension InsightsFormatters {
 
 extension InsightsFormatters {
 
-    /// 依與上期的比值產生走勢卡的成長率文字，沒有比值時顯示比較說明
+    /// 依與上期的比值產生走勢卡的成長率文字
     ///
     /// - Parameters:
     ///   - ratio: 本期相對上期的比值；`nil` 表示沒有比較值
     ///   - locale: App 選定、用於百分比呈現的 `locale`
-    /// - Returns: 含上升或下降箭頭與百分比的文字；沒有比值時為比較說明的本地化 key
-    static func trendDelta(_ ratio: Decimal?, locale: Locale) -> String {
+    /// - Returns: 含上升或下降箭頭與百分比的文字；沒有比值時為 `nil`，由畫面顯示比較說明
+    static func trendDelta(_ ratio: Decimal?, locale: Locale) -> String? {
         guard let ratio else {
-            return "insights.chart.label.comparison"
+            return nil
         }
         let arrow = ratio >= 0 ? "↑" : "↓"
         let formatted = BLFormatters.percent(abs(ratio), locale: locale)
@@ -87,7 +87,7 @@ extension InsightsFormatters {
     static func costDonutSlices(_ segments: [InsightsCostSegment], locale: Locale) -> [CostSlice] {
         segments.map {
             CostSlice(
-                label: $0.label.key,
+                label: $0.label,
                 value: NSDecimalNumber(decimal: $0.value).doubleValue,
                 valueDescription: BLFormatters.twd($0.value, locale: locale),
                 tone: $0.tone

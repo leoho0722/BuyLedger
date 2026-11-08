@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -106,14 +107,18 @@ struct OrderListFeatureClearFilterPresentationTests {
     ///
     /// - Parameter testCase: 顯示語言、已套用篩選摘要與預期的完整觸發鈕文案
     @Test(arguments: Self.clearFilterTitleCases)
-    func localizedString_篩選觸發鈕摘要_使用各語言冒號(testCase: ClearFilterTitleCase) {
+    func resolve_篩選觸發鈕摘要_使用各語言冒號(testCase: ClearFilterTitleCase) {
         // Given
-        let key = "orders.filter.label.filterSummary"
+        let resource = LocalizedStringResource(
+            "orders.filter.label.filterSummary",
+            defaultValue: "\(testCase.summary)"
+        )
 
         // When
-        let title = testCase.language.localizedString(forKey: key, testCase.summary)
+        let title = testCase.language.resolve(resource)
 
         // Then
+        #expect(resource.key == "orders.filter.label.filterSummary")
         #expect(title == testCase.expectedTitle)
     }
 }

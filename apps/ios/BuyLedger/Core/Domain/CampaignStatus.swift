@@ -12,10 +12,11 @@ import Foundation
 extension CampaignStatus {
 
     /// 顯示在介面中的狀態名稱
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .ongoing:
             "common.general.label.active"
+
         case .closed:
             "common.general.label.closed"
         }

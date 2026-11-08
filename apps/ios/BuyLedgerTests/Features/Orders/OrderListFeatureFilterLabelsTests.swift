@@ -28,7 +28,8 @@ struct OrderListFeatureFilterLabelsTests {
         )
 
         // Then
-        #expect(title == LocalizedStringKey(testCase.expectedTitle))
+        #expect(title.key == testCase.expectedKey)
+        #expect(testCase.language.resolve(title) == testCase.expectedTitle)
     }
 
     /// 驗證未選任何類別時，`hasCategoryFilter` 為 `false`
@@ -101,6 +102,9 @@ extension OrderListFeatureFilterLabelsTests {
 
         /// 預期的觸發鈕標題
         let expectedTitle: String
+
+        /// 標題使用的 catalog key
+        let expectedKey: String
     }
 }
 
@@ -114,42 +118,50 @@ private extension OrderListFeatureFilterLabelsTests {
             CategoryFilterTitleCase(
                 categories: [],
                 language: .traditionalChinese,
-                expectedTitle: "類別：全部"
+                expectedTitle: "類別：全部",
+                expectedKey: "orders.filter.label.categoryFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty"],
                 language: .traditionalChinese,
-                expectedTitle: "類別：beauty"
+                expectedTitle: "類別：beauty",
+                expectedKey: "orders.filter.label.categoryFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty", "snacks"],
                 language: .traditionalChinese,
-                expectedTitle: "類別：2 項"
+                expectedTitle: "類別：2 項",
+                expectedKey: "orders.filter.label.categoryCountFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty", "snacks", "books"],
                 language: .traditionalChinese,
-                expectedTitle: "類別：3 項"
+                expectedTitle: "類別：3 項",
+                expectedKey: "orders.filter.label.categoryCountFormat"
             ),
             CategoryFilterTitleCase(
                 categories: [],
                 language: .english,
-                expectedTitle: "Category: All"
+                expectedTitle: "Category: All",
+                expectedKey: "orders.filter.label.categoryFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty"],
                 language: .english,
-                expectedTitle: "Category: beauty"
+                expectedTitle: "Category: beauty",
+                expectedKey: "orders.filter.label.categoryFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty", "snacks"],
                 language: .english,
-                expectedTitle: "Categories: 2"
+                expectedTitle: "Categories: 2",
+                expectedKey: "orders.filter.label.categoryCountFormat"
             ),
             CategoryFilterTitleCase(
                 categories: ["beauty", "snacks", "books"],
                 language: .english,
-                expectedTitle: "Categories: 3"
+                expectedTitle: "Categories: 3",
+                expectedKey: "orders.filter.label.categoryCountFormat"
             ),
         ]
     }

@@ -48,8 +48,8 @@ struct OrderEditFeature {
         /// 表單建立時的行事曆，供完整時間格式化使用
         let calendar: Calendar
 
-        /// 依原始訂單是否存在提供標題的本地化鍵
-        var navigationTitleKey: String {
+        /// 依原始訂單是否存在提供標題的本地化資源
+        var navigationTitleKey: LocalizedStringResource {
             original == nil ? "orders.list.label.newOrder" : "orders.detail.label.editOrder"
         }
 
@@ -244,37 +244,37 @@ struct OrderEditFeature {
             case notes
         }
 
-        /// 依目前語言組成商品數量的顯示文字
+        /// 建立含商品數量的本地化資源
         ///
-        /// - Parameters:
-        ///   - quantity: 商品數量
-        ///   - locale: 畫面目前套用的語言與地區
-        /// - Returns: 含數量標籤與數字的文字
-        func itemQuantityDisplayText(_ quantity: Int, locale: Locale) -> String {
-            AppLanguage.format("orders.detail.label.quantity", quantity, locale: locale)
+        /// - Parameter quantity: 商品數量
+        /// - Returns: 含數量參數的本地化資源
+        func itemQuantityDisplayText(_ quantity: Int) -> LocalizedStringResource {
+            LocalizedStringResource("orders.detail.label.quantity", defaultValue: "\(quantity)")
         }
 
-        /// 依目前語言組成含草稿幣別的商品明細標題
+        /// 建立含草稿幣別的商品明細標題 resource
         ///
-        /// - Parameter locale: 畫面目前套用的語言與地區
-        /// - Returns: 含幣別代碼的商品明細標題
-        func itemDetailsTitle(locale: Locale) -> String {
-            AppLanguage.format(
+        /// - Returns: 含幣別代碼參數的本地化資源
+        func itemDetailsTitle() -> LocalizedStringResource {
+            LocalizedStringResource(
                 "orders.edit.label.itemDetailsCurrency",
-                draft.currency.rawValue,
-                locale: locale
+                defaultValue: "\(draft.currency.rawValue)"
             )
         }
 
         /// 依注入的行事曆與目前語言組成完整訂購日期說明
         ///
         /// - Parameter locale: 畫面目前套用的語言與地區
-        /// - Returns: 訂購日期標籤與包含秒數的時間戳
-        func orderDateTimestampText(locale: Locale) -> String {
-            AppLanguage.format(
-                "orders.edit.label.orderDateTimestamp",
-                OrderFormatters.fullTimestamp(draft.date, calendar: calendar, locale: locale),
+        /// - Returns: 含完整時間戳參數的本地化資源
+        func orderDateTimestampText(locale: Locale) -> LocalizedStringResource {
+            let timestamp = OrderFormatters.fullTimestamp(
+                draft.date,
+                calendar: calendar,
                 locale: locale
+            )
+            return LocalizedStringResource(
+                "orders.edit.label.orderDateTimestamp",
+                defaultValue: "\(timestamp)"
             )
         }
 

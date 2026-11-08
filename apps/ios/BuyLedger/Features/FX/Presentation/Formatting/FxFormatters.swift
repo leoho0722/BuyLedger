@@ -42,17 +42,17 @@ extension FxFormatters {
     ///   - currency: 來源幣別
     ///   - rate: 一單位來源幣別對應的新台幣匯率；無資料時為 `nil`
     ///   - locale: App 選定、用於呈現的 `locale`
-    /// - Returns: 依 App 語言解析後的換算說明，無匯率時匯率位置為破折號
+    /// - Returns: 換算說明的本地化文字，無匯率時匯率位置為破折號
     static func conversionLabel(
         from currency: CurrencyCode,
         rate: Decimal?,
         locale: Locale
-    ) -> String {
-        AppLanguage.format(
+    ) -> LocalizedStringResource {
+        let rateText = FxFormatters.rate(rate, locale: locale)
+
+        return LocalizedStringResource(
             "fx.rates.label.conversionRate",
-            currency.rawValue,
-            FxFormatters.rate(rate, locale: locale),
-            locale: locale
+            defaultValue: "\(currency.rawValue)\(rateText)"
         )
     }
 
@@ -92,15 +92,16 @@ extension FxFormatters {
     /// - Parameters:
     ///   - snapshotDate: 最新匯率快照時間；無快照時為 `nil`
     ///   - locale: App 選定、用於呈現的 `locale`
-    /// - Returns: 依 App 語言解析後的副標文字
-    static func rateSourceSubtitle(snapshotDate: Date?, locale: Locale) -> String {
+    /// - Returns: 尚未連線或來源與快照時間的本地化文字
+    static func rateSourceSubtitle(snapshotDate: Date?, locale: Locale) -> LocalizedStringResource {
         guard snapshotDate != nil else {
-            return AppLanguage(locale: locale).localized("fx.rates.label.connected")
+            return "fx.rates.label.connected"
         }
-        return AppLanguage.format(
+        let timestamp = snapshotTimestamp(snapshotDate, locale: locale)
+
+        return LocalizedStringResource(
             "fx.rates.label.sourceTimestamp",
-            snapshotTimestamp(snapshotDate, locale: locale),
-            locale: locale
+            defaultValue: "\(timestamp)"
         )
     }
 }

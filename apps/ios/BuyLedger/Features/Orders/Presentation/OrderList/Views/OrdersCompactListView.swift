@@ -72,7 +72,7 @@ private extension OrdersCompactListView {
     @ViewBuilder
     var loadFailureMessage: some View {
         if case .failed(let message) = store.loadState {
-            Text(LocalizedStringKey(message))
+            Text(message)
                 .padding(.horizontal, BLSpacing.large)
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blRed)
@@ -129,7 +129,7 @@ private extension OrdersCompactListView {
     ///   - isFirst: 是否為清單的第一個日期區段
     /// - Returns: 日期標題列
     func dateHeader(_ section: OrderDateSection, isFirst: Bool) -> some View {
-        Text(LocalizedStringKey(section.title))
+        Text(verbatim: section.title)
             .padding(.horizontal, BLSpacing.large)
             .font(BLTypographyStyle.footnote.font.weight(.semibold))
             .foregroundStyle(.blSecondaryLabel)

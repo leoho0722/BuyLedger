@@ -67,7 +67,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "quote.calculator.label.itemPrice",
                     $itemPrice,
-                    currencyCode,
+                    .verbatim(currencyCode),
                     field: .itemPrice,
                     isDecimalEntryAllowed: true,
                     identifier: BLAccessibilityID.Quote.principalField
@@ -76,7 +76,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "quote.calculator.label.localShipping",
                     $domesticShipping,
-                    currencyCode,
+                    .verbatim(currencyCode),
                     field: .domesticShipping,
                     isDecimalEntryAllowed: true,
                     identifier: BLAccessibilityID.Quote.localShippingField
@@ -85,7 +85,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "orders.detail.label.internationalShipping",
                     $internationalShippingTWD,
-                    "quote.calculator.label.twdItem",
+                    .localized("quote.calculator.label.twdItem"),
                     field: .internationalShippingTWD,
                     identifier: BLAccessibilityID.Quote.internationalShippingField
                 )
@@ -93,7 +93,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "orders.detail.label.cardFee",
                     $cardFeePercent,
-                    "%",
+                    .verbatim("%"),
                     field: .cardFeePercent,
                     fractionDigits: 1,
                     identifier: BLAccessibilityID.Quote.cardFeeField
@@ -102,7 +102,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "orders.detail.label.paymentProcessingFee",
                     $paymentFeePercent,
-                    "%",
+                    .verbatim("%"),
                     field: .paymentFeePercent,
                     fractionDigits: 1,
                     identifier: BLAccessibilityID.Quote.paymentFeeField
@@ -111,7 +111,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "orders.detail.label.platformFee",
                     $platformFeePercent,
-                    "%",
+                    .verbatim("%"),
                     field: .platformFeePercent,
                     fractionDigits: 1,
                     identifier: BLAccessibilityID.Quote.platformFeeField
@@ -120,7 +120,7 @@ struct QuoteInputsCard: View {
                 numberField(
                     "quote.calculator.label.targetMargin",
                     $targetMarginPercent,
-                    "%",
+                    .verbatim("%"),
                     field: .targetMarginPercent,
                     identifier: BLAccessibilityID.Quote.targetMarginField
                 )
@@ -183,16 +183,16 @@ private extension QuoteInputsCard {
     /// - Parameters:
     ///   - label: 欄位名稱
     ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數
-    ///   - unit: 顯示在輸入框右側的單位字串
+    ///   - unit: 顯示在輸入框右側的本地化或原文單位
     ///   - field: 此輸入列對應的焦點欄位
     ///   - fractionDigits: 顯示的小數位數
     ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
     /// - Returns: 數值輸入列 view
     func numberField(
-        _ label: String,
+        _ label: LocalizedStringResource,
         _ value: Binding<Decimal>,
-        _ unit: String,
+        _ unit: Unit,
         field: QuoteFeature.State.Field,
         fractionDigits: Int = 0,
         isDecimalEntryAllowed: Bool = false,
@@ -221,8 +221,8 @@ private extension QuoteInputsCard {
     ///
     /// - Parameter label: 欄位的本地化鍵值
     /// - Returns: 名稱標籤 view
-    func fieldLabel(_ label: String) -> some View {
-        Text(LocalizedStringKey(label))
+    func fieldLabel(_ label: LocalizedStringResource) -> some View {
+        Text(label)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .blTextStyle(.subhead)
@@ -234,16 +234,16 @@ private extension QuoteInputsCard {
     /// - Parameters:
     ///   - label: 輸入框提示鍵值
     ///   - value: 雙向繫結的值
-    ///   - unit: 單位字串
+    ///   - unit: 本地化或原文單位
     ///   - field: 此輸入列對應的焦點欄位
     ///   - fractionDigits: 顯示的小數位數
     ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
     /// - Returns: 輸入框與單位橫排 view
     func inputRow(
-        label: String,
+        label: LocalizedStringResource,
         value: Binding<Decimal>,
-        unit: String,
+        unit: Unit,
         field: QuoteFeature.State.Field,
         fractionDigits: Int,
         isDecimalEntryAllowed: Bool,
@@ -274,7 +274,7 @@ private extension QuoteInputsCard {
     ///   - identifier: UI 測試定位用的識別碼
     /// - Returns: 輸入框 view
     func inputField(
-        label: String,
+        label: LocalizedStringResource,
         value: Binding<Decimal>,
         field: QuoteFeature.State.Field,
         fractionDigits: Int,
@@ -282,7 +282,7 @@ private extension QuoteInputsCard {
         identifier: String?
     ) -> some View {
         BLNumberField(
-            LocalizedStringKey(label),
+            label,
             value: value,
             format: .number.precision(
                 isDecimalEntryAllowed ? .fractionLength(0...2) : .fractionLength(fractionDigits)
@@ -303,10 +303,10 @@ private extension QuoteInputsCard {
 
     /// 顯示單位，輔助字級時依內容自然展開
     ///
-    /// - Parameter unit: 單位文字或本地化鍵值
+    /// - Parameter unit: 本地化或原文單位
     /// - Returns: 單位標籤 view
-    func unitLabel(_ unit: String) -> some View {
-        Text(LocalizedStringKey(unit))
+    func unitLabel(_ unit: Unit) -> some View {
+        unit.text
             .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
             .frame(
                 minWidth: dynamicTypeSize.isAccessibilitySize ? nil : unitMinWidth,
@@ -315,6 +315,36 @@ private extension QuoteInputsCard {
             .layoutPriority(dynamicTypeSize.isAccessibilitySize ? 1 : 0)
             .blTextStyle(.footnote)
             .foregroundStyle(.blSecondaryLabel)
+    }
+}
+
+// MARK: - Nested Types
+
+private extension QuoteInputsCard {
+
+    /// 數值欄位單位的本地化文字或原文文字
+    enum Unit {
+
+        /// 隨 App 語言顯示的單位
+        ///
+        /// - Parameter localizedStringResource: 單位的本地化文字
+        case localized(LocalizedStringResource)
+
+        /// 原樣顯示的幣別代碼或符號
+        ///
+        /// - Parameter string: 不需本地化的單位文字
+        case verbatim(String)
+
+        /// 依單位來源建立顯示文字
+        var text: Text {
+            switch self {
+            case .localized(let resource):
+                return Text(resource)
+
+            case .verbatim(let text):
+                return Text(verbatim: text)
+            }
+        }
     }
 }
 

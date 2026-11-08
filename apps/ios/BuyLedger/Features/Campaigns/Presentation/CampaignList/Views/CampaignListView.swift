@@ -66,13 +66,14 @@ private extension CampaignListView {
     ///
     /// - Parameter message: 持續顯示的失敗訊息
     /// - Returns: 載入失敗 view
-    func loadFailure(message: String) -> some View {
+    func loadFailure(message: LocalizedStringResource) -> some View {
         BLLoadFailureView(
             message: message,
+            onRetry: {
+                store.send(.view(.retryTapped))
+            },
             retryIdentifier: BLAccessibilityID.Campaigns.listLoadFailureRetryButton
-        ) {
-            store.send(.view(.retryTapped))
-        }
+        )
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.listLoadFailure)
     }
 
@@ -148,7 +149,7 @@ private extension CampaignListView {
             Menu("campaigns.list.label.display") {
                 Picker("campaigns.list.label.group", selection: groupingBinding) {
                     ForEach(CampaignGrouping.allCases) {
-                        Text(LocalizedStringKey($0.title))
+                        Text($0.title)
                             .tag($0)
                     }
                 }
@@ -165,7 +166,7 @@ private extension CampaignListView {
     /// - Parameter status: 對應的開團狀態
     /// - Returns: 選項 view
     func statusFilterOption(_ status: CampaignStatus) -> some View {
-        Text(LocalizedStringKey(status.title))
+        Text(status.title)
             .tag(CampaignStatus?.some(status))
     }
 

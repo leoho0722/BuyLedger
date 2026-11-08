@@ -31,7 +31,7 @@ struct RootNavigationLayout: View {
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.view.tabSelected)) {
             Tab(
-                LocalizedStringKey(RootTab.dashboard.title),
+                RootTab.dashboard.title,
                 systemImage: RootTab.dashboard.systemImage,
                 value: RootTab.dashboard
             ) {
@@ -40,7 +40,7 @@ struct RootNavigationLayout: View {
             .accessibilityIdentifier(BLAccessibilityID.Root.tab(.dashboard))
 
             Tab(
-                LocalizedStringKey(RootTab.orders.title),
+                RootTab.orders.title,
                 systemImage: RootTab.orders.systemImage,
                 value: RootTab.orders
             ) {
@@ -50,7 +50,7 @@ struct RootNavigationLayout: View {
             .accessibilityIdentifier(BLAccessibilityID.Root.tab(.orders))
 
             Tab(
-                LocalizedStringKey(RootTab.campaigns.title),
+                RootTab.campaigns.title,
                 systemImage: RootTab.campaigns.systemImage,
                 value: RootTab.campaigns
             ) {
@@ -59,7 +59,7 @@ struct RootNavigationLayout: View {
             .accessibilityIdentifier(BLAccessibilityID.Root.tab(.campaigns))
 
             Tab(
-                LocalizedStringKey(RootTab.insights.title),
+                RootTab.insights.title,
                 systemImage: RootTab.insights.systemImage,
                 value: RootTab.insights
             ) {
@@ -67,11 +67,7 @@ struct RootNavigationLayout: View {
             }
             .accessibilityIdentifier(BLAccessibilityID.Root.tab(.insights))
 
-            Tab(
-                LocalizedStringKey(RootTab.more.title),
-                systemImage: RootTab.more.systemImage,
-                value: RootTab.more
-            ) {
+            Tab(RootTab.more.title, systemImage: RootTab.more.systemImage, value: RootTab.more) {
                 destination(for: .more)
             }
             .accessibilityIdentifier(BLAccessibilityID.Root.tab(.more))

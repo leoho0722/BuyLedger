@@ -101,7 +101,7 @@ private extension QuoteStatusBanner {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(.blSecondaryLabel)
 
-            Text(verbatim: QuoteFormatters.targetMarginLimitMessage(locale: locale))
+            Text(QuoteFormatters.targetMarginLimitMessage(locale: locale))
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blSecondaryLabel)
 

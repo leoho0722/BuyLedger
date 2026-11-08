@@ -76,7 +76,7 @@ private extension OrderEditFeesSection {
     /// 百分比輸入方式與有效範圍說明
     @ViewBuilder
     var sectionFooter: some View {
-        Text(verbatim: OrderFormatters.feeRateInputMessage(locale: locale))
+        Text(OrderFormatters.feeRateInputMessage(locale: locale))
             .blTextStyle(.footnote)
             .foregroundStyle(.blSecondaryLabel)
     }

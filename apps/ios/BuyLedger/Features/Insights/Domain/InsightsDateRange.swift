@@ -25,7 +25,7 @@ enum InsightsDateRange: String, CaseIterable, Sendable {
 extension InsightsDateRange {
 
     /// 顯示在 segmented control 上的標題
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .thirtyDays:
             "insights.chart.label.thirtyDays"
@@ -39,7 +39,7 @@ extension InsightsDateRange {
     }
 
     /// 趨勢卡片標題
-    var trendCardTitle: String {
+    var trendCardTitle: LocalizedStringResource {
         switch self {
         case .thirtyDays:
             "insights.chart.label.thirtyDayNetProfit"

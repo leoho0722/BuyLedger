@@ -18,13 +18,12 @@ extension QuoteFormatters {
     ///
     /// - Parameter locale: App 選定、用於百分比呈現的 locale
     /// - Returns: 依 App 語言呈現的目標毛利提示
-    static func targetMarginLimitMessage(locale: Locale) -> String {
+    static func targetMarginLimitMessage(locale: Locale) -> LocalizedStringResource {
         let targetMargin = 1.0.formatted(.percentUpToOneFractionDigit(locale: locale))
 
-        return AppLanguage.format(
+        return LocalizedStringResource(
             "quote.calculator.message.targetMarginLimitNotice",
-            targetMargin,
-            locale: locale
+            defaultValue: "\(targetMargin)"
         )
     }
 

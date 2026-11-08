@@ -61,10 +61,11 @@ private extension InsightsView {
             case .failed(let message):
                 BLLoadFailureView(
                     message: message,
+                    onRetry: {
+                        store.send(.view(.retryTapped))
+                    },
                     retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
-                ) {
-                    store.send(.view(.retryTapped))
-                }
+                )
                 .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
 
             case .empty:
@@ -162,7 +163,7 @@ private extension InsightsView {
         // segmented picker 的選項無法個別掛 identifier，identifier 掛在 `Picker` 本體，測試端依宣告順序點選選項
         Picker("orders.list.label.period", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) {
-                Text(LocalizedStringKey($0.title))
+                Text($0.title)
                     .tag($0)
             }
         }
@@ -177,10 +178,7 @@ private extension InsightsView {
     func trendCard(stats: InsightsStats) -> some View {
         InsightsTrendCard(
             bars: InsightsFormatters.trendBars(stats.trendBuckets, locale: locale),
-            delta: LocalizedStringKey(
-                InsightsFormatters.trendDelta(stats.trendRatio, locale: locale)
-            ),
-            language: language,
+            delta: InsightsFormatters.trendDelta(stats.trendRatio, locale: locale),
             range: store.insightsDateRange,
             totalProfit: stats.totalProfit,
             trend: BLTrend(delta: stats.trendRatio)

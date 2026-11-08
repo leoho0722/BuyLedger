@@ -215,7 +215,7 @@ struct OrderMergeFeatureTests {
         #expect(sections.map(\.id) == expectedSectionIDs)
     }
 
-    /// 驗證候選清單最後一個區段附上篩選說明，說明寫出同幣別與同客戶的條件
+    /// 驗證候選清單最後一個區段附上篩選說明，並保留等於本地化鍵的客戶名稱
     ///
     /// - Throws: 候選區段為空時丟出測試錯誤
     @Test
@@ -224,17 +224,24 @@ struct OrderMergeFeatureTests {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = .gmt
         let reference = Date(timeIntervalSince1970: 1_770_000_000)
-        let primary = OrderMergeFeatureTestSupport.makeOrder(id: "O1", status: .shipping)
+        let customerName = "orders.list.label.merged"
+        let primary = OrderMergeFeatureTestSupport.makeOrder(
+            id: "O1",
+            status: .shipping,
+            customer: customerName
+        )
         let orders = [
             primary,
             OrderMergeFeatureTestSupport.makeOrder(
                 id: "O2",
                 status: .purchased,
+                customer: customerName,
                 date: reference.addingTimeInterval(-3_600)
             ),
             OrderMergeFeatureTestSupport.makeOrder(
                 id: "O4",
                 status: .purchased,
+                customer: customerName,
                 date: reference.addingTimeInterval(-86_400)
             ),
         ]
@@ -247,15 +254,22 @@ struct OrderMergeFeatureTests {
                 dateContext: OrderDateContext(now: reference, calendar: calendar)
             )
         }
-        let locale = Locale(identifier: "zh-Hant")
-        let sections = state.candidateSections(locale: locale)
+        let sections = state.candidateSections(locale: Locale(identifier: "zh-Hant"))
         let lastSection = try #require(sections.last)
 
         // When
-        let notice = state.candidateFilterNotice(for: lastSection, in: sections, locale: locale)
+        let notice = state.candidateFilterNotice(for: lastSection, in: sections)
 
         // Then
-        #expect(notice == "僅列出與主訂單同幣別 (JPY)、同客戶「Alice」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。")
+        let resource = try #require(notice)
+        #expect(resource.key == "orders.merge.message.candidateFilterNotice")
+        let traditionalChineseNotice = "僅列出與主訂單同幣別 (JPY)、同客戶「orders.list.label.merged」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。"
+        let englishNotice = "Only orders with the same currency (JPY) and customer “orders.list.label.merged” are listed; selecting one opens the confirmation form with merged data."
+        #expect(
+            AppLanguage.resolve(resource, locale: Locale(identifier: "zh-Hant"))
+                == traditionalChineseNotice
+        )
+        #expect(AppLanguage.resolve(resource, locale: Locale(identifier: "en")) == englishNotice)
     }
 
     /// 驗證兩個日期區段中較新的第一個區段不附上篩選說明
@@ -290,12 +304,11 @@ struct OrderMergeFeatureTests {
                 dateContext: OrderDateContext(now: reference, calendar: calendar)
             )
         }
-        let locale = Locale(identifier: "zh-Hant")
-        let sections = state.candidateSections(locale: locale)
+        let sections = state.candidateSections(locale: Locale(identifier: "zh-Hant"))
         let firstSection = try #require(sections.first)
 
         // When
-        let notice = state.candidateFilterNotice(for: firstSection, in: sections, locale: locale)
+        let notice = state.candidateFilterNotice(for: firstSection, in: sections)
 
         // Then
         #expect(notice == nil)

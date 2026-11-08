@@ -58,7 +58,7 @@ struct InsightsFeatureDateContextTests {
         var staleCalendar = TestDependencies.fixedCalendar
         staleCalendar.firstWeekday = 2
         var initial = InsightsFeature.State()
-        initial.loadState = .failed("網路連線失敗")
+        initial.loadState = .failed("orders.general.message.ordersLoadedTry")
         initial.dateContext = InsightsDateContext(
             now: Date(timeIntervalSince1970: 1_777_420_800),
             calendar: staleCalendar

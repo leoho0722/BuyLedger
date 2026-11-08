@@ -13,37 +13,38 @@ struct BLSparkline: View {
 
     // MARK: - Properties
 
-    /// 走勢圖要呈現的數值
-    let data: [Double]
-
-    /// 可選的線條色彩；未提供時使用成功色
-    var tint: Color? = nil
+    /// App 根層依語言偏好注入的 `locale`，用於預設的資料點朗讀文字
+    @Environment(\.locale) private var locale
 
     /// 走勢圖高度
     @ScaledMetric var height: CGFloat = 40
 
-    /// 圖表無障礙描述的 X 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisXTitle: String = "orders.list.label.sequence"
+    /// 圖表無障礙描述的 X 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisXTitle: String? = nil
 
-    /// 圖表無障礙描述的 Y 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisYTitle: String = "orders.detail.label.value"
+    /// 圖表無障礙描述的 Y 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisYTitle: String? = nil
 
-    /// 圖表資料序列名稱；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var seriesName: String = "dashboard.overview.label.trendChart"
+    /// 走勢圖要呈現的數值
+    let data: [Double]
 
-    /// 供輔助技術朗讀的趨勢摘要
-    var summary: LocalizedStringKey? = nil
-
-    /// X 軸資料點的朗讀文字
+    /// X 軸資料點的朗讀文字；未提供時依環境 `locale` 解析預設文字
     ///
     /// - Parameter ordinal: 該資料點在序列中的順位 (1-based)
     /// - Returns: 該資料點的朗讀文字
-    var pointOrdinalDescription: (_ ordinal: Int) -> String = {
-        AppLanguage.traditionalChinese.localizedString(forKey: "common.general.label.pointLd", $0)
-    }
+    var pointOrdinalDescription: ((_ ordinal: Int) -> String)? = nil
+
+    /// 圖表資料序列名稱；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var seriesName: String? = nil
+
+    /// 供輔助技術朗讀的趨勢摘要，以 catalog key 攜帶
+    var summary: LocalizedStringResource? = nil
+
+    /// 可選的線條色彩；未提供時使用成功色
+    var tint: Color? = nil
 
     // MARK: - Body
 
@@ -56,10 +57,10 @@ struct BLSparkline: View {
             .accessibilityChartDescriptor(
                 ChartAccessibilityDescriptor(
                     data: data,
-                    axisXTitle: axisXTitle,
-                    axisYTitle: axisYTitle,
-                    seriesName: seriesName,
-                    pointOrdinalDescription: pointOrdinalDescription
+                    axisXTitle: resolvedTitles.axisX,
+                    axisYTitle: resolvedTitles.axisY,
+                    seriesName: resolvedTitles.series,
+                    pointOrdinalDescription: ordinalDescription
                 )
             )
             .accessibilityHidden(summary == nil)
@@ -121,7 +122,7 @@ private extension BLSparkline {
 
 // MARK: - Nested Types
 
-private extension BLSparkline {
+extension BLSparkline {
 
     /// 走勢圖的輔助技術描述
     struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
@@ -143,6 +144,62 @@ private extension BLSparkline {
         /// - Parameter ordinal: 該資料點在序列中的順位 (1-based)
         /// - Returns: 該資料點的朗讀文字
         let pointOrdinalDescription: (Int) -> String
+
+        /// 圖表無障礙描述的三個文字，已依環境 `locale` 解析
+        struct Titles {
+
+            /// X 軸標題
+            let axisX: String
+
+            /// Y 軸標題
+            let axisY: String
+
+            /// 資料序列名稱
+            let series: String
+        }
+
+        /// 解析無障礙標題；有提供時原樣使用，未提供時依 `locale` 解析預設的 catalog key
+        ///
+        /// - Parameters:
+        ///   - axisX: X 軸標題，未提供時為 `orders.list.label.sequence`
+        ///   - axisY: Y 軸標題，未提供時為 `orders.detail.label.value`
+        ///   - series: 資料序列名稱，未提供時為 `dashboard.overview.label.trendChart`
+        ///   - locale: 目前的 `Locale`
+        /// - Returns: X 軸標題、Y 軸標題與資料序列名稱
+        static func titles(
+            axisX: String?,
+            axisY: String?,
+            series: String?,
+            locale: Locale
+        ) -> Titles {
+            Titles(
+                axisX: axisX ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.list.label.sequence"),
+                    locale: locale
+                ),
+                axisY: axisY ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.detail.label.value"),
+                    locale: locale
+                ),
+                series: series ?? AppLanguage.resolve(
+                    LocalizedStringResource("dashboard.overview.label.trendChart"),
+                    locale: locale
+                )
+            )
+        }
+
+        /// 預設的資料點朗讀文字，依 `locale` 解析 `common.general.label.pointLd` (如「第 2 筆」、「Point 2」)
+        ///
+        /// - Parameters:
+        ///   - ordinal: 該資料點在序列中的順位 (1-based)
+        ///   - locale: 目前的 `Locale`
+        /// - Returns: 該資料點的朗讀文字
+        static func defaultPointOrdinalDescription(_ ordinal: Int, locale: Locale) -> String {
+            AppLanguage.resolve(
+                LocalizedStringResource("common.general.label.pointLd", defaultValue: "\(ordinal)"),
+                locale: locale
+            )
+        }
 
         /// 建立目前資料的輔助技術圖表描述
         ///
@@ -189,6 +246,25 @@ private extension BLSparkline {
 // MARK: - Private Method
 
 private extension BLSparkline {
+
+    /// 依目前的參數與環境 `locale` 解析的三個無障礙文字
+    var resolvedTitles: ChartAccessibilityDescriptor.Titles {
+        ChartAccessibilityDescriptor.titles(
+            axisX: axisXTitle,
+            axisY: axisYTitle,
+            series: seriesName,
+            locale: locale
+        )
+    }
+
+    /// 資料點朗讀文字的解析函式；未提供時依環境 `locale` 解析預設文字
+    var ordinalDescription: (Int) -> String {
+        if let pointOrdinalDescription {
+            return pointOrdinalDescription
+        }
+        let locale = self.locale
+        return { ChartAccessibilityDescriptor.defaultPointOrdinalDescription($0, locale: locale) }
+    }
 
     /// 供輔助技術讀取的趨勢摘要文字
     var accessibilityText: Text {

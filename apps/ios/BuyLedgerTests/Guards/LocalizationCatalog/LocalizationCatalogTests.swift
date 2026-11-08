@@ -26,7 +26,7 @@ struct LocalizationCatalogTests {
     func missingUserVisibleCodeLiterals_程式字面值_皆已收錄於目錄() throws {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
-        let sourceRoot = LocalizationCatalogLiteralScan.iosRootURL.appending(path: "BuyLedger")
+        let sourceRoot = TestPaths.iosRoot.appending(path: "BuyLedger")
 
         // When
         let missingCodeLiterals = try LocalizationCatalogLiteralScan.missingUserVisibleCodeLiterals(
@@ -239,7 +239,7 @@ struct LocalizationCatalogTests {
         )
     }
 
-    /// 驗證已清理的死碼 key (歷史廢棄與重複的通用 key) 不存在於字串目錄
+    /// 驗證已清理的死碼 key (歷史廢棄、重複的通用 key 與無程式引用的條目) 不存在於字串目錄
     ///
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
     @Test
@@ -257,6 +257,7 @@ struct LocalizationCatalogTests {
             "common.general.label.estimatedProfit",
             "common.general.label.returning",
             "common.general.label.workspace",
+            "common.general.message.afterConfirmationLd",
             "common.ui.label.disabled",
             "common.ui.label.eightLowerThan",
             "common.ui.label.primaryAction",
@@ -531,7 +532,7 @@ extension LocalizationCatalogTests {
                 expectedEnglishValue: "Confirm Correction"
             ),
             Self(
-                key: "common.general.message.afterConfirmationLd",
+                key: "orders.lookup.message.confirmRecalculateNotice",
                 expectedEnglishValue: "After confirmation, %lld existing orders will be recalculated for payment flags and profit. Deduction, supplement, or reconciliation status may be cleared. This cannot be undone."
             ),
             Self(
@@ -554,7 +555,7 @@ extension LocalizationCatalogTests {
     /// 規格範例的字串目錄條目，每筆為一組 key、狀態與中英文值，供參數化測試逐一驗證
     struct SpecCatalogEntryExample: Sendable {
 
-        /// 規格範例的兩筆條目，一筆沒有 `extractionState`，一筆為 manual
+        /// 規格範例的三筆條目，兩筆沒有 `extractionState`，一筆為 manual
         static let examples = [
             Self(
                 key: "dashboard.overview.label.revenue",
@@ -564,9 +565,15 @@ extension LocalizationCatalogTests {
             ),
             Self(
                 key: "orders.general.message.orderSavedTry",
-                expectedExtractionState: "manual",
+                expectedExtractionState: nil,
                 expectedChineseValue: "訂單儲存失敗，請稍後再試。",
                 expectedEnglishValue: "The order could not be saved. Try again later."
+            ),
+            Self(
+                key: "orders.general.label.model",
+                expectedExtractionState: "manual",
+                expectedChineseValue: "模型",
+                expectedEnglishValue: "Model"
             ),
         ]
 
@@ -634,7 +641,7 @@ private extension LocalizationCatalogTests {
     /// - Returns: 解析後的頂層 JSON 物件
     /// - Throws: 讀檔失敗，或內容不是 JSON 物件時丟出錯誤
     static func catalogRoot(atRelativePath relativePath: String) throws -> [String: Any] {
-        let catalogURL = LocalizationCatalogLiteralScan.iosRootURL.appending(path: relativePath)
+        let catalogURL = TestPaths.iosRoot.appending(path: relativePath)
         let data = try Data(contentsOf: catalogURL)
         return try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
     }

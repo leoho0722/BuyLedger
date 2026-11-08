@@ -81,6 +81,9 @@ struct AppLockFeature {
     /// 讀取辨識類型與請求本機驗證的 Service
     @Dependency(\.biometricAuthService) private var biometricAuthService
 
+    /// 目前系統語言，供系統驗證對話框的理由文字使用
+    @Dependency(\.locale) private var locale
+
     // MARK: - Body
 
     /// 組合鎖定與解鎖邏輯，不參與設定頁的啟用驗證或持久化
@@ -148,8 +151,13 @@ private extension AppLockFeature {
     /// - Returns: 送出解鎖結果的效果
     func attemptUnlock() -> Effect<Action> {
         let biometricAuthService = biometricAuthService
+        let locale = locale
         return .run { send in
-            let result = await biometricAuthService.authenticate(String(localized: "settings.preference.label.authenticateUnlockApp"))
+            let reason = AppLanguage.resolve(
+                "settings.preference.label.authenticateUnlockApp",
+                locale: locale
+            )
+            let result = await biometricAuthService.authenticate(reason)
             await send(.unlockResponse(result))
         }
     }

@@ -45,9 +45,9 @@ private extension OrderDetailMenu {
                     store.send(.view(.statusChanged(status)))
                 } label: {
                     if status == store.order?.status {
-                        Label(LocalizedStringKey(status.title), systemImage: "checkmark")
+                        Label(status.title, systemImage: "checkmark")
                     } else {
-                        Text(LocalizedStringKey(status.title))
+                        Text(status.title)
                     }
                 }
             }

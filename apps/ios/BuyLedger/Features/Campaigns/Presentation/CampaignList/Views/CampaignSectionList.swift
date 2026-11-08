@@ -118,13 +118,9 @@ private extension CampaignSectionList {
     /// 依日期脈絡與 `locale` 格式化區段與子群組的標題文字
     ///
     /// - Parameter title: 尚未格式化的標題內容
-    /// - Returns: 本地化 key 或依 `locale` 格式化的日期文字
+    /// - Returns: 已依 `locale` 解析的今天、昨天或格式化日期文字
     func titleText(_ title: CampaignSectionTitle) -> Text {
-        Text(
-            LocalizedStringKey(
-                CampaignFormatters.sectionTitle(title, context: dateContext, locale: locale)
-            )
-        )
+        Text(verbatim: CampaignFormatters.sectionTitle(title, context: dateContext, locale: locale))
     }
 
     /// 建立子群組標題列，與其下卡片之間的間距由列內距維持

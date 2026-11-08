@@ -249,12 +249,12 @@ struct OrderListFeatureFilterSheetTests {
         #expect(store.state.destination == nil)
         let summary = store.state.filterSummary(language: .traditionalChinese)
         #expect(summary == "本月 · 2 項類別")
-        #expect(
-            AppLanguage.traditionalChinese.localizedString(
-                forKey: "orders.filter.label.filterSummary",
-                summary
-            ) == "篩選：本月 · 2 項類別"
+        let resource = LocalizedStringResource(
+            "orders.filter.label.filterSummary",
+            defaultValue: "\(summary)"
         )
+        #expect(resource.key == "orders.filter.label.filterSummary")
+        #expect(AppLanguage.traditionalChinese.resolve(resource) == "篩選：本月 · 2 項類別")
     }
 
     /// 驗證提交的集合與已套用值相同時，清單接收套用結果並關閉篩選面板，已套用值保持不變，不委派任何請求

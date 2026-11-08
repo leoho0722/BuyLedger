@@ -59,9 +59,9 @@ struct InsightsFormattersTests {
         #expect(delta == "↓ 100.0%")
     }
 
-    /// 驗證沒有比值時，`trendDelta` 回傳比較說明的本地化鍵，不產生百分比
+    /// 驗證沒有比值時，`trendDelta` 回傳 `nil`，不產生百分比，比較說明由畫面顯示
     @Test
-    func trendDelta_沒有比值_顯示比較說明() {
+    func trendDelta_沒有比值_回傳nil() {
         // Given
         let ratio: Decimal? = nil
 
@@ -69,7 +69,7 @@ struct InsightsFormattersTests {
         let delta = InsightsFormatters.trendDelta(ratio, locale: Self.traditionalChinese)
 
         // Then
-        #expect(delta == "insights.chart.label.comparison")
+        #expect(delta == nil)
     }
 
     /// 驗證走勢段轉成長條圖資料時沿用原標籤，數值為獲利的 `Double`，描述為 NT$ 金額，負值保留負號
@@ -163,7 +163,12 @@ struct InsightsFormattersTests {
                 "orders.detail.label.fees",
             ]
         )
-        #expect(slices.map(\.label) == ["orders.detail.label.itemCost", "orders.detail.label.fees"])
+        #expect(
+            slices.map(\.label.key) == [
+                "orders.detail.label.itemCost",
+                "orders.detail.label.fees",
+            ]
+        )
         #expect(slices.map(\.value) == [300, 1_000])
         #expect(slices.map(\.valueDescription) == ["NT$300", "NT$1,000"])
         #expect(slices.map(\.tone) == [.accent, .orange])

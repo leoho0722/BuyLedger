@@ -12,9 +12,6 @@ struct InsightsHeatmapCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 `locale`
-    @Environment(\.locale) private var locale
-
     /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
     @ScaledMetric(relativeTo: .caption2) private var heatmapCellHeight: CGFloat = 30
 
@@ -48,7 +45,12 @@ private extension InsightsHeatmapCard {
 
     /// 卡片標題，點明涵蓋的週數
     var title: some View {
-        Text(AppLanguage.format("insights.chart.label.heatmapPastWeeks", weekCount, locale: locale))
+        Text(
+            LocalizedStringResource(
+                "insights.chart.label.heatmapPastWeeks",
+                defaultValue: "\(weekCount)"
+            )
+        )
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
             .foregroundStyle(.blLabel)
     }
@@ -66,11 +68,9 @@ private extension InsightsHeatmapCard {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             Text(
-                AppLanguage.format(
+                LocalizedStringResource(
                     "insights.chart.accessibility.heatmapSummary",
-                    weekCount,
-                    maxCount,
-                    locale: locale
+                    defaultValue: "\(weekCount)\(maxCount)"
                 )
             )
         )
@@ -162,20 +162,17 @@ private extension InsightsHeatmapCard {
             .accessibilityHidden(count == 0)
             .accessibilityLabel(
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "insights.chart.accessibility.weekdayWeek",
-                        weekdayLabel,
-                        week,
-                        locale: locale
+                        defaultValue: "\(weekdayLabel)\(week)"
                     )
                 )
             )
             .accessibilityValue(
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "insights.chart.accessibility.orderCount",
-                        count,
-                        locale: locale
+                        defaultValue: "\(count)"
                     )
                 )
             )

@@ -44,6 +44,11 @@ extension SidebarBadgeCounts {
         guard let badgeCount, badgeCount > 0 else {
             return ""
         }
-        return language.localizedString(forKey: "common.general.label.ldProgress", badgeCount)
+        return language.resolve(
+            LocalizedStringResource(
+                "common.general.label.ldProgress",
+                defaultValue: "\(badgeCount)"
+            )
+        )
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// 載入開團並評估自動結單，將資料與載入狀態提供給容器及列表
 @Reducer
@@ -27,7 +28,7 @@ struct CampaignLoadFeature {
         @Shared var hasLoaded: Bool
 
         /// 列表持續顯示的讀取失敗訊息
-        @Shared var errorMessage: String?
+        @Shared var errorMessage: LocalizedStringResource?
 
         /// 建立開團引用與獨立的載入狀態
         ///

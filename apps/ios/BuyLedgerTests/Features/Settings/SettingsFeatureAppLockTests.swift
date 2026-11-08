@@ -16,15 +16,21 @@ import Testing
 struct SettingsFeatureAppLockTests {
 
     /// 驗證 App 鎖定只在身分驗證成功後才啟用，保存完整偏好並送出同一份快照給父層
-    @Test
-    func appLockToggled_驗證成功_啟用儲存並回報偏好() async {
+    ///
+    /// - Parameter testCase: 系統語言與預期解鎖理由
+    @Test(arguments: AuthenticationReasonCase.examples)
+    func appLockToggled_驗證成功_依系統語言傳入理由(testCase: AuthenticationReasonCase) async {
         // Given
+        let reasons = LockIsolated<[String]>([])
         let saved = LockIsolated<[SettingsSnapshot]>([])
-        let initial = SettingsFeature.State(snapshot: Self.appLockSnapshot(isEnabled: false))
-        let expected = Self.appLockSnapshot(isEnabled: true)
+        let initial = SettingsFeature.State(
+            snapshot: Self.appLockSnapshot(isEnabled: false, language: .traditionalChinese)
+        )
+        let expected = Self.appLockSnapshot(isEnabled: true, language: .traditionalChinese)
         let store = TestStore(initialState: initial) {
             SettingsFeature()
         } withDependencies: {
+            $0.locale = testCase.locale
             $0.settingsService.save = { snapshot in
                 saved.withValue {
                     $0.append(snapshot)
@@ -33,8 +39,11 @@ struct SettingsFeatureAppLockTests {
             $0.biometricAuthService.isAvailable = {
                 true
             }
-            $0.biometricAuthService.authenticate = { _ in
-                .success
+            $0.biometricAuthService.authenticate = { reason in
+                reasons.withValue {
+                    $0.append(reason)
+                }
+                return .success
             }
         }
 
@@ -48,6 +57,7 @@ struct SettingsFeatureAppLockTests {
         await store.receive(\.delegate.preferencesChanged, expected)
         await store.finish()
         #expect(saved.value == [expected])
+        #expect(reasons.value == [testCase.expectedReason])
     }
 
     /// 驗證身分驗證失敗或取消時，App 鎖定維持關閉並顯示失敗說明，不儲存偏好，也不回報偏好變更
@@ -59,6 +69,7 @@ struct SettingsFeatureAppLockTests {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()
         } withDependencies: {
+            $0.locale = Locale(identifier: "zh-Hant")
             $0.biometricAuthService.isAvailable = {
                 true
             }
@@ -129,6 +140,30 @@ struct SettingsFeatureAppLockTests {
     }
 }
 
+// MARK: - Nested Types
+
+extension SettingsFeatureAppLockTests {
+
+    /// 系統語言與生物辨識啟用理由的固定案例
+    struct AuthenticationReasonCase: Sendable {
+
+        /// 中英文系統語言的解鎖理由預期
+        static let examples = [
+            Self(locale: Locale(identifier: "zh-Hant"), expectedReason: "驗證身份以解鎖 App"),
+            Self(
+                locale: Locale(identifier: "en"),
+                expectedReason: "Authenticate to unlock the app"
+            ),
+        ]
+
+        /// 注入給 reducer 的系統語言
+        let locale: Locale
+
+        /// catalog 中該語言的理由文字
+        let expectedReason: String
+    }
+}
+
 // MARK: - Private Method
 
 private extension SettingsFeatureAppLockTests {
@@ -165,11 +200,16 @@ private extension SettingsFeatureAppLockTests {
 
     /// 建立帶非預設值的完整偏好快照，供確認 App 鎖定的寫入不遺失其他設定
     ///
-    /// - Parameter isEnabled: 此快照的 App 鎖定啟用值
+    /// - Parameters:
+    ///   - isEnabled: 此快照的 App 鎖定啟用值
+    ///   - language: 此快照的 App 語言
     /// - Returns: 語言、幣別、目標與模型皆固定的偏好快照
-    static func appLockSnapshot(isEnabled: Bool) -> SettingsSnapshot {
+    static func appLockSnapshot(
+        isEnabled: Bool,
+        language: AppLanguage = .english
+    ) -> SettingsSnapshot {
         SettingsSnapshot(
-            language: .english,
+            language: language,
             defaultCurrency: .usd,
             monthlyProfitGoalTWD: 120_000,
             isAISummaryEnabled: true,
