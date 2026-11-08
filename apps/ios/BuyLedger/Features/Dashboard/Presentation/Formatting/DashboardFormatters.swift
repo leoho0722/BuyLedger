@@ -66,35 +66,36 @@ extension DashboardFormatters {
     /// - Parameters:
     ///   - points: 近 12 個月的淨獲利走勢值
     ///   - locale: App 選定、用於金額與敘述的 `locale`
-    /// - Returns: 少於兩點時為無資料的標題鍵，否則為帶點數與最低、最高獲利的敘述
-    static func sparklineSummary(_ points: [Double], locale: Locale) -> LocalizedStringKey {
+    /// - Returns: 少於兩點時為無資料的標題 key，否則為帶點數與最低、最高獲利的敘述
+    static func sparklineSummary(_ points: [Double], locale: Locale) -> LocalizedStringResource {
         guard points.count > 1,
               let first = points.first,
               let last = points.last,
               let lowest = points.min(),
               let highest = points.max() else {
-            return LocalizedStringKey("dashboard.overview.label.monthlyProfitTrend")
+            return LocalizedStringResource("dashboard.overview.label.monthlyProfitTrend")
         }
 
         // 三個方向各自成句、不拼接片語：拼接的句子無法在其他語言正確重組
         let low = BLFormatters.twd(Decimal(lowest), locale: locale)
         let high = BLFormatters.twd(Decimal(highest), locale: locale)
-        let key: String
+        let count = points.count
         if last > first {
-            key = "dashboard.overview.accessibility.trendUp"
-        } else if last < first {
-            key = "dashboard.overview.accessibility.trendDown"
-        } else {
-            key = "dashboard.overview.accessibility.trendFlat"
+            return LocalizedStringResource(
+                "dashboard.overview.accessibility.trendUp",
+                defaultValue: "\(count)\(low)\(high)"
+            )
         }
-        let text = AppLanguage.format(
-            key,
-            points.count,
-            low,
-            high,
-            locale: locale
+        if last < first {
+            return LocalizedStringResource(
+                "dashboard.overview.accessibility.trendDown",
+                defaultValue: "\(count)\(low)\(high)"
+            )
+        }
+        return LocalizedStringResource(
+            "dashboard.overview.accessibility.trendFlat",
+            defaultValue: "\(count)\(low)\(high)"
         )
-        return LocalizedStringKey(text)
     }
 
     /// 將目標進度與目標金額格式化為 hero 卡上的文字，例如 `14% / $80,000`

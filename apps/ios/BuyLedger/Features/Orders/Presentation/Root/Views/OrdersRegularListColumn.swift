@@ -119,7 +119,7 @@ private extension OrdersRegularListColumn {
     ///
     /// - Note: 直向清單欄放不下 inline 標題與多選工具列，筆數改顯示在這裡
     var selectionSummary: some View {
-        Text(verbatim: AppLanguage(locale: locale).localized(store.navigationTitleKey))
+        Text(verbatim: AppLanguage.resolve(store.navigationTitleKey, locale: locale))
             .blTextStyle(.headline)
             .foregroundStyle(.blLabel)
             .accessibilityIdentifier(BLAccessibilityID.Orders.selectionSummary)
@@ -146,7 +146,7 @@ private extension OrdersRegularListColumn {
             icon: "calendar",
             isSelected: store.selectedDatePeriod == period,
             style: .accent,
-            title: LocalizedStringKey(period.title)
+            title: period.title
         ) {
             store.send(.view(.datePeriodSelected(period)))
         }
@@ -245,7 +245,7 @@ private extension OrdersRegularListColumn {
     @ViewBuilder
     var loadFailureMessage: some View {
         if case .failed(let message) = store.loadState {
-            Text(LocalizedStringKey(message))
+            Text(message)
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blRed)
         }

@@ -13,14 +13,15 @@ struct BLLoadFailureView: View {
     // MARK: - Properties
 
     /// 描述失敗原因的訊息
-    let message: String
-
-    /// 重試鍵的 accessibility identifier
-    /// - Note: 未指定時不掛 identifier
-    var retryIdentifier: String? = nil
+    let message: LocalizedStringResource
 
     /// 點擊重試時的 callback
     let onRetry: () -> Void
+
+    /// 重試鍵的 accessibility identifier
+    ///
+    /// - Note: 未指定時不掛 identifier
+    var retryIdentifier: String? = nil
 
     // MARK: - Body
 
@@ -39,8 +40,7 @@ private extension BLLoadFailureView {
         ContentUnavailableView {
             Label("common.ui.label.unableLoad", systemImage: "exclamationmark.triangle")
         } description: {
-            // 訊息是 reducer 給的固定中文詞，須經 catalog 解析、不可 verbatim
-            Text(LocalizedStringKey(message))
+            Text(message)
         } actions: {
             retryButton
         }
@@ -66,5 +66,5 @@ private extension BLLoadFailureView {
 // MARK: - Preview
 
 #Preview("載入失敗") {
-    BLLoadFailureView(message: "orders.general.message.ordersLoadedTry") {}
+    BLLoadFailureView(message: "orders.general.message.ordersLoadedTry", onRetry: {})
 }

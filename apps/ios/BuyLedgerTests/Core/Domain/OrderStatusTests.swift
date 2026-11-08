@@ -34,7 +34,7 @@ struct OrderStatusTests {
         let title = OrderStatus.merged.title
 
         // Then
-        #expect(title == "orders.list.label.merged")
+        #expect(title.key == "orders.list.label.merged")
     }
 
     /// 驗證 `allCases` 的宣告順序中，合併狀態位於已取消之後
@@ -98,7 +98,7 @@ struct OrderStatusTests {
         let title = OrderStatus.pickedUp.title
 
         // Then
-        #expect(title == "common.general.label.pickedUp")
+        #expect(title.key == "common.general.label.pickedUp")
     }
 
     /// 驗證已取貨狀態屬於 `realizedStatuses`

@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 
 @testable import BuyLedger
 
@@ -115,7 +115,7 @@ extension OrdersFeatureTestSupport {
     /// - Parameter message: 預期通知訊息
     /// - Returns: `.alert` case 的目的地狀態，可直接指派給訂單分頁的目的地或暫存通知
     static func failureNotice(
-        _ message: LocalizedStringKey
+        _ message: LocalizedStringResource
     ) -> OrdersPresentationFeature.Destination.State {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
@@ -172,7 +172,7 @@ extension OrdersFeatureTestSupport {
     /// - Parameter message: alert 顯示的錯誤訊息
     /// - Returns: 寫入失敗時顯示的 alert
     static func expectedWriteFailureAlert(
-        _ message: LocalizedStringKey
+        _ message: LocalizedStringResource
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
             TextState("orders.list.label.operationFailed")

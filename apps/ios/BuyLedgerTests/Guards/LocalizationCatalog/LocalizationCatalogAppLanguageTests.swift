@@ -26,18 +26,18 @@ struct LocalizationCatalogAppLanguageTests {
             expectedTitles: ["總覽", "訂單", "開團", "分析", "更多"]
         ),
     ])
-    func localized_根導覽標題_依所選語言解析(scenario: LocalizedTitlesCase) {
+    func resolve_根導覽標題_依所選語言解析(scenario: LocalizedTitlesCase) {
         // Given
-        let titles: [String.LocalizationValue] = [
-            "dashboard.overview.title.overview",
-            "orders.list.title",
-            "orders.detail.title.campaigns",
-            "orders.filter.title.insights",
-            "common.action.label.more",
+        let titles: [LocalizedStringResource] = [
+            LocalizedStringResource("dashboard.overview.title.overview"),
+            LocalizedStringResource("orders.list.title"),
+            LocalizedStringResource("orders.detail.title.campaigns"),
+            LocalizedStringResource("orders.filter.title.insights"),
+            LocalizedStringResource("common.action.label.more"),
         ]
 
         // When
-        let localizedTitles = titles.map { scenario.language.localized($0) }
+        let localizedTitles = titles.map { scenario.language.resolve($0) }
 
         // Then
         #expect(localizedTitles == scenario.expectedTitles)
@@ -66,25 +66,30 @@ struct LocalizationCatalogAppLanguageTests {
             expectedTitles: ["項目", "數值", "順序", "類別", "占比", "長條圖", "圈狀圖", "走勢圖", "第 3 筆"]
         ),
     ])
-    func localized_圖表描述字串_依所選語言解析(scenario: LocalizedTitlesCase) {
+    func resolve_圖表描述字串_依所選語言解析(scenario: LocalizedTitlesCase) {
         // Given
         let ordinal = 3
-        let titles: [String.LocalizationValue] = [
-            "orders.list.label.text",
-            "orders.detail.label.value",
-            "orders.list.label.sequence",
-            "orders.list.label.category2",
-            "orders.detail.label.share",
-            "insights.chart.label.barChart",
-            "orders.detail.label.donutChart",
-            "dashboard.overview.label.trendChart",
-            "common.general.label.pointLd \(ordinal)",
+        let ordinalTitle = LocalizedStringResource(
+            "common.general.label.pointLd",
+            defaultValue: "\(ordinal)"
+        )
+        let titles: [LocalizedStringResource] = [
+            LocalizedStringResource("orders.list.label.text"),
+            LocalizedStringResource("orders.detail.label.value"),
+            LocalizedStringResource("orders.list.label.sequence"),
+            LocalizedStringResource("orders.list.label.category2"),
+            LocalizedStringResource("orders.detail.label.share"),
+            LocalizedStringResource("insights.chart.label.barChart"),
+            LocalizedStringResource("orders.detail.label.donutChart"),
+            LocalizedStringResource("dashboard.overview.label.trendChart"),
+            ordinalTitle,
         ]
 
         // When
-        let localizedTitles = titles.map { scenario.language.localized($0) }
+        let localizedTitles = titles.map { scenario.language.resolve($0) }
 
         // Then
+        #expect(ordinalTitle.key == "common.general.label.pointLd")
         #expect(localizedTitles == scenario.expectedTitles)
     }
 
@@ -99,9 +104,11 @@ struct LocalizationCatalogAppLanguageTests {
         state.selectedOrderIDs = scenario.selectedOrderIDs
 
         // When
-        let title = scenario.language.localized(state.navigationTitleKey)
+        let resource = state.navigationTitleKey
+        let title = scenario.language.resolve(resource)
 
         // Then
+        #expect(resource.key == scenario.expectedKey)
         #expect(title == scenario.expectedTitle)
     }
 
@@ -158,71 +165,98 @@ struct LocalizationCatalogAppLanguageTests {
     ///
     /// - Parameter scenario: 受測語言、輸入情境與固定預期結果
     @Test(arguments: LocalizedKeyExample.examples)
-    func localized_結構化英文Key_依所選語言解析(scenario: LocalizedKeyExample) {
+    func resolve_結構化英文Key_依所選語言解析(scenario: LocalizedKeyExample) {
         // Given
         let key = scenario.key
 
         // When
-        let value = scenario.language.localized(key)
+        let value = scenario.language.resolve(key)
 
         // Then
-        #expect(value == scenario.expectedValue, "Key \(key) 解析失敗")
+        #expect(value == scenario.expectedValue, "Key \(key.key) 解析失敗")
     }
 
     /// 驗證選取筆數依所選語言與單複數正確解析
     ///
     /// - Parameter scenario: 受測語言、輸入情境與固定預期結果
     @Test(arguments: SelectedCountExample.examples)
-    func localizedString_選取筆數_依單複數解析(scenario: SelectedCountExample) {
+    func resolve_選取筆數_依單複數解析(scenario: SelectedCountExample) {
         // Given
         let count = scenario.count
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "orders.batch.message.selectedCount",
-            count
+        let resource = LocalizedStringResource(
+            "orders.batch.message.selectedCount",
+            defaultValue: "\(count)"
         )
+        let value = scenario.language.resolve(resource)
 
         // Then
+        #expect(resource.key == "orders.batch.message.selectedCount")
         #expect(value == scenario.expectedValue)
     }
 
-    /// 驗證照片上限提示依位置參數帶入照片總數、上限與已選數量
+    /// 驗證 `BuyLedger.xctestplan` 鎖定系統語言為 `zh-Hant` 時，resource 依所選 App 語言解析
+    ///
+    /// - Parameter scenario: 受測語言、resource 與固定預期結果
+    /// - Note: 英文案例確認解析依所選 App 語言，而非測試計畫的系統語言
+    /// - Note: 1234 案例固定整數依 App 語言加千分位
+    @Test(arguments: ResolveResourceExample.examples)
+    func resolve_系統語言為正體中文_依所選語言輸出(scenario: ResolveResourceExample) {
+        // Given
+        let resource = scenario.resource
+
+        // When
+        let resolvedValue = scenario.language.resolve(resource)
+        let resolvedValueFromLocale = AppLanguage.resolve(
+            resource,
+            locale: scenario.language.locale
+        )
+
+        // Then
+        #expect(resource.key == scenario.expectedKey)
+        #expect(resolvedValue == scenario.expectedValue)
+        #expect(resolvedValueFromLocale == scenario.expectedValue)
+    }
+
+    /// 驗證合併照片上限 resource 依位置參數帶入照片總數、上限與已選數量
     ///
     /// - Parameter scenario: 受測語言、輸入情境與固定預期結果
     @Test(arguments: [
         LocalizedFragmentsCase(
             language: .traditionalChinese,
             expectedFirstFragment: "共有 10 張照片，超過上限 5 張",
-            expectedSecondFragment: "已選 2/5"
+            expectedSecondFragment: "已選 2/5",
+            expectedValue: "兩筆訂單共有 10 張照片，超過上限 5 張；請勾選要保留的照片 (已選 2/5)，按「繼續」帶入合併後的新訂單。"
         ),
         LocalizedFragmentsCase(
             language: .english,
             expectedFirstFragment: "contain 10 photos, exceeding the limit of 5",
-            expectedSecondFragment: "2/5 selected"
+            expectedSecondFragment: "2/5 selected",
+            expectedValue: "The two orders contain 10 photos, exceeding the limit of 5. Select photos to keep (2/5 selected), then continue."
         ),
     ])
-    func localizedString_照片上限提示_依位置參數帶入數值(scenario: LocalizedFragmentsCase) {
+    func resolve_照片上限提示_依位置參數帶入數值(scenario: LocalizedFragmentsCase) {
         // Given
         let totalCount = 10
         let maximumCount = 5
         let selectedCount = 2
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "orders.merge.message.photoLimitNotice",
-            totalCount,
-            maximumCount,
-            selectedCount,
-            maximumCount
+        let resource = LocalizedStringResource(
+            "orders.merge.message.photoLimitNotice",
+            defaultValue: "\(totalCount)\(maximumCount)\(selectedCount)\(maximumCount)"
         )
+        let value = AppLanguage.resolve(resource, locale: scenario.language.locale)
 
         // Then
+        #expect(resource.key == "orders.merge.message.photoLimitNotice")
+        #expect(value == scenario.expectedValue)
         #expect(value.contains(scenario.expectedFirstFragment))
         #expect(value.contains(scenario.expectedSecondFragment))
     }
 
-    /// 驗證訂購日期標籤依所選語言帶入時間戳字串
+    /// 驗證訂購日期 resource 依所選語言帶入時間戳字串
     ///
     /// - Parameter scenario: 受測語言、輸入情境與固定預期結果
     @Test(arguments: [
@@ -237,48 +271,54 @@ struct LocalizationCatalogAppLanguageTests {
             expectedValue: "Order Date: July 18, 2026 at 12:00 PM"
         ),
     ])
-    func localizedString_訂購日期_帶入時間戳字串(scenario: TimestampCase) {
+    func resolve_訂購日期_帶入時間戳字串(scenario: TimestampCase) {
         // Given
         let timestamp = scenario.timestamp
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "orders.edit.label.orderDateTimestamp",
-            timestamp
+        let resource = LocalizedStringResource(
+            "orders.edit.label.orderDateTimestamp",
+            defaultValue: "\(timestamp)"
         )
+        let value = AppLanguage.resolve(resource, locale: scenario.language.locale)
 
         // Then
+        #expect(resource.key == "orders.edit.label.orderDateTimestamp")
         #expect(value == scenario.expectedValue)
     }
 
-    /// 驗證候選篩選提示依所選語言帶入幣別與客戶名稱
+    /// 驗證候選篩選 resource 依所選語言帶入幣別與客戶名稱
     ///
     /// - Parameter scenario: 受測語言、輸入情境與固定預期結果
     @Test(arguments: [
         LocalizedFragmentsCase(
             language: .traditionalChinese,
             expectedFirstFragment: "JPY",
-            expectedSecondFragment: "Alice"
+            expectedSecondFragment: "Alice",
+            expectedValue: "僅列出與主訂單同幣別 (JPY)、同客戶「Alice」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。"
         ),
         LocalizedFragmentsCase(
             language: .english,
             expectedFirstFragment: "JPY",
-            expectedSecondFragment: "Alice"
+            expectedSecondFragment: "Alice",
+            expectedValue: "Only orders with the same currency (JPY) and customer “Alice” are listed; selecting one opens the confirmation form with merged data."
         ),
     ])
-    func localizedString_候選篩選提示_帶入幣別與客戶名稱(scenario: LocalizedFragmentsCase) {
+    func resolve_候選篩選提示_帶入幣別與客戶名稱(scenario: LocalizedFragmentsCase) {
         // Given
         let currency = "JPY"
         let customer = "Alice"
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "orders.merge.message.candidateFilterNotice",
-            currency,
-            customer
+        let resource = LocalizedStringResource(
+            "orders.merge.message.candidateFilterNotice",
+            defaultValue: "\(currency)\(customer)"
         )
+        let value = AppLanguage.resolve(resource, locale: scenario.language.locale)
 
         // Then
+        #expect(resource.key == "orders.merge.message.candidateFilterNotice")
+        #expect(value == scenario.expectedValue)
         #expect(value.contains(scenario.expectedFirstFragment))
         #expect(value.contains(scenario.expectedSecondFragment))
     }
@@ -290,19 +330,20 @@ struct LocalizationCatalogAppLanguageTests {
         LocalizedValueCase(language: .traditionalChinese, expectedValue: "12 筆 · NT$3,450"),
         LocalizedValueCase(language: .english, expectedValue: "12 orders · NT$3,450"),
     ])
-    func localizedString_開團訂單摘要_帶入筆數與金額(scenario: LocalizedValueCase) {
+    func resolve_開團訂單摘要_帶入筆數與金額(scenario: LocalizedValueCase) {
         // Given
         let count = 12
         let amount = "NT$3,450"
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "dashboard.overview.label.campaignOrderSummary",
-            count,
-            amount
+        let resource = LocalizedStringResource(
+            "dashboard.overview.label.campaignOrderSummary",
+            defaultValue: "\(count)\(amount)"
         )
+        let value = scenario.language.resolve(resource)
 
         // Then
+        #expect(resource.key == "dashboard.overview.label.campaignOrderSummary")
         #expect(value == scenario.expectedValue)
     }
 
@@ -316,17 +357,19 @@ struct LocalizationCatalogAppLanguageTests {
             expectedValue: "Deleting this order from “Alice” cannot be undone."
         ),
     ])
-    func localizedString_刪除訂單確認訊息_帶入客戶名稱(scenario: LocalizedValueCase) {
+    func resolve_刪除訂單確認訊息_帶入客戶名稱(scenario: LocalizedValueCase) {
         // Given
         let customer = "Alice"
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "orders.detail.message.deleteUndoneNotice",
-            customer
+        let resource = LocalizedStringResource(
+            "orders.detail.message.deleteUndoneNotice",
+            defaultValue: "\(customer)"
         )
+        let value = scenario.language.resolve(resource)
 
         // Then
+        #expect(resource.key == "orders.detail.message.deleteUndoneNotice")
         #expect(value == scenario.expectedValue)
         #expect(!value.contains("orders.detail"))
     }
@@ -338,21 +381,23 @@ struct LocalizationCatalogAppLanguageTests {
         DonutSummaryCase(language: .traditionalChinese, expectedItemCost: "商品金額"),
         DonutSummaryCase(language: .english, expectedItemCost: "Item Cost"),
     ])
-    func localizedString_圈狀圖無障礙摘要_帶入項目與金額(scenario: DonutSummaryCase) {
+    func resolve_圈狀圖無障礙摘要_帶入項目與金額(scenario: DonutSummaryCase) {
         // Given
-        let itemCost = scenario.language.localizedString(forKey: "orders.detail.label.itemCost")
+        let itemCostResource = LocalizedStringResource("orders.detail.label.itemCost")
+        let itemCost = scenario.language.resolve(itemCostResource)
         let itemCount = 4
         let amount = "NT$41,011"
 
         // When
-        let value = scenario.language.localizedString(
-            forKey: "common.ui.accessibility.donutChartSummary",
-            itemCount,
-            itemCost,
-            amount
+        let resource = LocalizedStringResource(
+            "common.ui.accessibility.donutChartSummary",
+            defaultValue: "\(itemCount)\(itemCost)\(amount)"
         )
+        let value = scenario.language.resolve(resource)
 
         // Then
+        #expect(itemCostResource.key == "orders.detail.label.itemCost")
+        #expect(resource.key == "common.ui.accessibility.donutChartSummary")
         #expect(value.contains(scenario.expectedItemCost))
         #expect(value.contains("NT$41,011"))
         #expect(!value.contains("orders.detail.label"))
@@ -362,6 +407,128 @@ struct LocalizationCatalogAppLanguageTests {
 // MARK: - Nested Types
 
 extension LocalizationCatalogAppLanguageTests {
+
+    /// 指定語言與 resource 的固定解析結果
+    struct ResolveResourceExample: Sendable {
+
+        /// 每個 resource 在兩種 App 語言下的固定預期案例
+        static let examples = [
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource("common.action.cancel"),
+                expectedKey: "common.action.cancel",
+                expectedValue: "取消"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource("common.action.cancel"),
+                expectedKey: "common.action.cancel",
+                expectedValue: "Cancel"
+            ),
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(0)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "已選 0 筆"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(0)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "0 Selected"
+            ),
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(1)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "已選 1 筆"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(1)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "1 Selected"
+            ),
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(3)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "已選 3 筆"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource(
+                    "orders.batch.message.selectedCount",
+                    defaultValue: "\(3)"
+                ),
+                expectedKey: "orders.batch.message.selectedCount",
+                expectedValue: "3 Selected"
+            ),
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource(
+                    "orders.merge.message.photoLimitNotice",
+                    defaultValue: "\(10)\(5)\(2)\(5)"
+                ),
+                expectedKey: "orders.merge.message.photoLimitNotice",
+                expectedValue: "兩筆訂單共有 10 張照片，超過上限 5 張；請勾選要保留的照片 (已選 2/5)，按「繼續」帶入合併後的新訂單。"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource(
+                    "orders.merge.message.photoLimitNotice",
+                    defaultValue: "\(10)\(5)\(2)\(5)"
+                ),
+                expectedKey: "orders.merge.message.photoLimitNotice",
+                expectedValue: "The two orders contain 10 photos, exceeding the limit of 5. Select photos to keep (2/5 selected), then continue."
+            ),
+            Self(
+                language: .traditionalChinese,
+                resource: LocalizedStringResource(
+                    "common.general.label.pointLd",
+                    defaultValue: "\(1234)"
+                ),
+                expectedKey: "common.general.label.pointLd",
+                expectedValue: "第 1,234 筆"
+            ),
+            Self(
+                language: .english,
+                resource: LocalizedStringResource(
+                    "common.general.label.pointLd",
+                    defaultValue: "\(1234)"
+                ),
+                expectedKey: "common.general.label.pointLd",
+                expectedValue: "Point 1,234"
+            ),
+        ]
+
+        /// 此案例使用的 App 語言
+        let language: AppLanguage
+
+        /// 要解析的 String Catalog resource
+        let resource: LocalizedStringResource
+
+        /// 預期的 String Catalog key
+        let expectedKey: String
+
+        /// 該語言的字面預期文字
+        let expectedValue: String
+    }
 
     /// 同一組標題在指定語言下的固定解析結果
     struct LocalizedTitlesCase: Sendable {
@@ -380,8 +547,12 @@ extension LocalizationCatalogAppLanguageTests {
         static let examples = [
             Self(language: .english, key: "common.action.cancel", expectedValue: "Cancel"),
             Self(language: .traditionalChinese, key: "common.action.cancel", expectedValue: "取消"),
-            Self(language: .english, key: "common.action.confirm", expectedValue: "Confirm"),
-            Self(language: .traditionalChinese, key: "common.action.confirm", expectedValue: "確認"),
+            Self(language: .english, key: "common.action.button.done", expectedValue: "Done"),
+            Self(
+                language: .traditionalChinese,
+                key: "common.action.button.done",
+                expectedValue: "完成"
+            ),
             Self(language: .english, key: "common.date.today", expectedValue: "Today"),
             Self(language: .traditionalChinese, key: "common.date.today", expectedValue: "今天"),
             Self(language: .english, key: "common.date.yesterday", expectedValue: "Yesterday"),
@@ -394,15 +565,11 @@ extension LocalizationCatalogAppLanguageTests {
                 key: "orders.edit.button.save",
                 expectedValue: "儲存"
             ),
-            Self(
-                language: .english,
-                key: "orders.edit.button.saveAndContinue",
-                expectedValue: "Save and Continue"
-            ),
+            Self(language: .english, key: "common.action.button.retry", expectedValue: "Retry"),
             Self(
                 language: .traditionalChinese,
-                key: "orders.edit.button.saveAndContinue",
-                expectedValue: "儲存並繼續新增"
+                key: "common.action.button.retry",
+                expectedValue: "重試"
             ),
             Self(
                 language: .english,
@@ -420,7 +587,7 @@ extension LocalizationCatalogAppLanguageTests {
         let language: AppLanguage
 
         /// 要解析的結構化 Key
-        let key: String.LocalizationValue
+        let key: LocalizedStringResource
 
         /// 該語言的字面預期文字
         let expectedValue: String
@@ -456,37 +623,43 @@ extension LocalizationCatalogAppLanguageTests {
                 language: .english,
                 isSelecting: false,
                 selectedOrderIDs: [],
-                expectedTitle: "Orders"
+                expectedTitle: "Orders",
+                expectedKey: "orders.list.title"
             ),
             Self(
                 language: .traditionalChinese,
                 isSelecting: false,
                 selectedOrderIDs: [],
-                expectedTitle: "訂單"
+                expectedTitle: "訂單",
+                expectedKey: "orders.list.title"
             ),
             Self(
                 language: .english,
                 isSelecting: true,
                 selectedOrderIDs: [],
-                expectedTitle: "Select Orders"
+                expectedTitle: "Select Orders",
+                expectedKey: "orders.edit.label.selectOrders"
             ),
             Self(
                 language: .traditionalChinese,
                 isSelecting: true,
                 selectedOrderIDs: [],
-                expectedTitle: "選擇訂單"
+                expectedTitle: "選擇訂單",
+                expectedKey: "orders.edit.label.selectOrders"
             ),
             Self(
                 language: .english,
                 isSelecting: true,
                 selectedOrderIDs: ["O1", "O2"],
-                expectedTitle: "2 Selected"
+                expectedTitle: "2 Selected",
+                expectedKey: "orders.batch.message.selectedCount"
             ),
             Self(
                 language: .traditionalChinese,
                 isSelecting: true,
                 selectedOrderIDs: ["O1", "O2"],
-                expectedTitle: "已選 2 筆"
+                expectedTitle: "已選 2 筆",
+                expectedKey: "orders.batch.message.selectedCount"
             ),
         ]
 
@@ -501,9 +674,12 @@ extension LocalizationCatalogAppLanguageTests {
 
         /// 該語言的字面預期標題
         let expectedTitle: String
+
+        /// 預期的 String Catalog key
+        let expectedKey: String
     }
 
-    /// 指定語言下須同時保留的兩段本地化文字
+    /// 指定語言下的本地化插值片段與完整預期文字
     struct LocalizedFragmentsCase: Sendable {
 
         /// 此案例使用的 App 語言
@@ -514,6 +690,9 @@ extension LocalizationCatalogAppLanguageTests {
 
         /// 結果須包含的第二段字面文字
         let expectedSecondFragment: String
+
+        /// 依該語言解析後的完整預期文字
+        let expectedValue: String
     }
 
     /// 指定語言下的時間戳輸入與固定預期標籤

@@ -165,6 +165,9 @@ struct SettingsFeature {
     /// 啟用 App 鎖定前檢查裝置支援與要求本機驗證的 Service
     @Dependency(\.biometricAuthService) private var biometricAuthService
 
+    /// 目前系統語言，供系統驗證對話框的理由文字使用
+    @Dependency(\.locale) private var locale
+
     // MARK: - Body
 
     /// 只負責組合 reducer，設定頁自己的邏輯在 `core(state:action:)`
@@ -275,8 +278,13 @@ private extension SettingsFeature {
             return .none
         }
         let biometricAuthService = biometricAuthService
+        let locale = locale
         return .run { send in
-            let result = await biometricAuthService.authenticate(String(localized: "settings.preference.label.authenticateUnlockApp"))
+            let reason = AppLanguage.resolve(
+                "settings.preference.label.authenticateUnlockApp",
+                locale: locale
+            )
+            let result = await biometricAuthService.authenticate(reason)
             await send(.appLockAuthenticationResponse(result))
         }
     }

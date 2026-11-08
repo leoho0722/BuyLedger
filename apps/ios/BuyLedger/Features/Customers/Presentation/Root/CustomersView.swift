@@ -81,7 +81,7 @@ private extension CustomersView {
     @ViewBuilder
     func topThree(topCustomers: [CustomerRank]) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            Text(CustomerFormatters.topCountLabel(locale: locale))
+            Text(CustomerFormatters.topCountLabel())
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
                 .foregroundStyle(.blSecondaryLabel)
                 .textCase(.uppercase)
@@ -104,10 +104,9 @@ private extension CustomersView {
                     .buttonStyle(.plain)
                     .accessibilityHint(
                         Text(
-                            AppLanguage.format(
+                            LocalizedStringResource(
                                 "customers.list.accessibility.viewOrders",
-                                ranked.customer.name,
-                                locale: locale
+                                defaultValue: "\(ranked.customer.name)"
                             )
                         )
                     )
@@ -139,10 +138,9 @@ private extension CustomersView {
                 Spacer()
 
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "customers.list.label.customerCount",
-                        customers.count,
-                        locale: locale
+                        defaultValue: "\(customers.count)"
                     )
                 )
                     .blTextStyle(.footnote)
@@ -161,10 +159,9 @@ private extension CustomersView {
                         .buttonStyle(.plain)
                         .accessibilityHint(
                             Text(
-                                AppLanguage.format(
+                                LocalizedStringResource(
                                     "customers.list.accessibility.viewOrders",
-                                    customer.name,
-                                    locale: locale
+                                    defaultValue: "\(customer.name)"
                                 )
                             )
                         )

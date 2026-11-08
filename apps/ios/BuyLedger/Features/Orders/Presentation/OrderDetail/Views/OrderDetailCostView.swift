@@ -52,12 +52,9 @@ private extension OrderDetailCostView {
             BLCard {
                 VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
-                        axisXTitle: language.localized("orders.list.label.category2"),
-                        axisYTitle: language.localized("orders.detail.label.share"),
                         centerTitle: "orders.detail.label.totalCost",
                         centerValue: OrderFormatters.twd(order.summary.totalCost, locale: locale),
-                        segments: donutSegments,
-                        seriesName: language.localized("orders.detail.label.donutChart")
+                        segments: donutSegments
                     )
                     .frame(maxWidth: .infinity)
 
@@ -86,7 +83,7 @@ private extension OrderDetailCostView {
                     .foregroundStyle(costColor(for: component.tone))
                     .accessibilityHidden(true)
 
-                Text(LocalizedStringKey(component.title))
+                Text(component.title)
                     .blTextStyle(.footnote)
                     .foregroundStyle(.blSecondaryLabel)
             }
@@ -106,16 +103,11 @@ private extension OrderDetailCostView {
 
 private extension OrderDetailCostView {
 
-    /// 由 `\.locale` 換算對應的 App 語言
-    var language: AppLanguage {
-        AppLanguage(locale: locale)
-    }
-
     /// 圈狀圖的區段，由成本切片依語意色調換算為畫面色盤顏色
     var donutSegments: [BLDonutSegment] {
         OrderCostBreakdown.donutSlices(for: components, locale: locale).map {
             BLDonutSegment(
-                label: language.localizedString(forKey: $0.label),
+                label: AppLanguage.resolve($0.label, locale: locale),
                 value: $0.value,
                 color: costColor(for: $0.tone),
                 valueDescription: $0.valueDescription

@@ -29,10 +29,11 @@ struct OrderEditFeatureDisplayTextTests {
         let locale = Locale(identifier: testCase.localeIdentifier)
 
         // When
-        let text = state.itemQuantityDisplayText(testCase.quantity, locale: locale)
+        let resource = state.itemQuantityDisplayText(testCase.quantity)
 
         // Then
-        #expect(text == testCase.expected)
+        #expect(resource.key == "orders.detail.label.quantity")
+        #expect(AppLanguage.resolve(resource, locale: locale) == testCase.expected)
     }
 
     /// 驗證商品明細標題依語言翻譯，並原樣帶入草稿幣別與半形括號
@@ -67,10 +68,11 @@ struct OrderEditFeatureDisplayTextTests {
         let locale = Locale(identifier: testCase.localeIdentifier)
 
         // When
-        let text = state.itemDetailsTitle(locale: locale)
+        let resource = state.itemDetailsTitle()
 
         // Then
-        #expect(text == testCase.expected)
+        #expect(resource.key == "orders.edit.label.itemDetailsCurrency")
+        #expect(AppLanguage.resolve(resource, locale: locale) == testCase.expected)
     }
 
     /// 驗證中英文訂購日期說明沿用注入的 UTC 加十四小時，並保留西曆及秒數
@@ -99,10 +101,11 @@ struct OrderEditFeatureDisplayTextTests {
         let locale = Locale(identifier: testCase.localeIdentifier)
 
         // When
-        let text = state.orderDateTimestampText(locale: locale)
+        let resource = state.orderDateTimestampText(locale: locale)
 
         // Then
-        #expect(text == testCase.expected)
+        #expect(resource.key == "orders.edit.label.orderDateTimestamp")
+        #expect(AppLanguage.resolve(resource, locale: locale) == testCase.expected)
     }
 }
 

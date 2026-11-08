@@ -36,7 +36,7 @@ struct CampaignEditView: View {
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
-            .navigationTitle(Text(LocalizedStringKey(store.navigationTitleKey)))
+            .navigationTitle(Text(store.navigationTitleKey))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 cancelToolbarItem
@@ -67,7 +67,7 @@ private extension CampaignEditView {
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
 
             if let nameConflictMessage = store.nameConflictMessage {
-                Text(LocalizedStringKey(nameConflictMessage))
+                Text(nameConflictMessage)
                     .blTextStyle(.footnote)
                     .foregroundStyle(.blRed)
             }
@@ -91,7 +91,7 @@ private extension CampaignEditView {
 
             Picker("orders.list.label.status", selection: $store.draft.status) {
                 ForEach(CampaignStatus.allCases) {
-                    Text(LocalizedStringKey($0.title))
+                    Text($0.title)
                         .tag($0)
                 }
             }

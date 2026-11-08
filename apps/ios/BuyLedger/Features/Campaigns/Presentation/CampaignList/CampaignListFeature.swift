@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// 開團列表的載入請求、篩選與日期投影
 @Reducer
@@ -36,7 +37,7 @@ struct CampaignListFeature {
         @SharedReader var hasLoaded: Bool
 
         /// 列表內持續顯示的載入失敗訊息
-        @SharedReader var errorMessage: String?
+        @SharedReader var errorMessage: LocalizedStringResource?
 
         /// 最近一次列表出現或重試時記錄的現在時間與行事曆
         var dateContext: CampaignDateContext?
@@ -98,7 +99,7 @@ struct CampaignListFeature {
             orders: SharedReader<[LedgerOrder]>,
             isLoading: SharedReader<Bool> = SharedReader(value: false),
             hasLoaded: SharedReader<Bool> = SharedReader(value: false),
-            errorMessage: SharedReader<String?> = SharedReader(value: nil)
+            errorMessage: SharedReader<LocalizedStringResource?> = SharedReader(value: nil)
         ) {
             self._campaigns = campaigns
             self._orders = orders
@@ -116,7 +117,7 @@ struct CampaignListFeature {
             /// 載入失敗
             ///
             /// - Parameter message: 持續顯示的訊息
-            case failed(String)
+            case failed(LocalizedStringResource)
 
             /// 正在載入或尚未開始載入
             case loading

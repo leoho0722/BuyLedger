@@ -93,12 +93,12 @@ private extension CampaignRow {
 
     /// 訂單筆數與應收金額
     var ordersSummary: some View {
-        Text(
-            AppLanguage.format(
+        let receivables = CampaignFormatters.twd(summary.receivables, locale: locale)
+
+        return Text(
+            LocalizedStringResource(
                 "common.general.label.ldOrders2",
-                summary.orderCount,
-                CampaignFormatters.twd(summary.receivables, locale: locale),
-                locale: locale
+                defaultValue: "\(summary.orderCount)\(receivables)"
             )
         )
         .blTextStyle(.subhead)

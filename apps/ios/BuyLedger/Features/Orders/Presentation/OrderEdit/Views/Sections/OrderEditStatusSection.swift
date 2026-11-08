@@ -38,7 +38,7 @@ private extension OrderEditStatusSection {
     var fields: some View {
         Picker("orders.list.label.status", selection: $store.draft.status) {
             ForEach(store.availableStatuses) {
-                Text(LocalizedStringKey($0.title))
+                Text($0.title)
                     .tag($0)
             }
         }

@@ -59,9 +59,9 @@ private extension OrdersToolbarContent {
     /// 切換為全選目前結果或清除選取
     var selectionButton: some View {
         Button(
-            LocalizedStringKey(
-                isAllFilteredSelected ? "common.action.button.clear" : "orders.list.label.selectAll"
-            )
+            isAllFilteredSelected
+                ? LocalizedStringResource("common.action.button.clear")
+                : LocalizedStringResource("orders.list.label.selectAll")
         ) {
             store.send(.view(isAllFilteredSelected ? .clearSelectionTapped : .selectAllTapped))
         }
@@ -73,7 +73,7 @@ private extension OrdersToolbarContent {
         Menu {
             // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
             ForEach(OrdersBatchOperations.targetStatuses()) { status in
-                Button(LocalizedStringKey(status.title)) {
+                Button(status.title) {
                     store.send(.view(.batchStatusChanged(status)))
                 }
             }

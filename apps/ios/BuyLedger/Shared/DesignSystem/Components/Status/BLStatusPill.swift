@@ -12,38 +12,54 @@ struct BLStatusPill: View {
 
     // MARK: - Properties
 
-    /// 狀態膠囊垂直內距，隨字級縮放
-    @ScaledMetric(relativeTo: .caption) private var verticalPadding: CGFloat = 3
-
     /// 狀態膠囊水平內距，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var horizontalPadding: CGFloat = 9
 
     /// 狀態點直徑，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var indicatorSize: CGFloat = 5
 
-    /// 狀態膠囊顯示的文字
-    let title: String
-
-    /// 狀態膠囊使用的語意狀態
-    let tone: BLTone
+    /// 狀態膠囊垂直內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var verticalPadding: CGFloat = 3
 
     /// 是否顯示左側狀態點
-    let isIndicatorVisible: Bool
+    private let isIndicatorVisible: Bool
+
+    /// 狀態膠囊顯示的文字
+    private let title: Title
+
+    /// 狀態膠囊使用的語意狀態
+    private let tone: BLTone
 
     // MARK: - Init
 
-    /// 建立狀態膠囊
+    /// 建立依畫面語言顯示文字的狀態膠囊
     ///
     /// - Parameters:
-    ///   - title: 狀態膠囊顯示的文字
+    ///   - title: 狀態膠囊顯示的本地化文字
     ///   - tone: 狀態膠囊使用的語意狀態
     ///   - isIndicatorVisible: 是否顯示左側狀態點
     init(
-        _ title: String,
+        _ title: LocalizedStringResource,
         tone: BLTone = .neutral,
         showsIndicator isIndicatorVisible: Bool = true
     ) {
-        self.title = title
+        self.title = .localized(title)
+        self.tone = tone
+        self.isIndicatorVisible = isIndicatorVisible
+    }
+
+    /// 建立原樣顯示文字的狀態膠囊
+    ///
+    /// - Parameters:
+    ///   - title: 不需本地化的狀態膠囊文字
+    ///   - tone: 狀態膠囊使用的語意狀態
+    ///   - isIndicatorVisible: 是否顯示左側狀態點
+    init(
+        verbatim title: String,
+        tone: BLTone = .neutral,
+        showsIndicator isIndicatorVisible: Bool = true
+    ) {
+        self.title = .verbatim(title)
         self.tone = tone
         self.isIndicatorVisible = isIndicatorVisible
     }
@@ -70,7 +86,7 @@ private extension BLStatusPill {
                     .accessibilityHidden(true)
             }
 
-            Text(LocalizedStringKey(title))
+            titleText
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
         }
         .padding(.vertical, verticalPadding)
@@ -79,6 +95,37 @@ private extension BLStatusPill {
         .background(tone.background)
         .clipShape(Capsule())
         .accessibilityElement(children: .combine)
+    }
+
+    /// 依文字來源選擇本地化或原文顯示方式
+    @ViewBuilder
+    var titleText: some View {
+        switch title {
+        case .localized(let resource):
+            Text(resource)
+
+        case .verbatim(let text):
+            Text(verbatim: text)
+        }
+    }
+}
+
+// MARK: - Nested Types
+
+private extension BLStatusPill {
+
+    /// 狀態膠囊文字的來源與顯示方式
+    enum Title {
+
+        /// 依畫面語言顯示的本地化文字
+        ///
+        /// - Parameter localizedStringResource: 要顯示的本地化文字
+        case localized(LocalizedStringResource)
+
+        /// 不進行本地化的原始文字
+        ///
+        /// - Parameter string: 要原樣顯示的文字
+        case verbatim(String)
     }
 }
 
@@ -96,14 +143,14 @@ private extension BLStatusPill {
 
     VStack(alignment: .leading, spacing: BLSpacing.small) {
         HStack(spacing: BLSpacing.small) {
-            ForEach(0..<3, id: \.self) { index in
-                BLStatusPill(samples[index].0, tone: samples[index].1)
+            ForEach(0..<3, id: \.self) {
+                BLStatusPill(verbatim: samples[$0].0, tone: samples[$0].1)
             }
         }
 
         HStack(spacing: BLSpacing.small) {
-            ForEach(3..<samples.count, id: \.self) { index in
-                BLStatusPill(samples[index].0, tone: samples[index].1)
+            ForEach(3..<samples.count, id: \.self) {
+                BLStatusPill(verbatim: samples[$0].0, tone: samples[$0].1)
             }
         }
     }

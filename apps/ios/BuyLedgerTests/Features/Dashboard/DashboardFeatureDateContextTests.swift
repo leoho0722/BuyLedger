@@ -58,7 +58,7 @@ struct DashboardFeatureDateContextTests {
         var staleCalendar = TestDependencies.fixedCalendar
         staleCalendar.firstWeekday = 2
         var initial = DashboardFeature.State()
-        initial.loadState = .failed("網路連線失敗")
+        initial.loadState = .failed("orders.general.message.ordersLoadedTry")
         initial.dateContext = DashboardDateContext(
             now: Date(timeIntervalSince1970: 1_777_420_800),
             calendar: staleCalendar
@@ -91,7 +91,7 @@ struct DashboardFeatureDateContextTests {
     func retryTapped_載入失敗隔天早上重試_記錄日期先更新且月份數字取五月() async {
         // Given
         var initial = DashboardFeature.State()
-        initial.loadState = .failed("網路連線失敗")
+        initial.loadState = .failed("orders.general.message.ordersLoadedTry")
         initial.orders = [
             DashboardStatsTestSupport.makeOrder(
                 id: "A",

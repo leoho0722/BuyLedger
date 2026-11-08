@@ -8,9 +8,7 @@
 import Foundation
 
 /// 訂單列表使用的日期區間篩選
-enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
-
-    // MARK: - Cases
+enum OrderDatePeriod: Hashable, CaseIterable {
 
     /// 顯示全部日期
     case all
@@ -24,26 +22,7 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
     /// 僅顯示上個月的訂單
     case lastMonth
 
-    // MARK: - Identifiable Properties
-
-    /// 篩選選項的穩定識別值
-    var id: String { rawIdentifier }
-
-    /// 篩選選項在 UI 與測試中使用的字串識別值
-    private var rawIdentifier: String {
-        switch self {
-        case .all:
-            "all"
-        case .thisWeek:
-            "thisWeek"
-        case .thisMonth:
-            "thisMonth"
-        case .lastMonth:
-            "lastMonth"
-        }
-    }
-
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 訂單瀏覽列表中提供的固定順序
     static let orderBrowsingCases: [OrderDatePeriod] = [
@@ -52,18 +31,24 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
         .thisMonth,
         .lastMonth,
     ]
+}
 
-    // MARK: - Display Properties
+// MARK: - Computed Properties
+
+extension OrderDatePeriod {
 
     /// 顯示在篩選列中的標題
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .all:
             "orders.general.label.allTime"
+
         case .thisWeek:
             "orders.list.label.week"
+
         case .thisMonth:
             "orders.list.label.month"
+
         case .lastMonth:
             "orders.general.label.lastMonth"
         }
@@ -75,16 +60,13 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 extension OrderDatePeriod {
 
     /// 判斷指定日期是否在此區間內
+    ///
     /// - Parameters:
     ///   - date: 要判斷的訂單日期
     ///   - referenceDate: 計算「本週/本月」等相對區間的基準日，通常為現在時間
     ///   - calendar: 用來計算區間的曆法
     /// - Returns: 若 `.all` 永遠回傳 `true`，否則只在 `date` 落於區間內時回傳 `true`
-    func includes(
-        _ date: Date,
-        referenceDate: Date,
-        calendar: Calendar
-    ) -> Bool {
+    func includes(_ date: Date, referenceDate: Date, calendar: Calendar) -> Bool {
         guard let range = dateRange(referenceDate: referenceDate, calendar: calendar) else {
             return true
         }
@@ -93,6 +75,7 @@ extension OrderDatePeriod {
     }
 
     /// 回傳此區間在指定基準日下的時間範圍
+    ///
     /// - Parameters:
     ///   - referenceDate: 計算區間的基準日
     ///   - calendar: 用來計算區間的曆法
@@ -103,7 +86,10 @@ extension OrderDatePeriod {
             return nil
 
         case .thisWeek:
-            guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: referenceDate) else {
+            guard let weekInterval = calendar.dateInterval(
+                of: .weekOfYear,
+                for: referenceDate
+            ) else {
                 return nil
             }
 
@@ -127,6 +113,38 @@ extension OrderDatePeriod {
             }
 
             return lastMonthStart..<thisMonthInterval.start
+        }
+    }
+}
+
+// MARK: - Identifiable
+
+extension OrderDatePeriod: Identifiable {
+
+    /// 篩選選項的穩定識別值
+    var id: String {
+        rawIdentifier
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrderDatePeriod {
+
+    /// 篩選選項在 UI 與測試中使用的字串識別值
+    var rawIdentifier: String {
+        switch self {
+        case .all:
+            "all"
+
+        case .thisWeek:
+            "thisWeek"
+
+        case .thisMonth:
+            "thisMonth"
+
+        case .lastMonth:
+            "lastMonth"
         }
     }
 }

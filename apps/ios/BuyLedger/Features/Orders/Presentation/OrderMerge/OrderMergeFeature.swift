@@ -80,22 +80,18 @@ struct OrderMergeFeature {
         /// - Parameters:
         ///   - section: 要查詢說明的候選區段
         ///   - sections: 同一次畫面更新已取得的全部候選區段
-        ///   - locale: 說明文字使用的語系
-        /// - Returns: 最後一個區段的篩選說明；其他區段為 `nil`
+        /// - Returns: 最後一個區段的篩選說明 resource；其他區段為 `nil`
         /// - Note: 傳入已取得的區段，避免每個區段都重新篩選與分組
         func candidateFilterNotice(
             for section: OrderDateSection,
-            in sections: [OrderDateSection],
-            locale: Locale
-        ) -> String? {
+            in sections: [OrderDateSection]
+        ) -> LocalizedStringResource? {
             guard section.id == sections.last?.id else {
                 return nil
             }
-            return AppLanguage.format(
+            return LocalizedStringResource(
                 "orders.merge.message.candidateFilterNotice",
-                primary.currency.rawValue,
-                primary.customer.name,
-                locale: locale
+                defaultValue: "\(primary.currency.rawValue)\(primary.customer.name)"
             )
         }
 

@@ -55,7 +55,7 @@ private extension BLTagPill {
 
             // 不可用 `.fixedSize(horizontal:)`：長類別文字會被迫單行、撐爆版面寬度
             // 讓膠囊隨文字換行增高
-            BLStatusPill(text, tone: .neutral, showsIndicator: false)
+            BLStatusPill(verbatim: text, tone: .neutral, showsIndicator: false)
                 .lineLimit(nil)
                 .fixedSize(horizontal: false, vertical: true)
         }

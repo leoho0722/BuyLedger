@@ -34,7 +34,7 @@ struct OrderCostBreakdownTests {
 
         // Then
         #expect(
-            components.map(\.title) == [
+            components.map(\.title.key) == [
                 "orders.detail.label.itemCost",
                 "orders.detail.label.cardFee",
                 "orders.detail.label.platformFee",
@@ -84,7 +84,7 @@ struct OrderCostBreakdownTests {
         let components = OrderCostBreakdown.components(for: order)
 
         // Then
-        #expect(components.map(\.title) == titles)
+        #expect(components.map(\.title.key) == titles)
         #expect(components.map(\.id) == titles)
         #expect(components.map(\.value) == [100, 10, 20, 30, 11, 22, 33])
         #expect(components.map(\.tone) == tones)
@@ -134,7 +134,7 @@ struct OrderCostBreakdownTests {
 
         // Then
         #expect(
-            components.map(\.title) == [
+            components.map(\.title.key) == [
                 "orders.detail.label.itemCost",
                 "orders.detail.label.paymentProcessingFee",
                 "orders.detail.label.internationalShipping",
@@ -156,20 +156,21 @@ struct OrderCostBreakdownTests {
 
         // Then
         #expect(
-            slices == [
-                OrderCostBreakdown.DonutSlice(
-                    label: "orders.detail.label.itemCost",
-                    value: 1_200,
-                    valueDescription: "NT$1,200",
-                    tone: .accent
-                ),
-                OrderCostBreakdown.DonutSlice(
-                    label: "orders.detail.label.cardFee",
-                    value: 300,
-                    valueDescription: "NT$300",
-                    tone: .orange
-                ),
+            slices.map(\.label.key) == [
+                "orders.detail.label.itemCost",
+                "orders.detail.label.cardFee",
             ]
+        )
+        #expect(slices.map(\.value) == [1_200, 300])
+        #expect(slices.map(\.valueDescription) == ["NT$1,200", "NT$300"])
+        #expect(slices.map(\.tone) == [.accent, .orange])
+        #expect(
+            slices.map { AppLanguage.resolve($0.label, locale: Locale(identifier: "zh-Hant")) }
+                == ["商品金額", "刷卡手續費"]
+        )
+        #expect(
+            slices.map { AppLanguage.resolve($0.label, locale: Locale(identifier: "en")) }
+                == ["Item Cost", "Card Fee"]
         )
     }
 
@@ -185,6 +186,43 @@ struct OrderCostBreakdownTests {
 
         // Then
         #expect(slices.isEmpty)
+    }
+
+    /// 驗證成本標題 key 經 AppLanguage 解析成兩種語言的既有目錄文字
+    ///
+    /// - Parameter scenario: 測試語言與對應的預期翻譯
+    @Test(arguments: [
+        CostTitleLocalizationCase(language: .traditionalChinese, expected: "國內運費"),
+        CostTitleLocalizationCase(language: .english, expected: "Local Shipping"),
+    ])
+    func componentTitle_不同語言_解析既有成本翻譯(scenario: CostTitleLocalizationCase) {
+        // Given
+        let component = OrderCostBreakdown.Component(
+            title: "orders.detail.label.localShipping",
+            value: 1,
+            tone: .indigo
+        )
+
+        // When
+        let title = scenario.language.resolve(component.title)
+
+        // Then
+        #expect(title == scenario.expected)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderCostBreakdownTests {
+
+    /// 成本標題本地化測試使用的語言與預期文字
+    struct CostTitleLocalizationCase: Sendable {
+
+        /// 測試使用的 App 語言
+        let language: AppLanguage
+
+        /// 該語言的目錄翻譯
+        let expected: String
     }
 }
 

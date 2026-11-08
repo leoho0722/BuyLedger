@@ -71,9 +71,7 @@ struct OrdersPresentationFeature {
         ) -> Effect<Action> {
             if !isStored {
                 let message = OrderWriteOperations.Failure.option(request.kind).message
-                return .send(
-                    .noticeRequested(.writeFailure(TextState(LocalizedStringKey(message))))
-                )
+                return .send(.noticeRequested(.writeFailure(TextState(message))))
             }
             guard destination?.edit?.id == request.id else {
                 return .none

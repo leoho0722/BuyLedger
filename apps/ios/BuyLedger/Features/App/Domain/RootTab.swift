@@ -5,6 +5,8 @@
 //  Created by Leo Ho on 2026/5/1.
 //
 
+import Foundation
+
 /// App 主要導覽分頁
 enum RootTab: String, CaseIterable, Sendable {
 
@@ -29,7 +31,7 @@ enum RootTab: String, CaseIterable, Sendable {
 extension RootTab {
 
     /// 分頁列與側邊欄顯示的標題
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .dashboard:
             "dashboard.overview.title.overview"

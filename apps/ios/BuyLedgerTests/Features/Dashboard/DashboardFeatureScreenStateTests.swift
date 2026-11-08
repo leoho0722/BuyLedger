@@ -18,13 +18,13 @@ struct DashboardFeatureScreenStateTests {
     func screenState_失敗且無日期_顯示失敗畫面() {
         // Given
         var state = DashboardFeature.State()
-        state.loadState = .failed("載入失敗")
+        state.loadState = .failed("orders.general.message.ordersLoadedTry")
 
         // When
         let screenState = state.screenState
 
         // Then
-        #expect(screenState == .failed("載入失敗"))
+        #expect(screenState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
     /// 驗證載入中時，即使已記錄日期，`screenState` 仍為載入骨架

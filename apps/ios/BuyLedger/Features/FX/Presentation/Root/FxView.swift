@@ -315,7 +315,7 @@ private extension FxView {
     NavigationStack {
         FxView(
             store: Store(
-                initialState: FxFeature.State(errorMessage: "fx.rates.message.exchangeRatesLoaded")
+                initialState: FxFeature.State(errorMessage: "fx.rates.message.networkErrorOccurred")
             ) {
                 FxFeature()
             }

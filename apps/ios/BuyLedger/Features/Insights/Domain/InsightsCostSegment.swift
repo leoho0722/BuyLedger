@@ -12,8 +12,8 @@ struct InsightsCostSegment: Equatable {
 
     // MARK: - Properties
 
-    /// 顯示在圖例的標籤，為本地化 key
-    let label: String
+    /// 顯示在圖例的本地化標籤
+    let label: LocalizedStringResource
 
     /// 此區塊的金額
     let value: Decimal
@@ -47,8 +47,8 @@ extension InsightsCostSegment {
 
 extension InsightsCostSegment: Identifiable {
 
-    /// 用標籤當識別值
+    /// 用本地化標籤的 key 當識別值
     var id: String {
-        label
+        label.key
     }
 }

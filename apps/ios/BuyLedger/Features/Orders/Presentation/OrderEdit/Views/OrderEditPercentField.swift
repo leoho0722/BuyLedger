@@ -25,7 +25,7 @@ struct OrderEditPercentField: View {
     let identifier: String?
 
     /// 欄位的本地化標題
-    let title: String
+    let title: LocalizedStringResource
 
     /// 草稿中 0 至 1 比例值的雙向綁定
     let value: Binding<Decimal>
@@ -58,7 +58,7 @@ private extension OrderEditPercentField {
 
     /// 長標題換行並撐高整列
     var fieldTitle: some View {
-        Text(LocalizedStringKey(title))
+        Text(title)
             .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -66,7 +66,6 @@ private extension OrderEditPercentField {
     var numberField: some View {
         HStack(spacing: BLSpacing.extraSmall) {
             BLNumberField(
-                "",
                 value: OrderPercentConversion.percentageBinding(for: value),
                 format: .number.precision(.fractionLength(2)).grouping(.never),
                 focus: focusedField,

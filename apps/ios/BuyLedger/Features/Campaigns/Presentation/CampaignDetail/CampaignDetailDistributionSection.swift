@@ -88,7 +88,9 @@ private extension CampaignDetailDistributionSection {
     /// - Parameter row: 分貨列
     /// - Returns: 客戶分貨列的標題
     func distributionLabel(_ row: CampaignDistributionRow) -> some View {
-        HStack(spacing: BLSpacing.small) {
+        let totalAmount = CampaignFormatters.twd(row.totalAmount, locale: locale)
+
+        return HStack(spacing: BLSpacing.small) {
             Image(systemName: row.isFullyReceived ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(row.isFullyReceived ? .blGreen : .blSecondaryLabel)
                 .accessibilityLabel(Text(row.receiptAccessibilityLabel))
@@ -104,11 +106,9 @@ private extension CampaignDetailDistributionSection {
             Spacer(minLength: 0)
 
             Text(
-                AppLanguage.format(
+                LocalizedStringResource(
                     "campaigns.detail.label.quantityWithAmount",
-                    row.totalQuantity,
-                    CampaignFormatters.twd(row.totalAmount, locale: locale),
-                    locale: locale
+                    defaultValue: "\(row.totalQuantity)\(totalAmount)"
                 )
             )
             .blTextStyle(.caption)
@@ -152,7 +152,7 @@ private extension CampaignDetailDistributionSection {
             onReceiptToggle(order.id)
         } label: {
             Label {
-                Text(LocalizedStringKey(order.paymentReceiptStatus.title))
+                Text(order.paymentReceiptStatus.title)
             } icon: {
                 Image(
                     systemName: order.paymentReceiptStatus == .received

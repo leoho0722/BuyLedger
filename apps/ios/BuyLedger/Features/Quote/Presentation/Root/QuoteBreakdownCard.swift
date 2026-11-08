@@ -126,7 +126,7 @@ private extension QuoteBreakdownCard {
     struct BreakdownItem: Identifiable {
 
         /// 拆解項目名稱
-        let label: String
+        let label: LocalizedStringResource
 
         /// 拆解項目金額
         let value: Decimal
@@ -134,9 +134,9 @@ private extension QuoteBreakdownCard {
         /// 進度條與分類的識別色
         let color: Color
 
-        /// 以標籤作為穩定識別值
+        /// 以標籤的本地化鍵作為穩定識別值
         var id: String {
-            label
+            label.key
         }
     }
 }

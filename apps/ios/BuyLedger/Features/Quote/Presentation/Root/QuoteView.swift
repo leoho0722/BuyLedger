@@ -131,17 +131,15 @@ private extension QuoteView {
 
             case .estimate(let profitTWD, let marginPercent):
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "quote.calculator.label.estimatedProfit",
-                        BLFormatters.twd(profitTWD, locale: locale),
-                        BLFormatters.percent(scaled: marginPercent, locale: locale),
-                        locale: locale
+                        defaultValue: "\(BLFormatters.twd(profitTWD, locale: locale))\(BLFormatters.percent(scaled: marginPercent, locale: locale))"
                     )
                 )
                 .blTextStyle(.footnote)
 
             case .marginTooHigh:
-                Text("quote.calculator.message.targetMarginMust")
+                Text(QuoteFormatters.targetMarginLimitMessage(locale: locale))
                     .blTextStyle(.footnote)
             }
         }

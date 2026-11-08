@@ -42,12 +42,12 @@ extension BLFormatters {
     ) -> String {
         let language = AppLanguage(locale: locale)
         if calendar.isDate(day, inSameDayAs: now) {
-            return language.localized("common.date.today")
+            return language.resolve("common.date.today")
         }
 
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: now),
            calendar.isDate(day, inSameDayAs: yesterday) {
-            return language.localized("common.date.yesterday")
+            return language.resolve("common.date.yesterday")
         }
 
         let isSameYear = calendar.component(.year, from: day)

@@ -19,16 +19,56 @@ struct BLProgressView: View {
     @Environment(\.locale) private var locale
 
     /// 可選的進度列色彩；未提供時使用主強調色
-    var tint: Color? = nil
+    private let tint: Color?
 
     /// 進度列左側顯示的標題
-    let title: String
+    private let title: Title
 
     /// 右側顯示文字；未提供時顯示百分比
-    var trailingText: String? = nil
+    private let trailingText: String?
 
     /// 進度值，建議範圍為 `0...1`
-    let value: Double
+    private let value: Double
+
+    // MARK: - Init
+
+    /// 建立依畫面語言顯示標題的進度列
+    ///
+    /// - Parameters:
+    ///   - tint: 進度列色彩；未提供時使用主強調色
+    ///   - title: 進度列左側顯示的本地化文字
+    ///   - trailingText: 右側原樣顯示的文字；未提供時顯示百分比
+    ///   - value: 進度值，建議範圍為 `0...1`
+    init(
+        tint: Color? = nil,
+        title: LocalizedStringResource,
+        trailingText: String? = nil,
+        value: Double
+    ) {
+        self.tint = tint
+        self.title = .localized(title)
+        self.trailingText = trailingText
+        self.value = value
+    }
+
+    /// 建立原樣顯示標題的進度列
+    ///
+    /// - Parameters:
+    ///   - tint: 進度列色彩；未提供時使用主強調色
+    ///   - title: 不需本地化的進度列標題
+    ///   - trailingText: 右側原樣顯示的文字；未提供時顯示百分比
+    ///   - value: 進度值，建議範圍為 `0...1`
+    init(
+        tint: Color? = nil,
+        verbatimTitle title: String,
+        trailingText: String? = nil,
+        value: Double
+    ) {
+        self.tint = tint
+        self.title = .verbatim(title)
+        self.trailingText = trailingText
+        self.value = value
+    }
 
     // MARK: - Body
 
@@ -51,7 +91,7 @@ private extension BLProgressView {
     /// 左側顯示標題，右側顯示目前值
     var header: some View {
         HStack {
-            Text(LocalizedStringKey(title))
+            titleText
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .foregroundStyle(.blLabel)
 
@@ -64,10 +104,16 @@ private extension BLProgressView {
         }
     }
 
-    /// 以水平進度條顯示完成比例
-    var progressBar: some View {
-        ProgressView(value: clampedValue)
-            .progressViewStyle(BLProgressViewStyle(tint: tint))
+    /// 依標題來源選擇本地化或原文顯示方式
+    @ViewBuilder
+    var titleText: some View {
+        switch title {
+        case .localized(let resource):
+            Text(resource)
+
+        case .verbatim(let text):
+            Text(verbatim: text)
+        }
     }
 
     /// 右側的當前值標籤：有自訂文字時優先，否則顯示百分比
@@ -81,6 +127,31 @@ private extension BLProgressView {
         } else {
             Text(BLFormatters.percent(Decimal(clampedValue), locale: locale, fractionLength: 0))
         }
+    }
+
+    /// 以水平進度條顯示完成比例
+    var progressBar: some View {
+        ProgressView(value: clampedValue)
+            .progressViewStyle(BLProgressViewStyle(tint: tint))
+    }
+}
+
+// MARK: - Nested Types
+
+private extension BLProgressView {
+
+    /// 進度列標題的來源與顯示方式
+    enum Title {
+
+        /// 依畫面語言顯示的本地化文字
+        ///
+        /// - Parameter localizedStringResource: 要顯示的本地化文字
+        case localized(LocalizedStringResource)
+
+        /// 不進行本地化的原始文字
+        ///
+        /// - Parameter string: 要原樣顯示的標題
+        case verbatim(String)
     }
 }
 
@@ -98,11 +169,11 @@ private extension BLProgressView {
 
 #Preview("進度列") {
     VStack(spacing: BLSpacing.large) {
-        BLProgressView(title: "月預算", value: 0.42)
+        BLProgressView(verbatimTitle: "月預算", value: 0.42)
 
-        BLProgressView(tint: .blGreen, title: "固定支出", value: 0.68)
+        BLProgressView(tint: .blGreen, verbatimTitle: "固定支出", value: 0.68)
 
-        BLProgressView(tint: .blOrange, title: "超支警示", value: 0.91)
+        BLProgressView(tint: .blOrange, verbatimTitle: "超支警示", value: 0.91)
     }
     .padding()
 }

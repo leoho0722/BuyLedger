@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -140,7 +140,7 @@ struct OrdersContainerPlanWritesTests {
 
         // Then
         let expected = OrdersPresentationFeature.Destination.State.alert(
-            Self.expectedWriteFailureAlert(LocalizedStringKey(scenario.message))
+            Self.expectedWriteFailureAlert(scenario.message)
         )
         #expect(outcome.shouldPopUnavailableDetails == scenario.shouldPopUnavailableDetails)
         #expect(outcome.notice == expected)
@@ -175,7 +175,7 @@ extension OrdersContainerPlanWritesTests {
         let shouldPopUnavailableDetails: Bool
 
         /// 通知內容的本地化訊息
-        let message: String
+        let message: LocalizedStringResource
     }
 }
 
@@ -188,7 +188,7 @@ private extension OrdersContainerPlanWritesTests {
     /// - Parameter message: 通知顯示的本地化訊息
     /// - Returns: `AlertState` 值，標題為固定的本地化鍵
     static func expectedWriteFailureAlert(
-        _ message: LocalizedStringKey
+        _ message: LocalizedStringResource
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
             TextState("orders.list.label.operationFailed")

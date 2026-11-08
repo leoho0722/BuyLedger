@@ -18,13 +18,13 @@ struct InsightsFeatureScreenStateTests {
     func screenState_載入失敗且未記錄日期_顯示失敗畫面() {
         // Given
         var state = InsightsFeature.State()
-        state.loadState = .failed("網路連線失敗")
+        state.loadState = .failed("orders.general.message.ordersLoadedTry")
 
         // When
         let screenState = state.screenState
 
         // Then
-        #expect(screenState == .failed("網路連線失敗"))
+        #expect(screenState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
     /// 驗證訂單仍在載入中時，即使已記錄日期，`screenState` 仍為載入骨架

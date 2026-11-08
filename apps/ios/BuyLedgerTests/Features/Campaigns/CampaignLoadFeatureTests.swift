@@ -61,7 +61,7 @@ struct CampaignLoadFeatureTests {
         #expect(store.state.campaigns == [campaign])
     }
 
-    /// 驗證讀取失敗時，共用清單保留原值，已載入旗標維持 `false` 以便下次重試，並送出載入失敗的通知
+    /// 驗證讀取失敗時，共用清單保留原值，已載入旗標維持 `false` 以便下次重試，並送出載入失敗的通知，失敗原因在兩種 App 語言各解析出完整文字
     @Test
     func loadRequested_讀取失敗_保留共用清單並委派錯誤() async {
         // Given
@@ -109,6 +109,15 @@ struct CampaignLoadFeatureTests {
         #expect(store.state.campaigns == [campaign])
         #expect(store.state.hasLoaded == false)
         #expect(store.state.isLoading == false)
+        #expect(store.state.errorMessage?.key == "campaigns.list.message.campaignsLoadedTry")
+        #expect(
+            store.state.errorMessage.map { AppLanguage.traditionalChinese.resolve($0) }
+                == "開團載入失敗，請稍後再試。"
+        )
+        #expect(
+            store.state.errorMessage.map { AppLanguage.english.resolve($0) }
+                == "The campaigns could not be loaded. Try again later."
+        )
     }
 
     /// 驗證已載入後再次請求時略過讀取，載入中旗標維持 `false`

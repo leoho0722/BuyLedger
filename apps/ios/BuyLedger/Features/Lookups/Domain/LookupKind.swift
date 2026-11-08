@@ -28,7 +28,7 @@ enum LookupKind: String, CaseIterable, Sendable {
 extension LookupKind {
 
     /// 主檔管理頁的導覽標題
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.lookup.label.orderSources"
@@ -45,7 +45,7 @@ extension LookupKind {
     }
 
     /// 更多頁主檔入口的標題
-    var entryTitle: String {
+    var entryTitle: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.detail.label.orderSource"
@@ -62,7 +62,7 @@ extension LookupKind {
     }
 
     /// 更多頁主檔入口的說明文字
-    var entrySubtitle: String {
+    var entrySubtitle: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.lookup.message.manageOrderSources"
@@ -96,7 +96,7 @@ extension LookupKind {
     }
 
     /// 管理頁新增按鈕的標題
-    var addButtonTitle: String {
+    var addButtonTitle: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.edit.label.addSource"
@@ -113,7 +113,7 @@ extension LookupKind {
     }
 
     /// 主檔清單空白時顯示的標題
-    var emptyTitle: String {
+    var emptyTitle: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.edit.label.sources"
@@ -130,7 +130,7 @@ extension LookupKind {
     }
 
     /// 主檔清單空白時顯示的操作說明
-    var emptyDescription: String {
+    var emptyDescription: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.lookup.message.useAddSource"
@@ -147,7 +147,7 @@ extension LookupKind {
     }
 
     /// 新增主檔表單的標題
-    var addFormTitle: String {
+    var addFormTitle: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.edit.label.addOrderSource"
@@ -164,7 +164,7 @@ extension LookupKind {
     }
 
     /// 新增主檔表單的補充說明
-    var addFormMessage: String {
+    var addFormMessage: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.lookup.message.enterNewOrder"
@@ -181,7 +181,7 @@ extension LookupKind {
     }
 
     /// 新增、改名與編輯表單中名稱欄位的提示文字
-    var nameFieldPlaceholder: String {
+    var nameFieldPlaceholder: LocalizedStringResource {
         switch self {
         case .orderSource:
             "orders.edit.label.sourceName"

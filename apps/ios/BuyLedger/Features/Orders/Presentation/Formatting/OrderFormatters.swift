@@ -16,6 +16,22 @@ enum OrderFormatters {
 
 extension OrderFormatters {
 
+    /// 提供手續費費率輸入說明 resource，數字依 App 語言格式化
+    ///
+    /// - Parameter locale: App 選定、用於數字呈現的 locale
+    /// - Returns: 帶有格式化數字參數的手續費輸入說明 resource
+    static func feeRateInputMessage(locale: Locale) -> LocalizedStringResource {
+        let exampleValue = 1.5.formatted(.number.precision(.fractionLength(0...1)).locale(locale))
+        let examplePercent = 0.015.formatted(.percentUpToOneFractionDigit(locale: locale))
+        let minimumPercent = 0.0.formatted(.percentUpToOneFractionDigit(locale: locale))
+        let maximumPercent = 1.0.formatted(.percentUpToOneFractionDigit(locale: locale))
+
+        return LocalizedStringResource(
+            "orders.edit.message.feeRateInputNotice",
+            defaultValue: "\(exampleValue)\(examplePercent)\(minimumPercent)\(maximumPercent)"
+        )
+    }
+
     /// 組合收款與帶正負號獲利的文字，供訂單列的無障礙值朗讀
     ///
     /// - Parameters:
@@ -166,11 +182,13 @@ extension OrderFormatters {
     static func paymentMethodFilterTitle(
         _ paymentMethod: String?,
         locale: Locale
-    ) -> LocalizedStringKey {
+    ) -> LocalizedStringResource {
         let language = AppLanguage(locale: locale)
-        let current = paymentMethod ?? language.localized("common.action.label.all")
-        return LocalizedStringKey(
-            language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", current)
+        let current = paymentMethod
+            ?? language.resolve(LocalizedStringResource("common.action.label.all"))
+        return LocalizedStringResource(
+            "orders.filter.label.paymentMethodFormat",
+            defaultValue: "\(current)"
         )
     }
 
@@ -183,22 +201,22 @@ extension OrderFormatters {
     static func categoryFilterTitle(
         _ categories: Set<String>,
         locale: Locale
-    ) -> LocalizedStringKey {
+    ) -> LocalizedStringResource {
         let language = AppLanguage(locale: locale)
         if categories.count >= 2 {
-            return LocalizedStringKey(
-                language.localizedString(
-                    forKey: "orders.filter.label.categoryCountFormat",
-                    categories.count
-                )
+            return LocalizedStringResource(
+                "orders.filter.label.categoryCountFormat",
+                defaultValue: "\(categories.count)"
             )
         }
         let sortedCategories = categories.sorted { lhs, rhs in
             lhs.localizedStandardCompare(rhs) == .orderedAscending
         }
-        let current = sortedCategories.first ?? language.localized("common.action.label.all")
-        return LocalizedStringKey(
-            language.localizedString(forKey: "orders.filter.label.categoryFormat", current)
+        let current = sortedCategories.first
+            ?? language.resolve(LocalizedStringResource("common.action.label.all"))
+        return LocalizedStringResource(
+            "orders.filter.label.categoryFormat",
+            defaultValue: "\(current)"
         )
     }
 

@@ -21,9 +21,6 @@ struct DashboardHeroCard: View {
     /// hero 淨獲利金額字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroProfitSize: CGFloat = 36
 
-    /// App 目前選用的顯示語系
-    let language: AppLanguage
-
     /// 已計算的本月統計
     let stats: DashboardStats
 
@@ -78,10 +75,9 @@ private extension DashboardHeroCard {
                 Text(verbatim: "·")
 
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "dashboard.overview.label.orderCount",
-                        stats.orderCount,
-                        locale: locale
+                        defaultValue: "\(stats.orderCount)"
                     )
                 )
                 .blTextStyle(.footnote)
@@ -89,19 +85,14 @@ private extension DashboardHeroCard {
         }
     }
 
-    /// 近 12 個月的淨獲利走勢圖
+    /// 近 12 個月的淨獲利走勢圖，圖表標題與資料點朗讀文字由元件依環境 `locale` 解析
     var sparkline: some View {
         BLSparkline(
-            data: stats.sparkline,
-            tint: .white,
             height: 36,
-            axisXTitle: language.localized("orders.list.label.sequence"),
-            axisYTitle: language.localized("orders.detail.label.value"),
-            seriesName: language.localized("dashboard.overview.label.trendChart"),
-            summary: DashboardFormatters.sparklineSummary(stats.sparkline, locale: locale)
-        ) {
-            language.localizedString(forKey: "common.general.label.pointLd", $0)
-        }
+            data: stats.sparkline,
+            summary: DashboardFormatters.sparklineSummary(stats.sparkline, locale: locale),
+            tint: .white
+        )
     }
 
     /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏，輔助字級時改為垂直堆疊
@@ -137,7 +128,6 @@ private extension DashboardHeroCard {
 
 #Preview("hero 卡") {
     DashboardHeroCard(
-        language: .traditionalChinese,
         stats: DashboardStats(
             orders: LedgerOrder.sampleOrders,
             monthlyGoal: 80_000,

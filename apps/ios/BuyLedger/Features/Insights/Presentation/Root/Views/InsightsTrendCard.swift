@@ -21,11 +21,8 @@ struct InsightsTrendCard: View {
     /// 走勢長條圖資料，30 天逐日、6 與 12 個月逐月
     let bars: [BLBarChartValue]
 
-    /// 與上期比較的成長率文字，沒有比較值時為比較說明
-    let delta: LocalizedStringKey
-
-    /// App 目前選用的顯示語系，用於圖表的無障礙標題
-    let language: AppLanguage
+    /// 與上期比較的成長率文字 (已格式化)；沒有比較值時為 `nil`，由畫面顯示比較說明
+    let delta: String?
 
     /// 目前選取的趨勢期間，決定卡片標題
     let range: InsightsDateRange
@@ -60,15 +57,25 @@ private extension InsightsTrendCard {
     /// 標題列：左側為期間標題，右側為與上期比較的成長率
     var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(LocalizedStringKey(range.trendCardTitle))
+            Text(range.trendCardTitle)
                 .font(BLTypographyStyle.subhead.font.weight(.medium))
                 .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
 
-            Text(delta)
+            deltaText
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
                 .foregroundStyle(deltaColor)
+        }
+    }
+
+    /// 成長率文字：有比較值時為格式化後的百分比，沒有時顯示比較說明
+    @ViewBuilder
+    var deltaText: some View {
+        if let delta {
+            Text(verbatim: delta)
+        } else {
+            Text("insights.chart.label.comparison")
         }
     }
 
@@ -82,17 +89,10 @@ private extension InsightsTrendCard {
             .accessibilityIdentifier(BLAccessibilityID.Insights.trendTotalProfit)
     }
 
-    /// 走勢長條圖，圖表標題隨 App 內選用的語言翻譯
+    /// 走勢長條圖，圖表標題由元件依環境 `locale` 解析預設文字
     var chart: some View {
-        BLBarChart(
-            data: bars,
-            height: 200,
-            axisXTitle: language.localized("orders.list.label.text"),
-            axisYTitle: language.localized("orders.detail.label.value"),
-            isScrollEnabled: true,
-            seriesName: language.localized("insights.chart.label.barChart")
-        )
-        .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
+        BLBarChart(height: 200, data: bars, isScrollEnabled: true)
+            .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
     }
 }
 
@@ -118,14 +118,14 @@ private extension InsightsTrendCard {
 // MARK: - Preview
 
 #Preview("走勢") {
+    let delta = "↑ 18.5%"
     InsightsTrendCard(
         bars: [
             BLBarChartValue(label: "4 月", value: 1_200, valueDescription: "NT$1,200"),
             BLBarChartValue(label: "5 月", value: 2_800, valueDescription: "NT$2,800"),
             BLBarChartValue(label: "6 月", value: 1_900, valueDescription: "NT$1,900"),
         ],
-        delta: "↑ 18.5%",
-        language: .traditionalChinese,
+        delta: delta,
         range: .sixMonths,
         totalProfit: 5_900,
         trend: .up

@@ -44,8 +44,8 @@ extension OrderCostBreakdown {
     /// 一項成本的標題、金額與語意色調
     struct Component: Equatable, Identifiable, Sendable {
 
-        /// 成本項目名稱
-        let title: String
+        /// 成本項目的本地化標題
+        let title: LocalizedStringResource
 
         /// 成本項目金額
         let value: Decimal
@@ -53,17 +53,17 @@ extension OrderCostBreakdown {
         /// 畫面應使用的色調
         let tone: Tone
 
-        /// 以原有標題識別成本項目
+        /// 以本地化標題的 key 識別成本項目
         var id: String {
-            title
+            title.key
         }
     }
 
     /// 圈狀圖的單一區段，金額已轉為 `Double` 並附上本地化金額描述
     struct DonutSlice: Equatable, Sendable {
 
-        /// 區段名稱，即成本項目名稱
-        let label: String
+        /// 區段名稱的本地化資源
+        let label: LocalizedStringResource
 
         /// 區段數值，供圈狀圖計算占比
         let value: Double

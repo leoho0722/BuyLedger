@@ -65,12 +65,11 @@ private extension OrderMergeCandidateSheet {
                                 candidateRow($0)
                             }
                         } header: {
-                            Text(LocalizedStringKey(section.title))
+                            Text(verbatim: section.title)
                         } footer: {
                             if let notice = store.state.candidateFilterNotice(
                                 for: section,
-                                in: sections,
-                                locale: locale
+                                in: sections
                             ) {
                                 Text(notice)
                                     .blTextStyle(.footnote)

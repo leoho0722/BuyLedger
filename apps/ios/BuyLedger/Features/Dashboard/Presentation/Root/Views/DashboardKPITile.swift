@@ -15,14 +15,14 @@ struct DashboardKPITile: View {
     /// 目前的動態字級；用來在無障礙字級下允許數值換行
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// 指標下方的變化說明，例如 `+18.2% MoM`；沒有上月比較值時改放其他補充文字
-    let delta: LocalizedStringKey
+    /// 指標下方的變化說明，例如 `+18.2% MoM` (已格式化，原樣顯示)；沒有上月比較值時為 `— MoM`
+    let delta: String
 
     /// 指標的穩定識別值
     let kpi: BLAccessibilityID.Dashboard.KPI
 
     /// 卡片左上方的指標名稱，例如「營業額」、「毛利率」
-    let label: String
+    let label: LocalizedStringResource
 
     /// 左上方色點顏色，用來區分指標分類
     let tint: Color
@@ -72,7 +72,7 @@ private extension DashboardKPITile {
                 .foregroundStyle(tint)
                 .accessibilityHidden(true)
 
-            Text(LocalizedStringKey(label))
+            Text(label)
                 .font(BLTypographyStyle.footnote.font.weight(.medium))
                 .foregroundStyle(.blSecondaryLabel)
         }
@@ -90,7 +90,7 @@ private extension DashboardKPITile {
 
     /// 下方的變化指標，依走向著色
     var deltaText: some View {
-        Text(delta)
+        Text(verbatim: delta)
             .font(BLTypographyStyle.caption.font.weight(.medium))
             .foregroundStyle(deltaColor)
     }
@@ -124,8 +124,10 @@ private extension DashboardKPITile {
 // MARK: - Preview
 
 #Preview("KPI 卡") {
+    let delta = "+18.2% MoM"
+
     DashboardKPITile(
-        delta: "+18.2% MoM",
+        delta: delta,
         kpi: .revenue,
         label: "dashboard.overview.label.revenue",
         tint: .blAccent,

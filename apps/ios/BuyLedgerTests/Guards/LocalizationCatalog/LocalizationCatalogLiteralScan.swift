@@ -265,8 +265,14 @@ private extension LocalizationCatalogLiteralScan {
 
         let variants = literal.localizationKeyVariants
 
-        // 排除規則 8：純動態插值 (字面值本身不含任何靜態可翻譯文字)
-        if Set(variants) == ["%lld", "%@"] {
+        // 排除規則 8：純動態插值 (不限插值個數，字面值本身不含任何靜態可翻譯文字)
+        let isPureInterpolation = variants.allSatisfy {
+            $0
+                .replacingOccurrences(of: "%@", with: "")
+                .replacingOccurrences(of: "%lld", with: "")
+                .isEmpty
+        }
+        if isPureInterpolation {
             return true
         }
 

@@ -12,9 +12,6 @@ struct DashboardSummarySection: View {
 
     // MARK: - Properties
 
-    /// App 目前選用的顯示語系
-    let language: AppLanguage
-
     /// 已計算的本月統計
     let stats: DashboardStats
 
@@ -23,7 +20,7 @@ struct DashboardSummarySection: View {
     /// 先顯示本月摘要，再依動態字級排列四項 KPI
     var body: some View {
         VStack(spacing: BLSpacing.medium) {
-            DashboardHeroCard(language: language, stats: stats)
+            DashboardHeroCard(stats: stats)
 
             DashboardKPITiles(stats: stats)
         }
@@ -34,7 +31,6 @@ struct DashboardSummarySection: View {
 
 #Preview("本月摘要") {
     DashboardSummarySection(
-        language: .traditionalChinese,
         stats: DashboardStats(
             orders: LedgerOrder.sampleOrders,
             monthlyGoal: 80_000,

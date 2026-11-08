@@ -13,6 +13,9 @@ struct OrderEditFeesSection: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderEditFeature>
 
@@ -73,7 +76,7 @@ private extension OrderEditFeesSection {
     /// 百分比輸入方式與有效範圍說明
     @ViewBuilder
     var sectionFooter: some View {
-        Text("orders.edit.message.enter1515")
+        Text(OrderFormatters.feeRateInputMessage(locale: locale))
             .blTextStyle(.footnote)
             .foregroundStyle(.blSecondaryLabel)
     }

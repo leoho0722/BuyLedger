@@ -23,16 +23,16 @@ struct BLDonutChart: View {
     /// 圈狀圖直徑，隨字級縮放
     @ScaledMetric(relativeTo: .headline) private var diameter: CGFloat = 150
 
-    /// 圖表無障礙描述的 X 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisXTitle: String = "orders.list.label.category2"
+    /// 圖表無障礙描述的 X 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisXTitle: String? = nil
 
-    /// 圖表無障礙描述的 Y 軸標題；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var axisYTitle: String = "orders.detail.label.share"
+    /// 圖表無障礙描述的 Y 軸標題；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var axisYTitle: String? = nil
 
-    /// 圈狀圖中央上方的輔助標題
-    let centerTitle: String
+    /// 圈狀圖中央上方的輔助標題，以 catalog key 攜帶，跟隨畫面 `\.locale` 呈現
+    let centerTitle: LocalizedStringResource
 
     /// 圈狀圖中央主要顯示值
     let centerValue: String
@@ -40,9 +40,9 @@ struct BLDonutChart: View {
     /// 圈狀圖要呈現的區段
     let segments: [BLDonutSegment]
 
-    /// 圖表資料序列名稱；預設為本地化 key 字串；
-    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
-    var seriesName: String = "orders.detail.label.donutChart"
+    /// 圖表資料序列名稱；`nil` 時依環境 `locale` 解析預設文字；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端傳入字串時應已本地化
+    var seriesName: String? = nil
 
     // MARK: - Body
 
@@ -89,15 +89,13 @@ private extension BLDonutChart {
         .frame(maxWidth: diameter, maxHeight: diameter)
         .chartForegroundStyleScale(domain: segments.map(\.label), range: segments.map(\.color))
         .chartLegend(.hidden)
-        .accessibilityLabel(
-            Text(ChartAccessibilityDescriptor.summary(for: segments, locale: locale))
-        )
+        .accessibilityLabel(ChartAccessibilityDescriptor.summary(for: segments, locale: locale))
         .accessibilityChartDescriptor(
             ChartAccessibilityDescriptor(
                 segments: segments,
-                axisXTitle: axisXTitle,
-                axisYTitle: axisYTitle,
-                seriesName: seriesName
+                axisXTitle: resolvedTitles.axisX,
+                axisYTitle: resolvedTitles.axisY,
+                seriesName: resolvedTitles.series
             )
         )
     }
@@ -105,7 +103,7 @@ private extension BLDonutChart {
     /// 圈狀圖標題與數值的置中內容與輔助字級堆疊內容
     var centerContent: some View {
         VStack(spacing: 2) {
-            Text(LocalizedStringKey(centerTitle))
+            Text(centerTitle)
                 .blTextStyle(.caption2)
                 .foregroundStyle(.blSecondaryLabel)
 
@@ -127,7 +125,7 @@ private extension BLDonutChart {
 extension BLDonutChart {
 
     /// 圈狀圖的輔助技術描述
-    private struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
+    struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
 
         /// 對應圖表目前呈現的區段
         let segments: [BLDonutSegment]
@@ -141,24 +139,68 @@ extension BLDonutChart {
         /// 資料序列名稱
         let seriesName: String
 
+        /// 圈狀圖的輔助技術文字，已依環境 `locale` 解析
+        struct Titles {
+
+            /// X 軸標題
+            let axisX: String
+
+            /// Y 軸標題
+            let axisY: String
+
+            /// 資料序列名稱
+            let series: String
+        }
+
+        /// 解析圖表無障礙描述的三個文字；有提供時原樣使用，未提供時依 `locale` 解析預設的 catalog key
+        ///
+        /// - Parameters:
+        ///   - axisX: X 軸標題，未提供時為 `orders.list.label.category2`
+        ///   - axisY: Y 軸標題，未提供時為 `orders.detail.label.share`
+        ///   - series: 資料序列名稱，未提供時為 `orders.detail.label.donutChart`
+        ///   - locale: 目前的 `Locale`
+        /// - Returns: X 軸標題、Y 軸標題與資料序列名稱
+        static func titles(
+            axisX: String?,
+            axisY: String?,
+            series: String?,
+            locale: Locale
+        ) -> Titles {
+            Titles(
+                axisX: axisX ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.list.label.category2"),
+                    locale: locale
+                ),
+                axisY: axisY ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.detail.label.share"),
+                    locale: locale
+                ),
+                series: series ?? AppLanguage.resolve(
+                    LocalizedStringResource("orders.detail.label.donutChart"),
+                    locale: locale
+                )
+            )
+        }
+
         /// 建立圖表層級的輔助技術摘要
         ///
         /// - Parameters:
         ///   - segments: 圈狀圖資料
         ///   - locale: 目前的 `Locale`
         /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(for segments: [BLDonutSegment], locale: Locale) -> LocalizedStringKey {
+        static func summary(for segments: [BLDonutSegment], locale: Locale) -> String {
             guard let largest = segments.max(by: { left, right in left.value < right.value }) else {
-                return "common.ui.label.donutChartData"
-            }
-            return LocalizedStringKey(
-                AppLanguage.format(
-                    "common.ui.accessibility.donutChartSummary",
-                    segments.count,
-                    largest.label,
-                    largest.valueDescription,
+                return AppLanguage.resolve(
+                    LocalizedStringResource("common.ui.label.donutChartData"),
                     locale: locale
                 )
+            }
+            return AppLanguage.resolve(
+                LocalizedStringResource(
+                    "common.ui.accessibility.donutChartSummary",
+                    defaultValue: "\(segments.count)\(largest.label)\(largest.valueDescription)"
+                ),
+                locale: locale
             )
         }
 
@@ -201,11 +243,26 @@ extension BLDonutChart {
     }
 }
 
+// MARK: - Private Method
+
+private extension BLDonutChart {
+
+    /// 依目前的參數與環境 `locale` 解析的三個無障礙文字
+    var resolvedTitles: ChartAccessibilityDescriptor.Titles {
+        ChartAccessibilityDescriptor.titles(
+            axisX: axisXTitle,
+            axisY: axisYTitle,
+            series: seriesName,
+            locale: locale
+        )
+    }
+}
+
 // MARK: - Preview
 
 #Preview("orders.detail.label.donutChart") {
     BLDonutChart(
-        centerTitle: "總支出",
+        centerTitle: "orders.detail.label.totalCost",
         centerValue: "$12.4K",
         segments: [
             BLDonutSegment(

@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// 以 reducer 已解析的訂單服務建立寫入效果，不持有或更新共用狀態
 struct OrderWriteOperations: Sendable {
@@ -50,7 +51,7 @@ extension OrderWriteOperations {
         case mergedStatusRejected
 
         /// 供容器呈現的既有本地化失敗訊息
-        var message: String {
+        var message: LocalizedStringResource {
             switch self {
             case .save:
                 return "orders.general.message.orderSavedTry"

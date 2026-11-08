@@ -55,9 +55,15 @@ struct CampaignFeatureNameConflictTests {
                 $0.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
             }
         }
+        let message = store.state.presentation.destination?.edit?.nameConflictMessage
+        #expect(message?.key == "campaigns.edit.message.anotherCampaignAlready")
         #expect(
-            store.state.presentation.destination?.edit?.nameConflictMessage
-                == "campaigns.edit.message.anotherCampaignAlready"
+            message.map { AppLanguage.traditionalChinese.resolve($0) }
+                == "已有其他開團使用這個名稱，請改用不同名稱。"
+        )
+        #expect(
+            message.map { AppLanguage.english.resolve($0) }
+                == "Another campaign already uses this name. Please choose a different name."
         )
     }
 

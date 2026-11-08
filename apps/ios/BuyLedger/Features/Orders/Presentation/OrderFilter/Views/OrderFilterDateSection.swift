@@ -42,7 +42,7 @@ private extension OrderFilterDateSection {
                 .sending(\.view.filterPendingDatePeriodSelected)
         ) {
             ForEach(OrderDatePeriod.orderBrowsingCases) {
-                Text(LocalizedStringKey($0.title))
+                Text($0.title)
                     .tag($0)
                     .accessibilityIdentifier(BLAccessibilityID.Orders.filterDatePeriod($0.id))
                     .accessibilityAddTraits(
@@ -69,7 +69,7 @@ private extension OrderFilterDateSection {
 
             Spacer(minLength: BLSpacing.small)
 
-            Text(LocalizedStringKey(store.pendingFilterSelection.datePeriod.title))
+            Text(store.pendingFilterSelection.datePeriod.title)
                 .fixedSize(horizontal: false, vertical: true)
                 .multilineTextAlignment(.trailing)
                 .foregroundStyle(.blSecondaryLabel)

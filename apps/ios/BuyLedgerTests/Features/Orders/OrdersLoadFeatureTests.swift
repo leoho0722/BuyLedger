@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -59,7 +60,7 @@ struct OrdersLoadFeatureTests {
         #expect(store.state.errorMessage == nil)
     }
 
-    /// 驗證讀取失敗時保留原有訂單，`hasLoaded` 維持 `false`，顯示載入失敗原因並回報失敗通知
+    /// 驗證讀取失敗時保留原有訂單，`hasLoaded` 維持 `false`，顯示載入失敗原因並回報失敗通知，原因在兩種 App 語言各解析出完整文字
     @Test
     func loadRequested_訂單讀取失敗_保留資料並委派錯誤() async {
         // Given
@@ -97,5 +98,14 @@ struct OrdersLoadFeatureTests {
         #expect(store.state.orders == [order])
         #expect(store.state.isLoading == false)
         #expect(store.state.hasLoaded == false)
+        #expect(store.state.errorMessage?.key == "orders.general.message.ordersLoadedTry")
+        #expect(
+            store.state.errorMessage.map { AppLanguage.traditionalChinese.resolve($0) }
+                == "訂單載入失敗，請稍後再試。"
+        )
+        #expect(
+            store.state.errorMessage.map { AppLanguage.english.resolve($0) }
+                == "The orders could not be loaded. Try again later."
+        )
     }
 }

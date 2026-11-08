@@ -28,7 +28,7 @@ struct CampaignEditFeature {
         var draft: CampaignDraft
 
         /// 父層拒絕儲存的原因；`nil` 表示沒有錯誤
-        var nameConflictMessage: String?
+        var nameConflictMessage: LocalizedStringResource?
 
         /// 捨棄未儲存變更的確認彈窗
         @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
@@ -60,7 +60,7 @@ struct CampaignEditFeature {
         }
 
         /// 導覽標題的本地化 key；沒有原開團時為新增，否則為編輯
-        var navigationTitleKey: String {
+        var navigationTitleKey: LocalizedStringResource {
             original == nil
                 ? "campaigns.list.label.addCampaign"
                 : "campaigns.list.label.editCampaign"

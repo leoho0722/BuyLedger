@@ -8,29 +8,17 @@
 import Foundation
 
 /// 訂單列表可使用的狀態篩選
-enum OrderStatusFilter: Hashable, Identifiable {
-
-    // MARK: - Cases
+enum OrderStatusFilter: Hashable {
 
     /// 顯示全部訂單
     case all
 
     /// 顯示指定狀態的訂單
+    ///
+    /// - Parameter orderStatus: 要篩選的訂單狀態
     case status(OrderStatus)
 
-    // MARK: - Identifiable Properties
-
-    /// 篩選選項的穩定識別值
-    var id: String {
-        switch self {
-        case .all:
-            "all"
-        case let .status(status):
-            status.rawValue
-        }
-    }
-
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 第一階段訂單列表使用的篩選選項
     static let orderBrowsingCases: [OrderStatusFilter] = [
@@ -48,28 +36,47 @@ enum OrderStatusFilter: Hashable, Identifiable {
 
     /// 集運中訂單的快捷篩選
     static let shipping = OrderStatusFilter.status(.shipping)
+}
 
-    // MARK: - Computed Properties
+// MARK: - Computed Properties
+
+extension OrderStatusFilter {
 
     /// 篩選對應的訂單狀態
     var orderStatus: OrderStatus? {
         switch self {
         case .all:
             nil
-        case let .status(status):
+
+        case .status(let status):
             status
         }
     }
 
-    // MARK: - Display Properties
-
     /// 顯示在篩選列中的標題
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .all:
             "common.action.label.all"
-        case let .status(status):
+
+        case .status(let status):
             status.title
+        }
+    }
+}
+
+// MARK: - Identifiable
+
+extension OrderStatusFilter: Identifiable {
+
+    /// 篩選選項的穩定識別值
+    var id: String {
+        switch self {
+        case .all:
+            "all"
+
+        case .status(let status):
+            status.rawValue
         }
     }
 }

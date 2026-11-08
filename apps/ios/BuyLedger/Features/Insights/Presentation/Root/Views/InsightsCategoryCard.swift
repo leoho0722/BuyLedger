@@ -73,10 +73,9 @@ private extension InsightsCategoryCard {
             .buttonStyle(.plain)
             .accessibilityHint(
                 Text(
-                    AppLanguage.format(
+                    LocalizedStringResource(
                         "insights.chart.accessibility.viewOrders",
-                        category.name,
-                        locale: locale
+                        defaultValue: "\(category.name)"
                     )
                 )
             )

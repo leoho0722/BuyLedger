@@ -55,7 +55,7 @@ struct OrderListFeature {
         @SharedReader var hasLoaded: Bool
 
         /// 持續顯示的載入失敗訊息
-        @SharedReader var errorMessage: String?
+        @SharedReader var errorMessage: LocalizedStringResource?
 
         /// 最近一次出現、重試或 Root 刷新時記錄的時間與行事曆
         var dateContext: OrderDateContext?
@@ -64,7 +64,7 @@ struct OrderListFeature {
         @Presents var destination: Destination.State?
 
         /// 依多選筆數顯示清單標題
-        var navigationTitleKey: String.LocalizationValue {
+        var navigationTitleKey: LocalizedStringResource {
             OrdersListQuery.navigationTitle(isSelecting: isSelecting, count: selectedOrderIDs.count)
         }
 
@@ -139,7 +139,7 @@ struct OrderListFeature {
             campaigns: SharedReader<[Campaign]> = SharedReader(value: []),
             isLoading: SharedReader<Bool> = SharedReader(value: false),
             hasLoaded: SharedReader<Bool> = SharedReader(value: false),
-            errorMessage: SharedReader<String?> = SharedReader(value: nil)
+            errorMessage: SharedReader<LocalizedStringResource?> = SharedReader(value: nil)
         ) {
             self._orders = orders
             self._campaigns = campaigns

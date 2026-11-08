@@ -12,10 +12,11 @@ import Foundation
 extension PaymentReceiptStatus {
 
     /// 顯示在介面中的狀態名稱
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .pending:
             "orders.filter.status.pendingPayment"
+
         case .received:
             "orders.general.status.received"
         }

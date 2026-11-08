@@ -12,6 +12,9 @@ struct QuoteStatusBanner: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
+
     /// 是否正在載入匯率
     let isLoading: Bool
 
@@ -98,7 +101,7 @@ private extension QuoteStatusBanner {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(.blSecondaryLabel)
 
-            Text("quote.calculator.message.targetMarginMust")
+            Text(QuoteFormatters.targetMarginLimitMessage(locale: locale))
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blSecondaryLabel)
 

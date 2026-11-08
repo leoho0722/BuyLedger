@@ -37,7 +37,7 @@ extension OrdersContainerPlan {
 
         case .failed(let failure):
             outcome.shouldPopUnavailableDetails = failure == .merge
-            outcome.notice = .writeFailure(TextState(LocalizedStringKey(failure.message)))
+            outcome.notice = .writeFailure(TextState(failure.message))
         }
         return outcome
     }

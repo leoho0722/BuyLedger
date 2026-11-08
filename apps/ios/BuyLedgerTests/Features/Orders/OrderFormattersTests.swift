@@ -18,6 +18,68 @@ struct OrderFormattersTests {
     /// 測試固定使用的英文呈現 locale，與 `BLFormattersTests` 既有慣例一致
     private static let locale = Locale(identifier: "en")
 
+    /// 驗證手續費輸入 resource 依 App 語言呈現數字與百分比
+    ///
+    /// - Parameter scenario: 測試語言與預期說明
+    @Test(arguments: [
+        FeeInputMessageCase(
+            language: .traditionalChinese,
+            expected: "輸入百分比例如 1.5 表示 1.5%；超出 0% ~ 100% 範圍會自動限制。"
+        ),
+        FeeInputMessageCase(
+            language: .english,
+            expected: "Enter 1.5 for 1.5%. Values outside 0% ~ 100% are automatically limited."
+        ),
+    ])
+    func feeRateInputMessage_各語言_顯示相符說明(scenario: FeeInputMessageCase) {
+        // Given
+        let locale = scenario.language.locale
+
+        // When
+        let message = OrderFormatters.feeRateInputMessage(locale: locale)
+        let value = AppLanguage.resolve(message, locale: locale)
+
+        // Then
+        #expect(message.key == "orders.edit.message.feeRateInputNotice")
+        #expect(value == scenario.expected)
+    }
+
+    /// 驗證付款方式標題保留使用者名稱並依 App 語言解析
+    ///
+    /// - Parameter testCase: 付款方式、App 語言與標題預期
+    @Test(arguments: [
+        PaymentMethodFilterTitleCase(
+            paymentMethod: nil,
+            language: .traditionalChinese,
+            expected: "付款方式：全部"
+        ),
+        PaymentMethodFilterTitleCase(
+            paymentMethod: nil,
+            language: .english,
+            expected: "Payment Method: All"
+        ),
+        PaymentMethodFilterTitleCase(
+            paymentMethod: "common.action.label.all",
+            language: .english,
+            expected: "Payment Method: common.action.label.all"
+        ),
+    ])
+    func paymentMethodFilterTitle_付款方式名稱等於Key_保留原文(testCase: PaymentMethodFilterTitleCase) {
+        // Given
+        let paymentMethod = testCase.paymentMethod
+
+        // When
+        let title = OrderFormatters.paymentMethodFilterTitle(
+            paymentMethod,
+            locale: testCase.language.locale
+        )
+        let value = testCase.language.resolve(title)
+
+        // Then
+        #expect(title.key == "orders.filter.label.paymentMethodFormat")
+        #expect(value == testCase.expected)
+    }
+
     /// 驗證正數金額前面加上加號，符號與金額之間沒有空格
     @Test
     func signedTWD_正數金額_前面加上加號() {
@@ -174,5 +236,33 @@ struct OrderFormattersTests {
 
         // Then
         #expect(text == "NT$500 +NT$0")
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderFormattersTests {
+
+    /// 付款方式篩選標題的語言與固定文字案例
+    struct PaymentMethodFilterTitleCase: Sendable {
+
+        /// 要顯示的付款方式名稱；`nil` 代表全部
+        let paymentMethod: String?
+
+        /// 使用的 App 語言
+        let language: AppLanguage
+
+        /// 依語言解析後的固定文字
+        let expected: String
+    }
+
+    /// 本地化說明測試使用的語言與預期字串
+    struct FeeInputMessageCase: Sendable {
+
+        /// 測試使用的 App 語言
+        let language: AppLanguage
+
+        /// 該語言的完整預期說明
+        let expected: String
     }
 }

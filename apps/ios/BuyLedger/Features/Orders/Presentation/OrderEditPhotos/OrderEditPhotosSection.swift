@@ -14,9 +14,6 @@ struct OrderEditPhotosSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 `locale`
-    @Environment(\.locale) private var locale
-
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderEditPhotosFeature>
 
@@ -92,10 +89,9 @@ private extension OrderEditPhotosSection {
 
         if store.photoImportFailureCount > 0 {
             Label(
-                AppLanguage.format(
+                LocalizedStringResource(
                     "orders.edit.message.photoImportFailedNotice",
-                    store.photoImportFailureCount,
-                    locale: locale
+                    defaultValue: "\(store.photoImportFailureCount)"
                 ),
                 systemImage: "exclamationmark.triangle"
             )
@@ -117,11 +113,9 @@ private extension OrderEditPhotosSection {
     /// 照片區段的目前張數與上限
     var sectionHeader: some View {
         Text(
-            AppLanguage.format(
+            LocalizedStringResource(
                 "orders.edit.label.orderPhotosCount",
-                store.draftPhotos.count,
-                LedgerOrder.maxPhotoCount,
-                locale: locale
+                defaultValue: "\(store.draftPhotos.count)\(LedgerOrder.maxPhotoCount)"
             )
         )
     }
@@ -129,10 +123,9 @@ private extension OrderEditPhotosSection {
     /// 照片容量與儲存方式說明
     var sectionFooter: some View {
         Text(
-            AppLanguage.format(
+            LocalizedStringResource(
                 "orders.edit.message.photoLimitNotice",
-                LedgerOrder.maxPhotoCount,
-                locale: locale
+                defaultValue: "\(LedgerOrder.maxPhotoCount)"
             )
         )
         .blTextStyle(.footnote)

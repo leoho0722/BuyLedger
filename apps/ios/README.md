@@ -45,6 +45,7 @@ apps/ios/
 │   │   ├── Environment/          # RuntimeEnvironment (判斷 Preview／UI 測試／單元測試)
 │   │   ├── Diagnostics/          # CrashDiagnosticsClient (啟動診斷的可替換介面)
 │   │   ├── Telemetry/            # TelemetryService (開啟 Firebase 遙測收集)
+│   │   ├── Formatters/           # 跨 Feature 共用的自訂 FormatStyle (如最多一位小數的百分比)
 │   │   └── Extensions/           # 系統型別的通用 extension (一型一檔)
 │   ├── Features/                 # 依功能切分的 TCA feature，依 ios-dev-kit 分 Presentation／Domain／Data
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
@@ -152,7 +153,7 @@ apps/ios/
 │   │   ├── Media/                # PhotoDataProcessor (照片降採樣與重編碼)
 │   │   └── DesignSystem/
 │   │       ├── Foundations/      # 色彩、字級、間距等 token，BLFormatters 與 ViewModifiers/
-│   │       └── Components/       # 可重用元件，依類型分 Avatar、Badges、Buttons、Cards、Charts、Chips、Forms、Images、Pickers、Progress、States、Status、Tags
+│   │       └── Components/       # 可重用元件，依類型分 Avatar、Buttons、Cards、Charts、Chips、Forms、Images、Pickers、Progress、States、Status、Tags
 │   └── Resources/                # Info.plist、PrivacyInfo.xcprivacy、字串目錄、assets 與設定範本 (見「開發環境設定」)
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (BLAccessibilityID+<區域>.swift，同時編入 App 與 UITests)
 ├── BuyLedgerTests/               # 單元測試，鏡像正式程式碼目錄
@@ -333,7 +334,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 - 腳本不遞增 build 號，上傳時也關閉 Xcode 的自動改號，上傳的版號與 build 號就是提交的值；同一版號的 build 號不可重複上傳。
 - `BuyLedger/`、`BuyLedger.xcodeproj/`、`BuyLedgerAccessibilityIDs/` 有未提交變更時拒絕打包；HEAD 沒有對應的 `ios-v<版號>` tag 時只警告。
 - archive 放在 `~/Library/Developer/Xcode/Archives/` (Xcode Organizer 看得到)；每次執行的 `ExportOptions.plist`、log 與匯出的 .ipa 放在 `apps/ios/build/testflight/<版號>-<build>-<時間>/` (已 gitignore)。
-- 打包後若 `.xcstrings` 被 Xcode 改寫，腳本會列出變更，確認後再還原。
+- 打包後 App 原始碼出現變更時腳本會列出；`.xcstrings` 被改寫代表 catalog 抽取狀態與程式碼不一致，依 `.claude/rules/ios-accessibility-localization.md` 修正，不整檔還原。
 
 ## 架構速覽
 

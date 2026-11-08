@@ -48,8 +48,8 @@ struct OrderEditFeature {
         /// 表單建立時的行事曆，供完整時間格式化使用
         let calendar: Calendar
 
-        /// 依原始訂單是否存在提供標題的本地化鍵
-        var navigationTitleKey: String {
+        /// 依原始訂單是否存在提供標題的本地化資源
+        var navigationTitleKey: LocalizedStringResource {
             original == nil ? "orders.list.label.newOrder" : "orders.detail.label.editOrder"
         }
 
@@ -83,7 +83,7 @@ struct OrderEditFeature {
             OrderEditDraftOperations.hasRequiredFields(draft: draft)
         }
 
-        /// 草稿或照片有未儲存變更
+        /// 草稿或照片是否有未儲存變更
         var isDirty: Bool {
             draft != initialDraft || photos.hasEditedPhotos
         }
@@ -129,11 +129,11 @@ struct OrderEditFeature {
             OrderStatusRules.selectableStatuses(for: draft.status)
         }
 
-        /// 開團選擇列的本地化值；未選時使用「未歸團」的既有本地化鍵
-        var campaignsDisplayText: LocalizedStringResource {
+        /// 開團選擇列的呈現資料；未選時為未歸團，已選時帶以頓號串接的原開團名稱
+        var campaignsDisplayText: CampaignsDisplayText {
             draft.campaignNames.isEmpty
-                ? "orders.detail.label.unassigned"
-                : "\(OrderFormatters.campaignsDisplayText(draft.campaignNames))"
+                ? .unassigned
+                : .names(OrderFormatters.campaignsDisplayText(draft.campaignNames))
         }
 
         /// 依原始訂單與父層帶入的選項建立草稿狀態
@@ -180,6 +180,18 @@ struct OrderEditFeature {
 
             /// 使用者選擇保留的照片
             let keptPhotos: [Data]
+        }
+
+        /// 開團選擇列的呈現資料，區分走本地化的未歸團與維持原文的開團名稱
+        enum CampaignsDisplayText: Equatable, Sendable {
+
+            /// 尚未歸屬任何開團，由畫面以本地化鍵顯示
+            case unassigned
+
+            /// 已選開團名稱，屬使用者資料，畫面以 verbatim 顯示
+            ///
+            /// - Parameter string: 以頓號串接的開團名稱
+            case names(String)
         }
 
         /// 表單中可取得鍵盤焦點的欄位
@@ -232,37 +244,37 @@ struct OrderEditFeature {
             case notes
         }
 
-        /// 依目前語言組成商品數量的顯示文字
+        /// 建立含商品數量的本地化資源
         ///
-        /// - Parameters:
-        ///   - quantity: 商品數量
-        ///   - locale: 畫面目前套用的語言與地區
-        /// - Returns: 含數量標籤與數字的文字
-        func itemQuantityDisplayText(_ quantity: Int, locale: Locale) -> String {
-            AppLanguage.format("orders.detail.label.quantity", quantity, locale: locale)
+        /// - Parameter quantity: 商品數量
+        /// - Returns: 含數量參數的本地化資源
+        func itemQuantityDisplayText(_ quantity: Int) -> LocalizedStringResource {
+            LocalizedStringResource("orders.detail.label.quantity", defaultValue: "\(quantity)")
         }
 
-        /// 依目前語言組成含草稿幣別的商品明細標題
+        /// 建立含草稿幣別的商品明細標題 resource
         ///
-        /// - Parameter locale: 畫面目前套用的語言與地區
-        /// - Returns: 含幣別代碼的商品明細標題
-        func itemDetailsTitle(locale: Locale) -> String {
-            AppLanguage.format(
+        /// - Returns: 含幣別代碼參數的本地化資源
+        func itemDetailsTitle() -> LocalizedStringResource {
+            LocalizedStringResource(
                 "orders.edit.label.itemDetailsCurrency",
-                draft.currency.rawValue,
-                locale: locale
+                defaultValue: "\(draft.currency.rawValue)"
             )
         }
 
         /// 依注入的行事曆與目前語言組成完整訂購日期說明
         ///
         /// - Parameter locale: 畫面目前套用的語言與地區
-        /// - Returns: 訂購日期標籤與包含秒數的時間戳
-        func orderDateTimestampText(locale: Locale) -> String {
-            AppLanguage.format(
-                "orders.edit.label.orderDateTimestamp",
-                OrderFormatters.fullTimestamp(draft.date, calendar: calendar, locale: locale),
+        /// - Returns: 含完整時間戳參數的本地化資源
+        func orderDateTimestampText(locale: Locale) -> LocalizedStringResource {
+            let timestamp = OrderFormatters.fullTimestamp(
+                draft.date,
+                calendar: calendar,
                 locale: locale
+            )
+            return LocalizedStringResource(
+                "orders.edit.label.orderDateTimestamp",
+                defaultValue: "\(timestamp)"
             )
         }
 

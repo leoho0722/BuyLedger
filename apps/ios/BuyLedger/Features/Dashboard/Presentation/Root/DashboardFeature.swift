@@ -94,7 +94,7 @@ struct DashboardFeature {
             /// 載入失敗，附帶失敗原因
             ///
             /// - Parameter message: 畫面持續顯示的失敗訊息
-            case failed(String)
+            case failed(LocalizedStringResource)
 
             /// 尚未載入完成或尚未記錄日期，顯示載入骨架
             case loading

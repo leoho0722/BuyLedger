@@ -36,7 +36,7 @@ struct OrderEditView: View {
             .task {
                 store.send(.view(.task))
             }
-            .navigationTitle(Text(LocalizedStringKey(store.navigationTitleKey)))
+            .navigationTitle(Text(store.navigationTitleKey))
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 editorToolbar

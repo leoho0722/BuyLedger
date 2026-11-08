@@ -150,11 +150,14 @@ private extension OrderCategoryGrid {
     /// - Returns: 可切換展開狀態的標題
     func groupHeader(_ group: OrderCategoryGroups.Display) -> some View {
         let language = AppLanguage(locale: locale)
-        let title = language.localizedString(
-            forKey: "orders.filter.label.groupHeader",
-            groupName(group.kind, language: language),
-            group.displayedCount
+        let displayName = groupName(group.kind, language: language)
+        let title = LocalizedStringResource(
+            "orders.filter.label.groupHeader",
+            defaultValue: "\(displayName)\(group.displayedCount)"
         )
+        let expansionLabel = group.isExpanded
+            ? LocalizedStringResource("orders.filter.label.groupExpanded")
+            : LocalizedStringResource("orders.filter.label.groupCollapsed")
         return Button {
             onGroupTapped(group.kind)
         } label: {
@@ -168,9 +171,9 @@ private extension OrderCategoryGrid {
 
                 if group.selectedCount > 0 {
                     BLStatusPill(
-                        language.localizedString(
-                            forKey: "orders.filter.label.selectedCount",
-                            group.selectedCount
+                        LocalizedStringResource(
+                            "orders.filter.label.selectedCount",
+                            defaultValue: "\(group.selectedCount)"
                         ),
                         tone: .accent,
                         showsIndicator: false
@@ -183,11 +186,7 @@ private extension OrderCategoryGrid {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.Orders.categoryGroupHeader(group.kind.rawValue))
-        .accessibilityValue(
-            group.isExpanded
-                ? language.localized("orders.filter.label.groupExpanded")
-                : language.localized("orders.filter.label.groupCollapsed")
-        )
+        .accessibilityValue(language.resolve(expansionLabel))
     }
 }
 
@@ -309,10 +308,10 @@ private extension OrderCategoryGrid {
     func groupName(_ kind: OrderCategoryGroups.Kind, language: AppLanguage) -> String {
         switch kind {
         case .ongoing:
-            language.localized("common.general.label.active")
+            language.resolve(LocalizedStringResource("common.general.label.active"))
 
         case .closed:
-            language.localized("common.general.label.closed")
+            language.resolve(LocalizedStringResource("common.general.label.closed"))
         }
     }
 }
