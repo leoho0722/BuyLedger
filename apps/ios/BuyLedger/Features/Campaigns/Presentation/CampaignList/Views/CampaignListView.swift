@@ -26,19 +26,22 @@ struct CampaignListView: View {
 
     /// 依載入狀態切換內容，並掛上根標題、工具列與載入任務
     var body: some View {
-        content
-            .task {
-                // 載入結果由多個分頁共用，不隨列表消失而取消
-                store.send(.view(.task))
-            }
-            .rootNavigationTitle("orders.detail.title.campaigns", language: language)
-            .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    filterMenu
+        ZStack {
+            content
+        }
+        .task {
+            // 載入結果由多個分頁共用，不隨列表消失而取消
+            // 掛在包住條件內容的單一容器上，條件內容上的 `.task` 會在分支互換時重跑
+            store.send(.view(.task))
+        }
+        .rootNavigationTitle("orders.detail.title.campaigns", language: language)
+        .toolbar {
+            ToolbarItemGroup(placement: .primaryAction) {
+                filterMenu
 
-                    addCampaignButton
-                }
+                addCampaignButton
             }
+        }
     }
 }
 

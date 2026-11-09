@@ -34,10 +34,10 @@ struct OrdersCompactListView: View {
 
             orderSections
         }
+        .contentMargins(.bottom, BLSpacing.section - BLCardRowMetrics.edgeRoom, for: .scrollContent)
         .listStyle(.plain)
         .environment(\.defaultMinListRowHeight, 0)
         .scrollContentBackground(.hidden)
-        .contentMargins(.bottom, BLSpacing.section - BLCardRowMetrics.edgeRoom, for: .scrollContent)
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         .scrollDismissesKeyboard(.interactively)
@@ -48,19 +48,15 @@ struct OrdersCompactListView: View {
 
 private extension OrdersCompactListView {
 
-    /// 篩選列與失敗訊息沿用原本的垂直間距
+    /// 篩選列沿用原本的垂直間距
     var controls: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            OrdersFilterControlsView(
-                store: store,
-                isUnifiedFilterTriggerShown: true,
-                statusChipHorizontalInset: BLSpacing.large,
-                statusChipSize: .large,
-                unifiedFilterHorizontalInset: BLSpacing.large
-            )
-
-            loadFailureMessage
-        }
+        OrdersFilterControlsView(
+            store: store,
+            isUnifiedFilterTriggerShown: true,
+            statusChipHorizontalInset: BLSpacing.large,
+            statusChipSize: .large,
+            unifiedFilterHorizontalInset: BLSpacing.large
+        )
         .padding(.top, BLSpacing.small)
         .padding(.bottom, BLSpacing.medium)
         .listRowInsets(EdgeInsets())
@@ -68,28 +64,36 @@ private extension OrdersCompactListView {
         .listRowBackground(Color.clear)
     }
 
-    /// 載入失敗時持續顯示的訊息，一次性操作失敗由容器的對話框呈現
-    @ViewBuilder
-    var loadFailureMessage: some View {
-        if case .failed(let message) = store.loadState {
-            Text(message)
-                .padding(.horizontal, BLSpacing.large)
-                .blTextStyle(.footnote)
-                .foregroundStyle(.blRed)
-        }
-    }
-
-    /// 顯示載入狀態、空狀態或依日期分組的訂單列
+    /// 依載入狀態顯示載入中、失敗訊息與重試鍵，或載入完成後的空狀態與依日期分組的訂單列
     @ViewBuilder
     var orderSections: some View {
-        if store.isLoading {
+        switch store.loadState {
+        case .loading:
             ProgressView("orders.list.label.loadOrders")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
+                .accessibilityIdentifier(BLAccessibilityID.Orders.listLoading)
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
-        } else if sections.isEmpty {
+
+        case .failed(let message):
+            OrdersListLoadFailureRow(horizontalInset: BLSpacing.large, message: message) {
+                store.send(.view(.retryTapped))
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+        case .loaded:
+            loadedSections
+        }
+    }
+
+    /// 載入完成後顯示空狀態或依日期分組的訂單列
+    @ViewBuilder
+    var loadedSections: some View {
+        if sections.isEmpty {
             emptyState
         } else {
             ForEach(Array(sections.enumerated()), id: \.element.id) { sectionIndex, section in
@@ -206,7 +210,7 @@ private extension OrdersCompactListView {
 
 // MARK: - Preview
 
-#Preview("窄版訂單清單") {
+#Preview("窄版訂單清單載入中") {
     OrdersCompactListView(
         store: Store(initialState: OrderListFeature.State(orders: SharedReader(value: []))) {
             OrderListFeature()
@@ -214,4 +218,65 @@ private extension OrdersCompactListView {
         sections: [],
         selection: nil
     )
+}
+
+#Preview("窄版訂單清單載入失敗") {
+    OrdersCompactListView(
+        store: Store(
+            initialState: OrderListFeature.State(
+                orders: SharedReader(value: []),
+                errorMessage: SharedReader<LocalizedStringResource?>(
+                    value: "orders.general.message.ordersLoadedTry"
+                )
+            )
+        ) {
+            OrderListFeature()
+        },
+        sections: [],
+        selection: nil
+    )
+}
+
+#Preview("窄版訂單清單無符合訂單") {
+    OrdersCompactListView(
+        store: Store(
+            initialState: OrderListFeature.State(
+                orders: SharedReader(value: []),
+                hasLoaded: SharedReader(value: true)
+            )
+        ) {
+            OrderListFeature()
+        },
+        sections: [],
+        selection: nil
+    )
+}
+
+#Preview("窄版訂單清單有資料") {
+    let calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .gmt
+        return calendar
+    }()
+    let sections = OrderDateSection.group(
+        LedgerOrder.sampleOrders,
+        referenceDate: Date(timeIntervalSince1970: 1_777_507_200),
+        calendar: calendar,
+        locale: AppLanguage.traditionalChinese.locale
+    )
+
+    NavigationStack {
+        OrdersCompactListView(
+            store: Store(
+                initialState: OrderListFeature.State(
+                    orders: SharedReader(value: LedgerOrder.sampleOrders),
+                    hasLoaded: SharedReader(value: true)
+                )
+            ) {
+                OrderListFeature()
+            },
+            sections: sections,
+            selection: nil
+        )
+    }
 }

@@ -35,6 +35,7 @@ struct LookupManagementView: View {
             store.send(.view(.renameButtonTapped(name: $0)))
         }
         .task {
+            // task-finish-exempt: 只讀取本頁主檔種類的項目，以 `hasLoaded` 擋重讀，離開時取消後下次進入會重讀，不影響共用目錄的載入旗標
             await store.send(.view(.task)).finish()
         }
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.root)

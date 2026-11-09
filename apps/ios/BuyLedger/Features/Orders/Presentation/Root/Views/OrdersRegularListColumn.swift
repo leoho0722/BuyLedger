@@ -58,13 +58,13 @@ struct OrdersRegularListColumn: View {
 
                 listContent
             }
-            .environment(\.defaultMinListRowHeight, 0)
             .contentMargins(
                 .bottom,
                 BLSpacing.medium - BLCardRowMetrics.edgeRoom,
                 for: .scrollContent
             )
             .listStyle(.plain)
+            .environment(\.defaultMinListRowHeight, 0)
             .scrollContentBackground(.hidden)
             .background(.blBackground)
             .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
@@ -78,7 +78,7 @@ struct OrdersRegularListColumn: View {
 
 private extension OrdersRegularListColumn {
 
-    /// 清單上方的多選筆數、篩選、清除入口與持續性載入失敗訊息
+    /// 清單上方的多選筆數、篩選與清除入口
     var listHeader: some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             if store.isSelecting {
@@ -107,11 +107,9 @@ private extension OrdersRegularListColumn {
 
                 clearFiltersButton
             }
-
-            loadFailureMessage
         }
         .padding(.top, BLSpacing.small)
-        .padding(.horizontal, verticalSizeClass == .compact ? BLSpacing.large : BLSpacing.medium)
+        .padding(.horizontal, listHorizontalInset)
         .padding(.bottom, BLSpacing.medium - BLCardRowMetrics.edgeRoom)
     }
 
@@ -241,27 +239,36 @@ private extension OrdersRegularListColumn {
         .accessibilityIdentifier(BLAccessibilityID.Orders.clearFiltersButton)
     }
 
-    /// 載入失敗時持續顯示的訊息，一次性操作失敗由容器的對話框呈現
-    @ViewBuilder
-    var loadFailureMessage: some View {
-        if case .failed(let message) = store.loadState {
-            Text(message)
-                .blTextStyle(.footnote)
-                .foregroundStyle(.blRed)
-        }
-    }
-
-    /// 清單欄的捲動內容，依載入中、沒有符合的訂單與有訂單三種情況切換
+    /// 清單欄的捲動內容，依載入狀態顯示載入中、失敗訊息與重試鍵，或載入完成後的清單
     @ViewBuilder
     var listContent: some View {
-        if store.isLoading {
+        switch store.loadState {
+        case .loading:
             ProgressView("orders.list.label.loadOrders")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
+                .accessibilityIdentifier(BLAccessibilityID.Orders.listLoading)
                 .listRowInsets(EdgeInsets())
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
-        } else if orders.isEmpty {
+
+        case .failed(let message):
+            OrdersListLoadFailureRow(horizontalInset: listHorizontalInset, message: message) {
+                store.send(.view(.retryTapped))
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+        case .loaded:
+            loadedContent
+        }
+    }
+
+    /// 載入完成後依沒有符合的訂單與有訂單兩種情況切換
+    @ViewBuilder
+    var loadedContent: some View {
+        if orders.isEmpty {
             ContentUnavailableView("orders.list.label.matchingOrders", systemImage: "tray")
                 .padding(.top, BLSpacing.extraLarge)
                 .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
@@ -353,6 +360,11 @@ private extension OrdersRegularListColumn {
 
 private extension OrdersRegularListColumn {
 
+    /// 篩選區與載入失敗列共用的水平內距，高度不足 (compact) 時與窄版相同
+    var listHorizontalInset: CGFloat {
+        verticalSizeClass == .compact ? BLSpacing.large : BLSpacing.medium
+    }
+
     /// 計算寬版清單的列內距，卡片水平內距為 `BLSpacing.medium`，與窄版的設計系統預設不同
     ///
     /// - Parameter position: 訂單在卡片中的位置
@@ -364,7 +376,52 @@ private extension OrdersRegularListColumn {
 
 // MARK: - Preview
 
-#Preview("訂單清單欄") {
+#Preview("訂單清單欄載入中") {
+    OrdersRegularListColumn(
+        store: Store(initialState: OrderListFeature.State(orders: SharedReader(value: []))) {
+            OrderListFeature()
+        },
+        orders: [],
+        selectedOrderID: nil,
+        selection: nil
+    )
+}
+
+#Preview("訂單清單欄載入失敗") {
+    OrdersRegularListColumn(
+        store: Store(
+            initialState: OrderListFeature.State(
+                orders: SharedReader(value: []),
+                errorMessage: SharedReader<LocalizedStringResource?>(
+                    value: "orders.general.message.ordersLoadedTry"
+                )
+            )
+        ) {
+            OrderListFeature()
+        },
+        orders: [],
+        selectedOrderID: nil,
+        selection: nil
+    )
+}
+
+#Preview("訂單清單欄無符合訂單") {
+    OrdersRegularListColumn(
+        store: Store(
+            initialState: OrderListFeature.State(
+                orders: SharedReader(value: []),
+                hasLoaded: SharedReader(value: true)
+            )
+        ) {
+            OrderListFeature()
+        },
+        orders: [],
+        selectedOrderID: nil,
+        selection: nil
+    )
+}
+
+#Preview("訂單清單欄有資料") {
     let previewState: OrderListFeature.State = {
         let state = OrderListFeature.State(orders: SharedReader(value: LedgerOrder.sampleOrders))
         state.$hasLoaded = SharedReader(value: true)

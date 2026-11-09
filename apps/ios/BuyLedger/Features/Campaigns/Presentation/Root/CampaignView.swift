@@ -38,6 +38,7 @@ struct CampaignView: View {
         .accessibilityIdentifier(BLAccessibilityID.Common.selectedItem(.campaigns))
         .accessibilityValue(Text(verbatim: pathProjectedCampaignID))
         .task {
+            // task-finish-exempt: 提醒連結供開團畫面顯示與操作，未完成時重返畫面會再次載入
             await store.send(.view(.task)).finish()
         }
         .sheet(

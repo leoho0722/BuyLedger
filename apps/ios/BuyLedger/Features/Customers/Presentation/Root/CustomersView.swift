@@ -36,7 +36,8 @@ struct CustomersView: View {
         .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Customers.listRoot)
         .task {
-            await store.send(.view(.task)).finish()
+            // 客戶頁經 Root 發起共用訂單讀取，離開畫面時不可取消
+            store.send(.view(.task))
         }
         .navigationTitle(Text("settings.more.label.customers"))
     }

@@ -18,6 +18,15 @@ extension BLAccessibilityID {
         /// 訂單清單無資料狀態容器
         static let listEmptyState = "orders.list.emptyState"
 
+        /// 訂單清單載入失敗訊息
+        static let listLoadFailure = Common.loadFailure("orders.list")
+
+        /// 訂單清單載入中指示器
+        static let listLoading = Common.loading("orders.list")
+
+        /// 訂單清單載入失敗重試按鈕
+        static let listLoadFailureRetryButton = Common.loadFailureRetryButton("orders.list")
+
         /// 新增訂單按鈕
         static let addButton = "orders.list.addButton"
 

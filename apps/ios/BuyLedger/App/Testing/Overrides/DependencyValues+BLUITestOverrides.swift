@@ -11,7 +11,7 @@ import SwiftData
 
 #if DEBUG
 
-// MARK: - Internal Method
+// MARK: - UI Test Overrides
 
 extension DependencyValues {
 
@@ -43,7 +43,7 @@ extension DependencyValues {
     }
 }
 
-// MARK: - Private Method
+// MARK: - UI Test Override Steps
 
 private extension DependencyValues {
 
@@ -92,6 +92,13 @@ private extension DependencyValues {
                     throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
                 }
                 return try await baseFetch()
+            }
+
+        case .ordersDelayed:
+            let readDelay = Duration.seconds(8)
+            orderService.fetchOrders = { () throws(PersistenceError) in
+                try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
             }
 
         case .none, .campaigns, .lookups:

@@ -14,7 +14,12 @@ paths:
 - **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`**，`AppDelegate` 只在 `didFinishLaunching` 呼叫它；新增啟動設定加在這裡。
 - **啟動載入由 Root 先送主檔目錄，完成後才送訂單**：`view(.task)` 送 `.more(.catalogLoadRequested)`、`.campaigns(.loadRequested)` 與 `.launch(.loadRequested)`，`.more(.delegate(.catalogLoadFinished))` 才送 `.orders(.rootRequest(.load))`。首頁、分析、客戶頁重試與訂單分頁的載入請求也都由 Root 先經主檔目錄，不以子層畫面事件觸發。
     - 清單出現或重試時先寫入 `dateContext`，再以 delegate 請容器載入 (訂單清單經 Root 先讀主檔目錄)；`OrdersLoadFeature`／`CampaignLoadFeature` 在載入中或已載入時略過，首次失敗後下一次請求會重讀。
-    - 清單的 `.task` 只呼叫 `store.send(.view(.task))`，不等待 `finish()`：讀取結果由多個分頁共用，不能因切走清單而取消容器的載入 effect；只有畫面存在時才應執行的長效 effect 才隨畫面等待。
+- **畫面的 `.task` 掛在 body 根為單一、非條件容器的 view 上，只呼叫 `store.send(.view(.task))`，不等待 `finish()`**：
+    - 不掛在 `Group`、`switch`、`if` 等條件內容上 (body 本身是條件內容的自訂 View 也算)：官方註明 `Group` 的修飾器套用到各成員，載入中與失敗互換時 `.task` 重跑並送出新的載入請求；沒有 `Group` 的條件內容官方沒有保證行為，一律比照處理。總覽與分析掛在 `NavigationStack` 這一層，開團清單掛在包住條件內容的單一容器上。
+    - 結果要給其他畫面用、或必須比畫面活得久的工作只送出不等待：view 消失或身分改變時 SwiftUI 取消 `.task`，等待中的 `finish()` 會連帶取消這次送出衍生的 effect，包括經 Root 串起的共用讀取 (`RootFeatureLoadCancellationTests` 固定此 TCA 行為)。
+    - 以「只由回應清除的載入中旗標」去重的載入器 (`OrdersLoadFeature`、`LookupCatalogFeature`、`CampaignLoadFeature`) 不可在會被取消的 `.task` 底下發起：回應一次被丟棄，旗標就停在載入中，之後的請求與重試全被擋下。
+    - 只該在畫面存在時執行的工作，才等待 `finish()` 或由 reducer 以 cancel id 管理；等待 `finish()` 的呼叫點在同一行或上一行寫 `// task-finish-exempt: <理由>`，由 `TaskFinishConventionScanTests` 掃描 `Features/` 守門。
+    - 已知例外：`RootView` 的根層 `.task` 掛在依鎖定狀態切換的 `Group` 上並等待 `finish()`，新程式碼不比照。
 - **跨頁觸發新訂單由 Root 在總覽 `delegate(.newOrderTapped)` 的同一次更新內切到 `.orders` 並呼叫容器的 `presentNewOrder(id:now:calendar:)`**：從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
     - 訂單分頁新增、編輯、合併確認與首頁新增都經容器的 `makeEditOptions(now:calendar:)` 帶入主檔、開團、幣別與行事曆；Root 不自行建立 `OrderEditFeature.State`，表單不在 `.task` 讀取選項。
 - **Orders 的編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的同一個 `destination`，掛在 `OrdersView` 外層**：以 `@Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)` 取得子 store，經 `$presentation.scope(state: \.$destination, action: \.destination)` 的各 case 呈現，iPhone／iPad 共用，不移到平台分流後的子 view。
@@ -82,8 +87,7 @@ paths:
     - `OptionPickerSheet`／`PaymentMethodEditorSheet` 以 `isEmbedded: true` 嵌入宿主堆疊，預設 `false` 為自帶 `NavigationStack` 的單層 sheet。
     - 開團的操作確認 (刪除、結團) 與寫入、提醒失敗提示只由容器的呈現子 Feature (`CampaignPresentationFeature`) 呈現，確認結果以 delegate 交容器寫入；詳情沒有 `destination`，只以 `delegate(.requested)` 請容器處理；表單自身的捨棄確認 (`CampaignEditFeature.discardConfirmation`) 保留在表單內。
     - 訂單呈現子 Feature 的 `Destination` 統一呈現 edit、merge、aiSummary 與 alert (刪除確認、寫入失敗、AI 摘要未啟用)，存檔、新增選項、刪除確認與 AI 設定以 delegate 交容器；清單與詳情只以 `delegate(.requested(OrderRequest))` 請容器處理。清單的篩選 sheet (iPhone) 與類別選擇器 (iPad) 是清單自己的 `destination` (`OrderListFeature+Destination`)，不經容器的呈現佇列，但 `.sheet` 同樣掛在 `OrdersView` 分欄層，不掛在並排或單欄分支內：分支切換時 sheet 要有宿主。捨棄確認各留在 `OrderFilterFeature`／`OrderCategoryPickerFeature`；編輯表單的捨棄確認留在表單。
-- **容器直接設定 `destination` 呈現的 sheet，若 sheet 內會推入子畫面，內容畫面的 `.task` 不可 `await store.send(...).finish()`**：呈現子 Feature 的 `ifLet` 沒參與那次呈現，TCA 的 dismiss effect 延到第一個送進呈現 reducer 的 action 才啟動，等於掛在 `.task` 這次送出底下；推入子畫面時 `.task` 被取消，dismiss effect 跟著取消，之後 `@Dependency(\.dismiss)` 不再關閉 sheet (參考 `OrderEditView`)。
-    - 需要隨畫面取消的長效 effect 改由 reducer 以 cancel id 管理，不靠 `.task` 等待完成。
+- **容器直接設定 `destination` 呈現的 sheet，若 sheet 內會推入子畫面，內容畫面的 `.task` 同樣只送出** (通則見「根導覽與啟動」的 `.task` 條目)：呈現子 Feature 的 `ifLet` 沒參與那次呈現，TCA 的 dismiss effect 延到第一個送進呈現 reducer 的 action 才啟動，等於掛在 `.task` 這次送出底下；推入子畫面時 `.task` 被取消，dismiss effect 跟著取消，之後 `@Dependency(\.dismiss)` 不再關閉 sheet (參考 `OrderEditView`)。
 - **`NavigationStack` 外層的 `.alert` 在 iPad 的 `NavigationSplitView` 中無法顯示在推入的頁面之上 (`.sheet` 可以)**：容器統一呈現 alert 時，把 alert 綁定掛在目前最上層的畫面，堆疊為空時掛根內容、有推入時掛最上層目的地，另一處給 `.constant(nil)` (參考 `CampaignView.alertBinding(isDetail:)`)。
     - 同一個綁定同時掛兩處會破壞 iPhone：兩層各自呈現同一個 alert。
     - 訂單 split 的清單欄 (`OrdersCompactView`／`OrdersRegularListContent`) 與詳情欄 (`OrdersView`) 共用 `OrdersView.alertBinding(store:isDetail:)`：`path` 有詳情時只有詳情欄拿到真綁定，否則只有清單欄拿到。
