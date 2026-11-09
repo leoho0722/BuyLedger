@@ -48,6 +48,7 @@ private extension RootView {
             }
         }
         .task {
+            // task-finish-exempt: 已知風險，待後續 change：鎖定狀態切換會取消根層啟動鏈，可能遺失載入回應
             await store.send(.view(.task)).finish()
         }
     }

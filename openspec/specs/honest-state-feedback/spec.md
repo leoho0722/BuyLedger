@@ -171,7 +171,7 @@ code:
 ---
 ### Requirement: Load failure is surfaced with a reason and a recovery path
 
-When a screen depends on data that fails to load, the screen SHALL display an explanation of the failure together with a control that retries the load. It SHALL NOT remain in a loading state indefinitely. Screens SHALL distinguish three states — loaded, failed, and loading — rather than inferring failure from the absence of a loaded flag.
+When a screen depends on data that fails to load, the screen SHALL display an explanation of the failure together with a control that retries the load. It SHALL NOT remain in a loading state indefinitely. Screens SHALL distinguish three states — loaded, failed, and loading — rather than inferring failure from the absence of a loaded flag. A screen moving between its loading and failed states SHALL NOT by itself start another load request. A load whose result is shared with other screens SHALL deliver its result to those screens even when the screen that requested it is no longer displayed, so that leaving a screen during such a load SHALL NOT leave any screen in the loading state indefinitely.
 
 #### Scenario: Dashboard surfaces an order load failure
 
@@ -201,147 +201,61 @@ When a screen depends on data that fails to load, the screen SHALL display an ex
 | no | yes | failure message with retry |
 | no | no | loading indicator |
 
+#### Scenario: Order list failure is not shown as an empty result
+
+- **WHEN** order loading fails and the order list is presented
+- **THEN** the order list shows the order load failure message with a retry control, and does not show the empty state that suggests changing the search or filters
+
+##### Example: persistent order read failure
+
+- **GIVEN** the App is launched with every order read failing and no order has ever loaded
+- **WHEN** the user opens the orders tab
+- **THEN** the order list shows the text of `orders.general.message.ordersLoadedTry` and a retry control, and does not show the text of `orders.list.message.tryChangingSearch`
+
+#### Scenario: Switching tabs after a load failure does not start a reload loop
+
+- **GIVEN** every order read fails and the App has been launched with the dashboard as the first tab
+- **WHEN** the user switches to the orders tab, then to the more tab, then back to the orders tab, then to the dashboard tab, then to the insights tab
+- **THEN** after the order list first shows the order load failure message, it keeps showing that message with a retry control and no loading indicator
+- **THEN** the dashboard and the insights screen each keep showing their failure message with a retry control and no loading indicator once their failure first appears
+
+#### Scenario: Leaving a screen during a shared load keeps the load result
+
+- **GIVEN** every order read fails only after a delay, and the order load failure has already been shown once
+- **WHEN** the user opens a screen that starts a new order read (the insights tab, or the customers screen under the more tab) and leaves it while the order list still shows its loading indicator
+- **THEN** once the read finishes, the order list shows the order load failure message instead of staying in the loading state
+
 
 <!-- @trace
-source: hig-blocker-remediation
-updated: 2026-07-23
+source: load-failure-reload-loop
+updated: 2026-11-09
 code:
-  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
-  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - apps/ios/BuyLedgerTests/ColorContrast.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Badges/BLBadge.swift
-  - apps/ios/BuyLedgerUITests/PhotoViewerPagingTests.swift
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
-  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedgerTests/SnapshotTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel5Numeral.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutSegment.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsSnapshot.swift
-  - apps/ios/BuyLedger/Shared/Keyboard/KeyboardDismissOnTap.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel2Background.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
-  - apps/ios/BuyLedger/Features/App/RootView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Lists/BLListRow.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel3Numeral.colorset/Contents.json
-  - apps/ios/BuyLedgerUITests/KeyboardDismissTests.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementDestination.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/SegmentedControls/BLSegmentedControl.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Status/BLStatusPill.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/TextFields/BLAmountField.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Lookups/LookupNameEditorSheet.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsStorage.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/ios/BuyLedgerTests/ColorContrastTests.swift
-  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
-  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
-  - apps/ios/README.md
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLPalette.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLLoadFailureView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
-  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Avatar/BLAvatar.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTone.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel4Numeral.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift
-  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
-  - apps/ios/BuyLedger/Features/Settings/AppearancePreference.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeroGradientStart.colorset/Contents.json
-  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedgerUITests.xcscheme
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
-  - apps/ios/BuyLedger/Features/More/MoreView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChartValue.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
-  - apps/ios/BuyLedger/Features/FX/FxView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel3Background.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel2Numeral.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessSoftBackground.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressBar.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLHeatmapDepth.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLRankBadgeFirstBackground.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralIndicator.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel4Background.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel1Numeral.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveOnIndicator.colorset/Contents.json
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
-  - apps/ios/BuyLedger/Features/App/RootFeature.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeroGradientEnd.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLTypographyModifier.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel1Background.colorset/Contents.json
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel5Background.colorset/Contents.json
-  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/TextFields/BLSearchField.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentIndicator.colorset/Contents.json
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/DelayedProgressView.swift
-  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentSurfaceText.colorset/Contents.json
-  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedger.xcscheme
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListLoadFailureLoopTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/LoadFailureReloadLoopTests.swift
+  - apps/ios/BuyLedger/Features/FX/Presentation/Root/FxView.swift
+  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardView.swift
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignView.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLoadCancellationTests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersListLoadFailureRow.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementView.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+LoadStateSampling.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignListView.swift
+  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsView.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Insights.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedger/App/Testing/Overrides/DependencyValues+BLUITestOverrides.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersCompactListView.swift
+  - apps/ios/BuyLedgerTests/Guards/TaskFinishConventionScanTests.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestLoadFailure.swift
+  - apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersView.swift
+  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteView.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderListLoadFailureTests.swift
 -->
 
 ---

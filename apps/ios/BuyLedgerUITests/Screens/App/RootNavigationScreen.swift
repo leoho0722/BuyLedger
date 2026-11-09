@@ -291,6 +291,7 @@ private extension RootNavigationScreen {
                 BLAccessibilityID.Insights.rangePicker,
                 BLAccessibilityID.Insights.trendTotalProfit,
                 BLAccessibilityID.Insights.emptyState,
+                BLAccessibilityID.Insights.loadFailureRetryButton,
             ])
 
         case .more:

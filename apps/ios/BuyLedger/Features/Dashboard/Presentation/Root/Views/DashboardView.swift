@@ -49,12 +49,11 @@ struct DashboardView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.blBackground)
-                .task {
-                    // 進入總覽頁時先載入訂單與設定資料
-                    // `refresh` 只轉發，去重由 `OrdersLoadFeature` 的載入守衛處理
-                    await store.send(.view(.task)).finish()
-                }
                 .rootNavigationTitle("dashboard.overview.title.overview", language: language)
+        }
+        .task {
+            // 共用載入掛在穩定堆疊上且只送出，避免分支互換重跑或離開畫面時取消讀取
+            store.send(.view(.task))
         }
     }
 }

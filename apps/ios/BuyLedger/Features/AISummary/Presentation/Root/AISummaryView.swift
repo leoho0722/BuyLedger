@@ -30,6 +30,7 @@ struct AISummaryView: View {
                     .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
             }
             .task {
+                // task-finish-exempt: AI 摘要串流只在摘要畫面呈現期間執行，離開畫面時應停止
                 await store.send(.view(.task)).finish()
             }
             .navigationTitle(Text("orders.general.label.aiItemSummary"))
@@ -59,20 +60,6 @@ private extension AISummaryView {
             .foregroundStyle(.blSecondaryLabel)
             .background(.secondary.opacity(0.08))
             .accessibilityIdentifier(BLAccessibilityID.AISummary.dataTransferDisclosure)
-    }
-
-    /// 總結 sheet 的關閉按鈕
-    @ToolbarContentBuilder
-    var closeToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .cancellationAction) {
-            Button {
-                store.send(.view(.closeTapped))
-            } label: {
-                Image(systemName: "xmark")
-            }
-            .accessibilityLabel(Text("common.action.label.close"))
-            .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
-        }
     }
 
     /// 依目前串流階段呈現的主內容
@@ -159,6 +146,20 @@ private extension AISummaryView {
         .background(.secondary.opacity(0.12), in: Capsule())
         // `frame` 保持在 `background` 外層，避免膠囊背景撐滿整列
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    /// 總結 sheet 的關閉按鈕
+    @ToolbarContentBuilder
+    var closeToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                store.send(.view(.closeTapped))
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .accessibilityLabel(Text("common.action.label.close"))
+            .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
+        }
     }
 }
 

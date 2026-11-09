@@ -39,10 +39,11 @@ struct InsightsView: View {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.blBackground)
-                .task {
-                    await store.send(.view(.task)).finish()
-                }
                 .rootNavigationTitle("orders.filter.title.insights", language: language)
+        }
+        .task {
+            // 共用載入掛在穩定堆疊上且只送出，避免分支互換重跑或離開畫面時取消讀取
+            store.send(.view(.task))
         }
     }
 }
@@ -64,9 +65,9 @@ private extension InsightsView {
                     onRetry: {
                         store.send(.view(.retryTapped))
                     },
-                    retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
+                    retryIdentifier: BLAccessibilityID.Insights.loadFailureRetryButton
                 )
-                .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
+                .accessibilityIdentifier(BLAccessibilityID.Insights.loadFailure)
 
             case .empty:
                 emptyState
@@ -117,7 +118,7 @@ private extension InsightsView {
         .scrollDisabled(true)
         .accessibilityElement()
         .accessibilityLabel(Text("common.action.label.loading"))
-        .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
+        .accessibilityIdentifier(BLAccessibilityID.Insights.loading)
     }
 
     /// 沒有訂單時的空狀態，引導使用者先建立訂單
@@ -255,6 +256,49 @@ private extension InsightsView {
     let previewState: InsightsFeature.State = {
         var state = InsightsFeature.State()
         state.orders = LedgerOrder.sampleOrders
+        state.loadState = .loaded
+        state.dateContext = InsightsDateContext(
+            now: LedgerOrder.sampleOrders[0].date,
+            calendar: Calendar(identifier: .gregorian)
+        )
+        return state
+    }()
+
+    InsightsView(
+        store: Store(initialState: previewState) {
+            InsightsFeature()
+        },
+        language: .traditionalChinese
+    )
+}
+
+#Preview("common.action.label.loading") {
+    InsightsView(
+        store: Store(initialState: InsightsFeature.State()) {
+            InsightsFeature()
+        },
+        language: .traditionalChinese
+    )
+}
+
+#Preview("載入失敗") {
+    let previewState: InsightsFeature.State = {
+        var state = InsightsFeature.State()
+        state.loadState = .failed("orders.general.message.ordersLoadedTry")
+        return state
+    }()
+
+    InsightsView(
+        store: Store(initialState: previewState) {
+            InsightsFeature()
+        },
+        language: .traditionalChinese
+    )
+}
+
+#Preview("首次使用") {
+    let previewState: InsightsFeature.State = {
+        var state = InsightsFeature.State()
         state.loadState = .loaded
         state.dateContext = InsightsDateContext(
             now: LedgerOrder.sampleOrders[0].date,

@@ -169,6 +169,9 @@ extension LaunchOptions {
         /// 訂單只有第一次讀取失敗
         case ordersFirstReadOnly
 
+        /// 訂單每次讀取都先延遲再失敗，用來驗證讀取中離開畫面
+        case ordersDelayed
+
         /// 開團載入失敗
         case campaigns
 

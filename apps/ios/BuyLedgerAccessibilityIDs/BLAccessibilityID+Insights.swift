@@ -15,6 +15,15 @@ extension BLAccessibilityID {
         /// 分析頁的根 accessibility identifier
         static let root = "insights.root"
 
+        /// 分析頁載入中容器
+        static let loading = Common.loading("insights")
+
+        /// 分析頁載入失敗容器
+        static let loadFailure = Common.loadFailure("insights")
+
+        /// 分析頁載入失敗重試按鈕
+        static let loadFailureRetryButton = Common.loadFailureRetryButton("insights")
+
         /// 分析頁無資料狀態容器
         static let emptyState = "insights.emptyState"
 

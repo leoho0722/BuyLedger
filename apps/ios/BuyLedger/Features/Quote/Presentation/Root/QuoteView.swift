@@ -45,6 +45,7 @@ struct QuoteView: View {
         .scrollDismissesKeyboard(.interactively)
         .bind($store.focusedField, to: $focusedField)
         .task {
+            // task-finish-exempt: 已知風險，待後續 change：切走時匯率回應可能遭取消，載入旗標因未收到回應而維持啟動
             await store.send(.view(.task)).finish()
         }
         .navigationTitle(Text("settings.more.label.quoteCalculator"))
@@ -89,11 +90,10 @@ private extension QuoteView {
                 platformFeePercent: $store.platformFeePercent,
                 targetMarginPercent: $store.targetMarginPercent,
                 currencyCode: store.rateSource.fromCurrency.rawValue,
-                focus: $focusedField,
-                onCurrencyPickerTapped: {
-                    store.send(.view(.currencyPickerTapped))
-                }
-            )
+                focus: $focusedField
+            ) {
+                store.send(.view(.currencyPickerTapped))
+            }
 
             suggestedHero
 

@@ -44,6 +44,7 @@ struct SettingsView: View {
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isGoalFieldFocused, to: $isGoalFieldFocused)
         .task {
+            // task-finish-exempt: 幣別選項只供設定畫面使用，離開時取消讀取不影響其他畫面
             await store.send(.view(.task)).finish()
         }
         .rootNavigationTitle("orders.edit.title.settings", language: store.language)
