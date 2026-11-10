@@ -19,13 +19,13 @@ extension BLAccessibilityID {
         static let listEmptyState = "orders.list.emptyState"
 
         /// 訂單清單載入失敗訊息
-        static let listLoadFailure = Common.loadFailure("orders.list")
+        static let listLoadFailure = "orders.list.loadFailure"
 
         /// 訂單清單載入中指示器
-        static let listLoading = Common.loading("orders.list")
+        static let listLoading = "orders.list.loading"
 
         /// 訂單清單載入失敗重試按鈕
-        static let listLoadFailureRetryButton = Common.loadFailureRetryButton("orders.list")
+        static let listLoadFailureRetryButton = "orders.list.loadFailure.retryButton"
 
         /// 新增訂單按鈕
         static let addButton = "orders.list.addButton"

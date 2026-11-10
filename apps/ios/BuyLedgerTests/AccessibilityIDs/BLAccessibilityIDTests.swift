@@ -83,66 +83,6 @@ struct BLAccessibilityIDTests {
         #expect(identifier == scenario.expectedIdentifier)
     }
 
-    /// 驗證訂單容器的載入失敗區塊識別碼，在容器前綴後接上失敗區域
-    @Test
-    func loadFailure_容器識別碼_附加載入失敗區域() {
-        // Given
-
-        // When
-        let loadFailure = BLAccessibilityID.Common.loadFailure("orders")
-
-        // Then
-        #expect(loadFailure == "orders.loadFailure")
-    }
-
-    /// 驗證訂單容器的重試鈕識別碼，接在該容器的載入失敗區域後
-    @Test
-    func loadFailureRetryButton_容器識別碼_附加重試按鈕區域() {
-        // Given
-
-        // When
-        let retryButton = BLAccessibilityID.Common.loadFailureRetryButton("orders")
-
-        // Then
-        #expect(retryButton == "orders.loadFailure.retryButton")
-    }
-
-    /// 驗證總覽的載入中區塊識別碼，使用固定的總覽前綴
-    @Test
-    func loading_總覽載入中_使用總覽前綴() {
-        // Given
-
-        // When
-        let loading = BLAccessibilityID.Dashboard.loading
-
-        // Then
-        #expect(loading == "dashboard.loading")
-    }
-
-    /// 驗證總覽的載入失敗區塊識別碼，在總覽前綴後接上失敗區域
-    @Test
-    func loadFailure_總覽載入失敗_使用總覽前綴() {
-        // Given
-
-        // When
-        let loadFailure = BLAccessibilityID.Dashboard.loadFailure
-
-        // Then
-        #expect(loadFailure == "dashboard.loadFailure")
-    }
-
-    /// 驗證總覽的重試鈕識別碼，接在總覽的載入失敗區域後
-    @Test
-    func loadFailureRetryButton_總覽重試按鈕_接在失敗區域後() {
-        // Given
-
-        // When
-        let loadFailureRetryButton = BLAccessibilityID.Dashboard.loadFailureRetryButton
-
-        // Then
-        #expect(loadFailureRetryButton == "dashboard.loadFailure.retryButton")
-    }
-
     /// 驗證每個靜態識別碼都只含 ASCII 字元且不為空
     ///
     /// - Parameter identifier: 要檢查的靜態識別碼
@@ -173,15 +113,15 @@ struct BLAccessibilityIDTests {
     @Test(arguments: [
         FeatureScopedItemCase(
             feature: .orders,
-            expectedIdentifier: "common.navigation.orders.selectedItem"
+            expectedIdentifier: "common.navigation.selectedItem.orders"
         ),
         FeatureScopedItemCase(
             feature: .campaigns,
-            expectedIdentifier: "common.navigation.campaigns.selectedItem"
+            expectedIdentifier: "common.navigation.selectedItem.campaigns"
         ),
         FeatureScopedItemCase(
             feature: .more,
-            expectedIdentifier: "common.navigation.more.selectedItem"
+            expectedIdentifier: "common.navigation.selectedItem.more"
         ),
     ])
     func selectedItem_指定功能範疇_組成符合慣例之ASCII識別碼(scenario: FeatureScopedItemCase) {

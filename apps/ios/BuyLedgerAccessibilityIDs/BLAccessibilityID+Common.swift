@@ -34,37 +34,13 @@ extension BLAccessibilityID {
             case more
         }
 
-        /// 組出載入中容器的識別碼
-        ///
-        /// - Parameter feature: 功能名稱
-        /// - Returns: 載入中容器的 accessibility identifier
-        static func loading(_ feature: String) -> String {
-            option(feature, key: "loading")
-        }
-
-        /// 組出載入失敗容器的識別碼
-        ///
-        /// - Parameter feature: 功能名稱
-        /// - Returns: 載入失敗容器的 accessibility identifier
-        static func loadFailure(_ feature: String) -> String {
-            option(feature, key: "loadFailure")
-        }
-
-        /// 組出載入失敗容器重試按鈕的識別碼
-        ///
-        /// - Parameter feature: 功能名稱
-        /// - Returns: 載入失敗重試按鈕的 accessibility identifier
-        static func loadFailureRetryButton(_ feature: String) -> String {
-            option(feature, key: "loadFailure") + ".retryButton"
-        }
-
         /// 組出各功能共用格式、依功能範疇區分的目前選取項目識別碼
         ///
         /// - Parameter feature: 功能範疇 (如 `.orders`, `.campaigns`, `.more`)
-        /// - Returns: 對應功能的選取項目識別碼 (格式：`"common.navigation.<feature>.selectedItem"`)
+        /// - Returns: 對應功能的選取項目識別碼 (格式：`"common.navigation.selectedItem.<feature>"`)
         /// - Note: 該元素的 `accessibilityValue` 直接反映導覽路徑目前選取的項目識別碼；未選取時為空字串，不另存第二份選取狀態
         static func selectedItem(_ feature: Feature) -> String {
-            "common.navigation.\(feature.rawValue).selectedItem"
+            option("common.navigation.selectedItem", key: feature.rawValue)
         }
     }
 
