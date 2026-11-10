@@ -19,10 +19,10 @@ extension BLAccessibilityID {
         static let listEmptyState = "campaigns.list.emptyState"
 
         /// 開團清單載入失敗容器
-        static let listLoadFailure = Common.loadFailure("campaigns.list")
+        static let listLoadFailure = "campaigns.list.loadFailure"
 
         /// 開團清單載入失敗重試按鈕
-        static let listLoadFailureRetryButton = Common.loadFailureRetryButton("campaigns.list")
+        static let listLoadFailureRetryButton = "campaigns.list.loadFailure.retryButton"
 
         /// 新增開團按鈕
         static let addButton = "campaigns.list.addButton"

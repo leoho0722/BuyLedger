@@ -16,13 +16,13 @@ extension BLAccessibilityID {
         static let root = "dashboard.root"
 
         /// 總覽頁載入中容器
-        static let loading = Common.loading("dashboard")
+        static let loading = "dashboard.loading"
 
         /// 總覽頁載入失敗容器
-        static let loadFailure = Common.loadFailure("dashboard")
+        static let loadFailure = "dashboard.loadFailure"
 
         /// 總覽頁載入失敗重試按鈕
-        static let loadFailureRetryButton = Common.loadFailureRetryButton("dashboard")
+        static let loadFailureRetryButton = "dashboard.loadFailure.retryButton"
 
         /// 總覽頁無資料狀態容器
         static let emptyState = "dashboard.emptyState"

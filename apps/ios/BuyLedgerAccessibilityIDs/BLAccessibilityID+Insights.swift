@@ -16,13 +16,13 @@ extension BLAccessibilityID {
         static let root = "insights.root"
 
         /// 分析頁載入中容器
-        static let loading = Common.loading("insights")
+        static let loading = "insights.loading"
 
         /// 分析頁載入失敗容器
-        static let loadFailure = Common.loadFailure("insights")
+        static let loadFailure = "insights.loadFailure"
 
         /// 分析頁載入失敗重試按鈕
-        static let loadFailureRetryButton = Common.loadFailureRetryButton("insights")
+        static let loadFailureRetryButton = "insights.loadFailure.retryButton"
 
         /// 分析頁無資料狀態容器
         static let emptyState = "insights.emptyState"
