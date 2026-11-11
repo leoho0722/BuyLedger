@@ -33,8 +33,11 @@ enum BLUITestStubs {
     /// 行事曆替身建立事件後回傳的固定識別碼
     private static let stubEventIdentifier = "ui-test-event-identifier"
 
-    /// UI 測試用本機驗證回覆延遲，讓重試中間狀態可被 XCUITest 觀察
-    private static let biometricResponseDelay = Duration.seconds(3)
+    /// UI 測試用本機驗證失敗回覆延遲，讓重試中間狀態可被 XCUITest 觀察
+    private static let biometricFailureDelay = Duration.seconds(3)
+
+    /// UI 測試用本機驗證成功回覆延遲：長到 UI 測試啟動完成時鎖定畫面仍在，又短於延遲讀取失敗的 8 秒，讓解鎖發生在讀取進行中
+    private static let biometricSuccessDelay = Duration.seconds(4)
 
     /// AI 摘要替身的固定輸出，建立串流時一次全部 `yield` 完 (不模擬串流節奏)
     private static let aiSummaryChunks = [
@@ -116,19 +119,21 @@ extension BLUITestStubs {
     static func makeBiometricAuthService(
         scenario: BLUITestBiometricScenario
     ) -> BiometricAuthService {
-        let result: BiometricAuthService.AuthenticationResult
-        if scenario == .success {
-            result = .success
-        } else {
-            result = .failure
-        }
         return BiometricAuthService(
             isAvailable: { true },
             authenticate: { _ in
-                if scenario == .failure {
-                    try? await Task.sleep(for: biometricResponseDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                switch scenario {
+                case .success:
+                    return .success
+
+                case .successDelayed:
+                    try? await Task.sleep(for: biometricSuccessDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的成功結果
+                    return .success
+
+                case .failure:
+                    try? await Task.sleep(for: biometricFailureDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                    return .failure
                 }
-                return result
             },
             biometryType: { .faceID }
         )

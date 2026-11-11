@@ -79,7 +79,8 @@
   - iPad 的數字鍵盤按鍵不在 `snapshot-ui` 內，也不可改用 `key-press`／`key-sequence`：硬體按鍵會讓模擬器進入硬體鍵盤狀態，軟體鍵盤不再出現，鍵盤相關 UI 測試整批失敗；到 Device Hub 切換 Simulate Hardware Keyboard 可恢復，重開模擬器後又會回來。iPad 上需要輸入數字的實測改寫成量完即刪的暫時 XCUITest。
 - **`simulator launch-app` 會結束並重開 App**，不會把背景中的 App 帶回前景：驗證背景與前景改按 `ui-automation button --button-type lock`，再按兩次 `home` 喚醒並解鎖。
   - 一閃即過的畫面 (如自動解鎖) 用 `simulator record-video` 錄影逐格確認。
-- **`--launch-args` 的純數字值會驗證失敗**，改用 `--json '{"launchArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。
+  - 回傳的 OSLog 檔只擷取啟動後一小段時間，Runtime Logs 檔 (stdout) 才持續到 App 結束：需要跨背景與前景觀察的暫時診斷用 `print`。
+- **`--launch-args`／`--extra-args` 的純數字值會驗證失敗** (如 `-test-iterations 3`)，改用 `--json '{"launchArgs":[...]}'`／`--json '{"extraArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。
 - **列位於分頁列範圍下方時 `touch` 會點到分頁列**，先捲動讓目標露出再點。
 - **sheet 內 `List` 最後一列的 `touch`／`tap` 可能回報成功卻沒觸發** (同一 sheet 其他列正常)：改以 XCUITest 驗證 (正式 UI 測試，或量完即刪的暫時測試)，不反覆重試。
 - **iPad 模擬器多工模式維持「全螢幕 App」**：「視窗 App」模式下 `snapshot-ui` 取不到可及性樹。
@@ -208,6 +209,8 @@
 
 - **`MoreFeature` 是 App 殼層的分頁宿主**，沒有自己的領域資料；它的 `Path` 引用其他 Feature 模組的 Feature 型別，視為 kit「跨 Feature 模組導航只在 App 層」的殼層例外，目錄暫留 `Features/More/`，依第 10 步調整。
 - **設定寫入維持 reducer 內同步呼叫**：讓連續輸入依序保存，避免非同步效果重排快照。
+- **供其他畫面使用的結果，或生命週期由 App 管理的 `Effect`，不依賴 `.task` 取消管理**：`.task` 只送出不等待，讀取由載入器去重，長效監聽以 `CancelID` 加 `cancelInFlight: true` 取代前一次；`ios-navigation.md` 的 `.task` 條目優先於 kit `tca-architecture.md` 的 Effect 條目 (監聽靠離開畫面取消、`CancelID` 只給使用者動作)。
+  - 只該在畫面存在時執行的工作仍可等待 `finish()`，呼叫點要寫 `task-finish-exempt` 理由。
 
 ### 依 kit、例外先個案討論
 

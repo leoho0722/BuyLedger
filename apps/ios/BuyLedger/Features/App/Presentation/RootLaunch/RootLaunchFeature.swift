@@ -37,7 +37,7 @@ struct RootLaunchFeature {
         /// - Parameter outcome: 快取中的幣別清單或讀取失敗原因
         case currencyCodesResponse(Result<[CurrencyCode], CurrencyMetadataServiceError>)
 
-        /// 根功能於 `view(.task)` 時送出，開始載入幣別並監聽時間變更
+        /// 根功能於 `view(.task)` 時送出，開始載入幣別並監聽時間變更；再次送出時取代前一次時間監聽
         case loadRequested
 
         /// 需要根功能處理的事件
@@ -62,6 +62,18 @@ struct RootLaunchFeature {
     /// 只負責組合 reducer，本功能自己的邏輯在 `core(state:action:)`
     var body: some ReducerOf<Self> {
         Reduce(core)
+    }
+}
+
+// MARK: - Nested Types
+
+extension RootLaunchFeature {
+
+    /// 啟動載入功能用來取代既有工作的取消識別
+    enum CancelID {
+
+        /// 系統重大時間變更監聽
+        case significantTimeChanges
     }
 }
 

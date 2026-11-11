@@ -143,6 +143,9 @@ extension LaunchOptions {
         /// 本機驗證一律成功
         case success
 
+        /// 本機驗證延遲後成功，讓解鎖發生在啟動的資料讀取進行中
+        case successDelayed
+
         /// 本機驗證一律失敗
         case failure
     }
