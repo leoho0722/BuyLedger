@@ -131,4 +131,110 @@ final class LoadFailureReloadLoopTests: BLUITestCase {
             context: "離開客戶頁後的訂單清單"
         )
     }
+
+    /// 驗證冷啟動解鎖發生在訂單讀取期間，總覽仍收到失敗結果且不再回到載入中
+    ///
+    /// - Note: 情境測試，固定 app-lock 規格的冷啟動解鎖範例
+    func testColdStartUnlock_訂單延遲讀取失敗_解鎖後總覽收到失敗結果() {
+        // Given
+        let app = launch(
+            LaunchOptions(
+                loadFailure: .ordersDelayed,
+                isAppLockEnabled: true,
+                biometricScenario: .successDelayed
+            )
+        )
+        let lockScreen = AppLockScreen(app: app)
+        guard lockScreen.waitUntilReady(timeout: 1) else {
+            failWithDiagnostics(in: app, "啟動後鎖定畫面不在驗證成功前的時間窗內，時間窗不存在")
+            return
+        }
+
+        // When
+        let dashboardLoading = app.descendants(matching: .any)[BLAccessibilityID.Dashboard.loading]
+        guard dashboardLoading.waitForExistence(timeout: 8) else {
+            failWithDiagnostics(in: app, "解鎖後總覽未顯示載入中，訂單讀取已結束或未進行，時間窗不存在")
+            return
+        }
+
+        // Then
+        assertLoadStateStaysStable(
+            in: app,
+            waitingFor: BLAccessibilityID.Dashboard.loadFailure,
+            present: [BLAccessibilityID.Dashboard.loadFailureRetryButton],
+            absent: [BLAccessibilityID.Dashboard.loading],
+            context: "冷啟動解鎖後的總覽",
+            firstAppearanceTimeout: 7
+        )
+    }
+
+    /// 驗證 App 進入背景上鎖後，在訂單讀取期間回前景解鎖，總覽仍收到失敗結果且不再回到載入中
+    ///
+    /// - Note: 情境測試，固定 app-lock 規格的背景上鎖範例
+    func testBackgroundLock_訂單延遲讀取失敗_回前景解鎖後總覽收到失敗結果() {
+        // Given
+        let app = launch(
+            LaunchOptions(
+                loadFailure: .ordersDelayed,
+                isAppLockEnabled: true,
+                biometricScenario: .success
+            )
+        )
+        let dashboardLoading = app.descendants(matching: .any)[BLAccessibilityID.Dashboard.loading]
+        guard dashboardLoading.waitForExistence(timeout: 5) else {
+            failWithDiagnostics(in: app, "啟動後總覽未顯示載入中，訂單讀取已結束或未進行，時間窗不存在")
+            return
+        }
+        let loadingSeenAt = Date()
+
+        // When
+        XCUIDevice.shared.press(.home)
+        guard waitUntilInBackground(app, timeout: 5) else {
+            failWithDiagnostics(in: app, "按下 Home 後 App 未進入背景，沒有上鎖")
+            return
+        }
+        // 從看到載入中起算 3 秒後才回前景 (對齊規格範例)，進入背景前已經過的時間要扣除
+        let backgroundDuration: TimeInterval = 3
+        let remainingDuration = backgroundDuration - Date().timeIntervalSince(loadingSeenAt)
+        if remainingDuration > 0 {
+            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: remainingDuration)
+        }
+        app.activate()
+
+        // Then
+        guard dashboardLoading.waitForExistence(timeout: 3) else {
+            failWithDiagnostics(in: app, "回前景解鎖後總覽未顯示載入中，訂單讀取已結束或被取消，時間窗不存在")
+            return
+        }
+        assertLoadStateStaysStable(
+            in: app,
+            waitingFor: BLAccessibilityID.Dashboard.loadFailure,
+            present: [BLAccessibilityID.Dashboard.loadFailureRetryButton],
+            absent: [BLAccessibilityID.Dashboard.loading],
+            context: "背景上鎖並解鎖後的總覽",
+            firstAppearanceTimeout: 5
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension LoadFailureReloadLoopTests {
+
+    /// 輪詢等待 App 離開前景
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - timeout: 等待進入背景的秒數
+    /// - Returns: App 是否在逾時前進入 `runningBackground` 或 `runningBackgroundSuspended`
+    func waitUntilInBackground(_ app: XCUIApplication, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if app.state == .runningBackground || app.state == .runningBackgroundSuspended {
+                return true
+            }
+            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
+        } while Date() < deadline
+        return false
+    }
 }

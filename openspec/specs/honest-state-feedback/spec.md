@@ -171,7 +171,7 @@ code:
 ---
 ### Requirement: Load failure is surfaced with a reason and a recovery path
 
-When a screen depends on data that fails to load, the screen SHALL display an explanation of the failure together with a control that retries the load. It SHALL NOT remain in a loading state indefinitely. Screens SHALL distinguish three states — loaded, failed, and loading — rather than inferring failure from the absence of a loaded flag. A screen moving between its loading and failed states SHALL NOT by itself start another load request. A load whose result is shared with other screens SHALL deliver its result to those screens even when the screen that requested it is no longer displayed, so that leaving a screen during such a load SHALL NOT leave any screen in the loading state indefinitely.
+When a screen depends on data that fails to load, the screen SHALL display an explanation of the failure together with a control that retries the load. It SHALL NOT remain in a loading state indefinitely. Screens SHALL distinguish three states — loaded, failed, and loading — rather than inferring failure from the absence of a loaded flag. A screen moving between its loading and failed states SHALL NOT by itself start another load request. A load whose result is shared with other screens SHALL deliver its result to those screens even when the screen that requested it is no longer displayed, so that leaving a screen during such a load SHALL NOT leave any screen in the loading state indefinitely. Replacing the visible content with the lock screen, or revealing the content after authentication, SHALL NOT cancel such a load either.
 
 #### Scenario: Dashboard surfaces an order load failure
 
@@ -226,36 +226,26 @@ When a screen depends on data that fails to load, the screen SHALL display an ex
 - **THEN** once the read finishes, the order list shows the order load failure message instead of staying in the loading state
 
 
+#### Scenario: Revealing the content after authentication during a launch load keeps the load result
+
+- **GIVEN** ledger protection is on, authentication succeeds only after a short delay, and every order read fails only after a longer delay
+- **WHEN** the App is launched and authentication succeeds while the launch's order read is still in progress
+- **THEN** once the read finishes, the dashboard shows the order load failure message with a retry control instead of staying in the loading state
+
+
 <!-- @trace
-source: load-failure-reload-loop
-updated: 2026-11-09
+source: root-task-lock-cancellation
+updated: 2026-11-11
 code:
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListLoadFailureLoopTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Navigation/LoadFailureReloadLoopTests.swift
-  - apps/ios/BuyLedger/Features/FX/Presentation/Root/FxView.swift
-  - apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardView.swift
-  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignView.swift
-  - apps/ios/BuyLedgerTests/Features/App/RootFeatureLoadCancellationTests.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootLaunchFeatureTests.swift
   - apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift
-  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersListLoadFailureRow.swift
-  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupManagementView.swift
-  - apps/ios/BuyLedgerUITests/Support/XCTestCase+LoadStateSampling.swift
-  - apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignList/Views/CampaignListView.swift
-  - apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsView.swift
-  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Insights.swift
-  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
-  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
-  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift
-  - apps/ios/BuyLedger/App/Testing/Overrides/DependencyValues+BLUITestOverrides.swift
-  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
-  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderList/Views/OrdersCompactListView.swift
-  - apps/ios/BuyLedgerTests/Guards/TaskFinishConventionScanTests.swift
-  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestLoadFailure.swift
-  - apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersView.swift
-  - apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteView.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchFeature.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/LoadFailureReloadLoopTests.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestBiometricScenario.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/App/Testing/TestDoubles/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchOperations.swift
   - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderListLoadFailureTests.swift
 -->
 
 ---

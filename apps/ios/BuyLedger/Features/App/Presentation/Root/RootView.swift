@@ -38,9 +38,11 @@ struct RootView: View {
 
 private extension RootView {
 
-    /// 持久層正常時的主內容，依鎖定狀態切換鎖定畫面與一般佈局；啟動工作只在這一層執行
+    /// 持久層正常時的主內容，單一容器包住鎖定畫面與一般佈局的切換，鎖定與解鎖不會取消或重跑根層 `.task`
+    ///
+    /// - Note: `.task` 不可掛到 `body` 外層的 `Group`，持久層失敗時也會發起讀取；啟動工作壽命跟 store 而不跟 view，所以只送出
     var mainContent: some View {
-        Group {
+        ZStack {
             if store.appLock.isLocked {
                 AppLockView(store: store.scope(state: \.appLock, action: \.appLock))
             } else {
@@ -48,8 +50,7 @@ private extension RootView {
             }
         }
         .task {
-            // task-finish-exempt: 已知風險，待後續 change：鎖定狀態切換會取消根層啟動鏈，可能遺失載入回應
-            await store.send(.view(.task)).finish()
+            store.send(.view(.task))
         }
     }
 

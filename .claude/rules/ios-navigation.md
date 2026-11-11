@@ -14,12 +14,16 @@ paths:
 - **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`**，`AppDelegate` 只在 `didFinishLaunching` 呼叫它；新增啟動設定加在這裡。
 - **啟動載入由 Root 先送主檔目錄，完成後才送訂單**：`view(.task)` 送 `.more(.catalogLoadRequested)`、`.campaigns(.loadRequested)` 與 `.launch(.loadRequested)`，`.more(.delegate(.catalogLoadFinished))` 才送 `.orders(.rootRequest(.load))`。首頁、分析、客戶頁重試與訂單分頁的載入請求也都由 Root 先經主檔目錄，不以子層畫面事件觸發。
     - 清單出現或重試時先寫入 `dateContext`，再以 delegate 請容器載入 (訂單清單經 Root 先讀主檔目錄)；`OrdersLoadFeature`／`CampaignLoadFeature` 在載入中或已載入時略過，首次失敗後下一次請求會重讀。
+    - 根層 `view(.task)` 衍生的工作必須可重送 (根畫面重建與 iPad 多視窗都會再次送出)：讀取由載入器去重，長效監聽以 cancel id 加 `cancelInFlight: true` 取代前一次 (目前只有系統時間變更監聽)。
 - **畫面的 `.task` 掛在 body 根為單一、非條件容器的 view 上，只呼叫 `store.send(.view(.task))`，不等待 `finish()`**：
     - 不掛在 `Group`、`switch`、`if` 等條件內容上 (body 本身是條件內容的自訂 View 也算)：官方註明 `Group` 的修飾器套用到各成員，載入中與失敗互換時 `.task` 重跑並送出新的載入請求；沒有 `Group` 的條件內容官方沒有保證行為，一律比照處理。總覽與分析掛在 `NavigationStack` 這一層，開團清單掛在包住條件內容的單一容器上。
     - 結果要給其他畫面用、或必須比畫面活得久的工作只送出不等待：view 消失或身分改變時 SwiftUI 取消 `.task`，等待中的 `finish()` 會連帶取消這次送出衍生的 effect，包括經 Root 串起的共用讀取 (`RootFeatureLoadCancellationTests` 固定此 TCA 行為)。
     - 以「只由回應清除的載入中旗標」去重的載入器 (`OrdersLoadFeature`、`LookupCatalogFeature`、`CampaignLoadFeature`) 不可在會被取消的 `.task` 底下發起：回應一次被丟棄，旗標就停在載入中，之後的請求與重試全被擋下。
     - 只該在畫面存在時執行的工作，才等待 `finish()` 或由 reducer 以 cancel id 管理；等待 `finish()` 的呼叫點在同一行或上一行寫 `// task-finish-exempt: <理由>`，由 `TaskFinishConventionScanTests` 掃描 `Features/` 守門。
-    - 已知例外：`RootView` 的根層 `.task` 掛在依鎖定狀態切換的 `Group` 上並等待 `finish()`，新程式碼不比照。
+    - `RootView` 的根層 `.task` 掛在持久層正常分支內、包住鎖定切換的單一 `ZStack` 上，只送出不等待，不以 `task-finish-exempt` 豁免 (持久層正常分支在同一個 process 內出現後不會消失)：
+        - 容器不可改成條件內容：鎖定切換若讓 `.task` 重跑，每次上鎖與解鎖都會重送啟動鏈並重讀失敗的讀取，違反「App 鎖定」的不發起讀取規則。
+        - 不可等待 `finish()`：啟動讀取與時間監聽屬於 App 持有的 store，根畫面重建 (含 iPad 關閉其中一個視窗) 時不可隨之取消。
+        - 不掛在 `body` 外層的 `Group`：持久層失敗時也會發起讀取。
 - **跨頁觸發新訂單由 Root 在總覽 `delegate(.newOrderTapped)` 的同一次更新內切到 `.orders` 並呼叫容器的 `presentNewOrder(id:now:calendar:)`**：從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
     - 訂單分頁新增、編輯、合併確認與首頁新增都經容器的 `makeEditOptions(now:calendar:)` 帶入主檔、開團、幣別與行事曆；Root 不自行建立 `OrderEditFeature.State`，表單不在 `.task` 讀取選項。
 - **Orders 的編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的同一個 `destination`，掛在 `OrdersView` 外層**：以 `@Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)` 取得子 store，經 `$presentation.scope(state: \.$destination, action: \.destination)` 的各 case 呈現，iPhone／iPad 共用，不移到平台分流後的子 view。
@@ -59,6 +63,8 @@ paths:
 - **啟用帳本保護前先通過一次驗證**：`SettingsFeature` 收到 `view(.appLockToggled(true))` 先呼叫 `BiometricAuthService`，成功才設 `isBiometricUnlockEnabled`、寫入並送 `delegate(.preferencesChanged)`，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
     - 設定頁 Toggle 用自訂 `Binding` (`get` 讀已生效的值、`set` 只送出意圖)，不用 `$store.xxx`，讓驗證失敗時開關自動彈回。
     - `AppLockFeature` 常駐於 Root，只管上鎖與解鎖；啟用驗證與失敗說明留在設定頁，因為 alert 要掛在推入的設定頁之上。
+- **鎖定與解鎖只切換顯示內容，不發起、不取消、不重試資料讀取**：解鎖後顯示的分頁依自身出現規則載入。
+    - 要加前景重試時由 Root 處理 `didBecomeActive`，不由 `AppLockFeature` 新增 delegate：鎖定功能不帶資料語意，開鎖與不開鎖的使用者維持同一套恢復行為。
 
 ## 呈現
 

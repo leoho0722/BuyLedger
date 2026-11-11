@@ -51,7 +51,7 @@ private extension RootLaunchOperations {
         }
     }
 
-    /// 監聽系統重大時間變更，每次變更都以委派交給啟動載入功能
+    /// 監聽系統重大時間變更並取代前一次監聽，每次變更都以委派交給啟動載入功能
     ///
     /// - Returns: 持續送出時間變更委派的工作
     func observeSignificantTimeChanges() -> Effect<RootLaunchFeature.Action> {
@@ -60,5 +60,6 @@ private extension RootLaunchOperations {
                 await send(.delegate(.significantTimeChanged))
             }
         }
+        .cancellable(id: RootLaunchFeature.CancelID.significantTimeChanges, cancelInFlight: true)
     }
 }

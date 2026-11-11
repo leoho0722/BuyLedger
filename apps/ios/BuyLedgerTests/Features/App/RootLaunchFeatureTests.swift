@@ -92,6 +92,70 @@ struct RootLaunchFeatureTests {
         await store.finish()
     }
 
+    /// 驗證連續請求載入時取代前一次時間監聽，系統廣播一次變更只送出一次委派
+    @Test(.timeLimit(.minutes(1)))
+    func loadRequested_連續送出兩次_只保留最後一次時間監聽() async {
+        // Given
+        let subscriptions = LockIsolated<[AsyncStream<Void>.Continuation]>([])
+        let hasTerminated = LockIsolated<[Bool]>([])
+        let subscriptionStarted = AsyncStream<Int>.makeStream()
+        var subscriptionIterator = subscriptionStarted.stream.makeAsyncIterator()
+        let initial = Self.makeIsolatedLaunchState()
+        let store = TestStore(initialState: initial) {
+            RootLaunchFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.currencyMetadataService.refreshIfStale = { _ in
+                false
+            }
+            $0.currencyMetadataService.fetchCodes = {
+                []
+            }
+            $0.significantTimeChangeService.changes = {
+                let timeChanges = AsyncStream<Void>.makeStream()
+                let subscriptionIndex = subscriptions.withValue {
+                    let index = $0.count
+                    $0.append(timeChanges.continuation)
+                    return index
+                }
+                hasTerminated.withValue {
+                    $0.append(false)
+                }
+                timeChanges.continuation.onTermination = { _ in
+                    hasTerminated.withValue {
+                        $0[subscriptionIndex] = true
+                    }
+                }
+                subscriptionStarted.continuation.yield(subscriptionIndex)
+                return timeChanges.stream
+            }
+        }
+        await store.send(.loadRequested)
+        await store.receive(\.currencyCodesResponse.success, [])
+        let firstSubscription = await subscriptionIterator.next()
+        #expect(firstSubscription == 0)
+
+        // When
+        await store.send(.loadRequested)
+
+        // Then
+        await store.receive(\.currencyCodesResponse.success, [])
+        let secondSubscription = await subscriptionIterator.next()
+        #expect(secondSubscription == 1)
+        #expect(subscriptions.value.count == 2)
+        #expect(hasTerminated.value == [true, false])
+        for continuation in subscriptions.value {
+            continuation.yield(())
+        }
+        await store.receive(\.delegate.significantTimeChanged)
+        for continuation in subscriptions.value {
+            continuation.finish()
+        }
+        subscriptionStarted.continuation.finish()
+        await store.finish()
+        #expect(hasTerminated.value == [true, true])
+    }
+
     /// 驗證快取回傳非空清單時，共用幣別清單改為快取內容
     @Test
     func currencyCodesResponse_成功且非空_寫入共用幣別清單() async {
