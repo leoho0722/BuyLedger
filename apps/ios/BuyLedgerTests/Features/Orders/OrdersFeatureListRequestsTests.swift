@@ -42,7 +42,6 @@ struct OrdersFeatureListRequestsTests {
         await store.receive(\.list.delegate.loadRequested)
         await store.receive(\.delegate.loadRequested)
         #expect(store.state.list.hasLoaded)
-        #expect(store.state.list.isLoading == false)
     }
 
     /// 驗證清單已記錄日期脈絡時開始合併，合併候選沿用清單的時間與時區，即使注入的時間與時區不同也不覆寫

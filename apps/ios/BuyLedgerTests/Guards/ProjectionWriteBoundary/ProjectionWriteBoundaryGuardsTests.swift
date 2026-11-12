@@ -8,7 +8,7 @@
 import Foundation
 import Testing
 
-/// 共享訂單投影寫入邊界的單元測試，涵蓋正式原始碼掃描與片段違規案例
+/// 共享投影寫入邊界的單元測試，涵蓋正式原始碼掃描與片段違規案例
 struct ProjectionWriteBoundaryGuardsTests {
 
     // MARK: - Properties
@@ -231,6 +231,111 @@ struct ProjectionWriteBoundaryGuardsTests {
         ),
     ]
 
+    /// 訂單載入狀態投影的合法寫入者、唯讀轉換與可寫參考外傳案例
+    private static let sharedLoadStateScenarios: [ProjectionWriteBoundaryScenario] = [
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: "state.$ordersLoadState.withLock { $0 = .loaded }",
+            expectedCount: 2
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: "let leaked = state.$ordersLoadState",
+            expectedCount: 1
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: "SharedReader(state.$ordersLoadState)",
+            expectedCount: 0
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: "SharedReader(\n    state.more.$ordersLoadState\n)",
+            expectedCount: 0
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/App/Presentation/Root/RootFeature.swift",
+            source: "state.more.$ordersLoadState.withLock { $0 = .loaded }",
+            expectedCount: 0
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrderWritesFeature.swift",
+            source: "state.$ordersLoadState.withLock { $0 = .loaded }",
+            expectedCount: 1
+        ),
+    ]
+
+    /// 訂單投影與載入狀態投影同時出現時的可寫參考與唯讀轉換案例
+    private static let sharedProjectionCombinationScenarios: [ProjectionWriteBoundaryScenario] = [
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: """
+                CustomersFeature.State(orders: state.$orders, \
+                loadState: SharedReader(state.$ordersLoadState))
+                """,
+            expectedCount: 1
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: """
+                CustomersFeature.State(orders: SharedReader(
+                    state.more.$orders
+                ), loadState: SharedReader(state.more.$ordersLoadState))
+                """,
+            expectedCount: 0
+        ),
+    ]
+
+    /// 投影直接賦值的非法寫入與合法初始化案例
+    private static let directProjectionScenarios: [ProjectionWriteBoundaryScenario] = [
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: """
+                struct MoreFeature {
+                    func update(state: inout State) {
+                        state.ordersLoadState = .loaded
+                    }
+                }
+                """,
+            expectedCount: 1
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: """
+                struct MoreFeature {
+                    func update(state: inout State) {
+                        state.orders = []
+                    }
+                }
+                """,
+            expectedCount: 1
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
+            source: "state.more.ordersLoadState = .loaded",
+            expectedCount: 1
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
+            source: """
+                struct MoreFeature {
+                    struct State {
+                        init() {
+                            _orders = Shared<[LedgerOrder]>(value: [])
+                            _ordersLoadState = Shared<OrdersLoadState>(value: .loading)
+                        }
+                    }
+                }
+                """,
+            expectedCount: 0
+        ),
+        ProjectionWriteBoundaryScenario(
+            relativePath: "Features/App/Presentation/Root/RootFeature.swift",
+            source: "state.more.ordersLoadState = .loaded",
+            expectedCount: 0
+        ),
+    ]
+
     /// 驗證投影擁有者宣告的主檔路徑都存在於 App 原始碼，清單過時時會列出缺漏的主檔
     @Test
     func projectionOwners_檢查主檔路徑_全部存在() {
@@ -294,11 +399,11 @@ struct ProjectionWriteBoundaryGuardsTests {
         )
     }
 
-    /// 驗證共享訂單只由擁有者寫入，開團與更多功能只取得唯讀參考，沒有投影寫入或可寫參考外傳
+    /// 驗證共享投影只由各自的合法寫入者更新，唯讀目錄不寫入也不外傳可寫參考
     ///
     /// - Throws: 原始檔讀取或規則建立失敗時丟出錯誤
     @Test
-    func sharedOrderViolations_掃描正式原始碼_沒有投影寫入或可寫參考外傳() throws {
+    func sharedProjectionViolations_掃描正式原始碼_沒有投影寫入或可寫參考外傳() throws {
         // Given
         let files = try SwiftSourceFiles.swiftFiles(
             under: ProjectionWriteBoundaryScanner.productionRoot
@@ -312,7 +417,7 @@ struct ProjectionWriteBoundaryGuardsTests {
                 under: ProjectionWriteBoundaryScanner.productionRoot
             )
             let source = try String(contentsOf: file, encoding: .utf8)
-            violations += try ProjectionWriteBoundaryScanner.sharedOrderViolations(
+            violations += try ProjectionWriteBoundaryScanner.sharedProjectionViolations(
                 relativePath: relativePath,
                 source: source
             )
@@ -322,22 +427,47 @@ struct ProjectionWriteBoundaryGuardsTests {
         #expect(files.count >= Self.minimumProductionFileCount)
         #expect(
             violations.isEmpty,
-            "共享訂單投影違規：\(ProjectionWriteBoundaryPatterns.describe(violations))"
+            "共享投影違規：\(ProjectionWriteBoundaryPatterns.describe(violations))"
         )
     }
 
-    /// 驗證每個原始碼片段的共享訂單違規筆數都符合案例的預期值，涵蓋寫入邊界與唯讀轉換
+    /// 驗證訂單投影與載入狀態投影的原始碼片段違規筆數符合預期，兩種投影共用寫入邊界與唯讀轉換規則
     ///
     /// - Parameter scenario: 檔案路徑、原始碼與預期違規筆數
     /// - Throws: 規則建立失敗時丟出錯誤
-    @Test(arguments: Self.sharedOrderScenarios + Self.sharedOrderWriterScenarios)
-    func sharedOrderViolations_套用路徑與原始碼_符合預期違規筆數(scenario: ProjectionWriteBoundaryScenario) throws {
+    @Test(
+        arguments: Self.sharedOrderScenarios + Self.sharedOrderWriterScenarios
+            + Self.sharedLoadStateScenarios + Self.sharedProjectionCombinationScenarios
+    )
+    func sharedProjectionViolations_套用路徑與原始碼_符合預期違規筆數(
+        scenario: ProjectionWriteBoundaryScenario
+    ) throws {
         // Given
         let relativePath = scenario.relativePath
         let source = scenario.source
 
         // When
-        let violations = try ProjectionWriteBoundaryScanner.sharedOrderViolations(
+        let violations = try ProjectionWriteBoundaryScanner.sharedProjectionViolations(
+            relativePath: relativePath,
+            source: source
+        )
+
+        // Then
+        #expect(violations.count == scenario.expectedCount)
+    }
+
+    /// 驗證投影直接賦值只允許在根功能處理，更多頁初始化共享來源時不會被誤判
+    ///
+    /// - Parameter scenario: 直接賦值或初始化的原始碼片段與預期違規筆數
+    /// - Throws: 規則建立失敗時丟出錯誤
+    @Test(arguments: Self.directProjectionScenarios)
+    func projectionViolations_直接賦值與初始化_符合預期違規筆數(scenario: ProjectionWriteBoundaryScenario) throws {
+        // Given
+        let relativePath = scenario.relativePath
+        let source = scenario.source
+
+        // When
+        let violations = try ProjectionWriteBoundaryScanner.projectionViolations(
             relativePath: relativePath,
             source: source
         )

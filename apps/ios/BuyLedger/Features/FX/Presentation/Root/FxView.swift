@@ -45,8 +45,8 @@ struct FxView: View {
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
         .task {
-            // task-finish-exempt: 已知風險，待後續 change：切走時匯率回應可能遭取消，載入旗標因未收到回應而維持啟動
-            await store.send(.view(.task)).finish()
+            // 工具狀態隨更多堆疊保留，讀取不隨畫面消失而取消
+            store.send(.view(.task))
         }
         .navigationTitle(Text("settings.more.label.exchangeRates"))
         .toolbar {

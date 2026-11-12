@@ -48,9 +48,6 @@ struct OrderListFeature {
         /// 主檔端維護、供篩選使用的四種唯讀主檔目錄
         @SharedReader(.lookupCatalog) var lookupCatalog: LookupCatalog
 
-        /// 目前是否正在載入，由載入子層維護
-        @SharedReader var isLoading: Bool
-
         /// 是否已完成載入，由載入子層維護
         @SharedReader var hasLoaded: Bool
 
@@ -131,19 +128,16 @@ struct OrderListFeature {
         /// - Parameters:
         ///   - orders: 共用訂單的唯讀引用
         ///   - campaigns: 容器提供的開團唯讀引用
-        ///   - isLoading: 載入中的旗標
         ///   - hasLoaded: 已載入的旗標
         ///   - errorMessage: 載入錯誤訊息
         init(
             orders: SharedReader<[LedgerOrder]>,
             campaigns: SharedReader<[Campaign]> = SharedReader(value: []),
-            isLoading: SharedReader<Bool> = SharedReader(value: false),
             hasLoaded: SharedReader<Bool> = SharedReader(value: false),
             errorMessage: SharedReader<LocalizedStringResource?> = SharedReader(value: nil)
         ) {
             self._orders = orders
             self._campaigns = campaigns
-            self._isLoading = isLoading
             self._hasLoaded = hasLoaded
             self._errorMessage = errorMessage
         }

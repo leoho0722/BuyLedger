@@ -15,18 +15,15 @@ import Testing
 @MainActor
 struct OrderListFeatureTests {
 
-    /// 驗證任務開始時，不論是否已載入或正在載入，都先記錄日期脈絡，再送出載入請求，由 `OrdersFeature` 決定是否真正載入
+    /// 驗證任務開始時，不論是否已載入，都先記錄日期脈絡，再送出載入請求，由 `OrdersFeature` 決定是否真正載入
     ///
-    /// - Parameters:
-    ///   - hasLoaded: 是否已載入
-    ///   - isLoading: 是否正在載入
-    @Test(arguments: [false, true], [false, true])
-    func task_各種載入旗標_記錄日期並委派載入(hasLoaded: Bool, isLoading: Bool) async {
+    /// - Parameter hasLoaded: 是否已載入
+    @Test(arguments: [false, true])
+    func task_各種已載入旗標_記錄日期並委派載入(hasLoaded: Bool) async {
         // Given
         var initial = OrderListFeatureTestSupport.makeState()
         initial.dateContext = nil
         initial.$hasLoaded = SharedReader(value: hasLoaded)
-        initial.$isLoading = SharedReader(value: isLoading)
         let store = TestStore(initialState: initial) {
             OrderListFeature()
         } withDependencies: {
@@ -45,7 +42,6 @@ struct OrderListFeatureTests {
         // Then
         await store.receive(\.delegate.loadRequested)
         #expect(store.state.hasLoaded == hasLoaded)
-        #expect(store.state.isLoading == isLoading)
     }
 
     /// 驗證按下重試時，舊的日期記錄先換成目前時間，再送出載入請求

@@ -51,6 +51,7 @@ private extension QuoteStatusBanner {
         HStack(spacing: BLSpacing.small) {
             ProgressView()
                 .controlSize(.small)
+                .accessibilityIdentifier(BLAccessibilityID.Quote.loading)
 
             Text("quote.calculator.label.loadingExchangeRates")
                 .blTextStyle(.footnote)
@@ -76,6 +77,7 @@ private extension QuoteStatusBanner {
             Text(message)
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blLabel)
+                .accessibilityIdentifier(BLAccessibilityID.Quote.loadFailure)
 
             Spacer()
 

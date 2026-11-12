@@ -21,7 +21,12 @@ struct MoreFeatureRelaysTests {
         // Given
         var initial = MoreFeature.State(appVersion: "1.7.0")
         initial.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(initial.$orders)))
+            .customers(
+                CustomersFeature.State(
+                    orders: SharedReader(initial.$orders),
+                    loadState: SharedReader(initial.$ordersLoadState)
+                )
+            )
         )
         let store = TestStore(initialState: initial) {
             MoreFeature()
@@ -62,7 +67,12 @@ struct MoreFeatureRelaysTests {
         fx.amount = 150_000
         initial.path.append(.fx(fx))
         initial.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(initial.$orders)))
+            .customers(
+                CustomersFeature.State(
+                    orders: SharedReader(initial.$orders),
+                    loadState: SharedReader(initial.$ordersLoadState)
+                )
+            )
         )
         let sourcePathIDs = initial.path.ids
         let customerPathID = try #require(sourcePathIDs.last)

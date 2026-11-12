@@ -61,6 +61,15 @@ extension BLAccessibilityID {
         /// 客戶清單無資料狀態容器
         static let listEmptyState = "customers.list.emptyState"
 
+        /// 客戶清單載入中的進度指示器
+        static let listLoading = "customers.list.loading"
+
+        /// 客戶清單載入失敗畫面的容器
+        static let listLoadFailure = "customers.list.loadFailure"
+
+        /// 客戶清單載入失敗畫面的重試鍵
+        static let listLoadFailureRetryButton = "customers.list.loadFailureRetryButton"
+
         /// 取得 Top 3 卡片的識別碼，以客戶名稱識別
         ///
         /// - Parameter customerName: 客戶名稱
@@ -86,6 +95,15 @@ extension BLAccessibilityID {
 
         /// 匯率查詢狀態橫幅
         static let statusBanner = "fx.statusBanner"
+
+        /// 匯率狀態橫幅的載入中指示器
+        static let loading = "fx.loading"
+
+        /// 匯率狀態橫幅的失敗訊息
+        static let loadFailure = "fx.loadFailure"
+
+        /// 匯率狀態橫幅的重試鍵
+        static let retryButton = "fx.retryButton"
 
         /// 幣別選擇按鈕
         static let currencyPickerButton = "fx.currencyPickerButton"
@@ -140,6 +158,12 @@ extension BLAccessibilityID {
 
         /// 報價試算狀態橫幅
         static let statusBanner = "quote.statusBanner"
+
+        /// 報價狀態橫幅的載入中指示器
+        static let loading = "quote.loading"
+
+        /// 報價狀態橫幅的失敗訊息
+        static let loadFailure = "quote.loadFailure"
 
         /// 報價試算重新載入按鈕
         static let retryButton = "quote.retryButton"

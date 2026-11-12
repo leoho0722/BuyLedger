@@ -209,6 +209,8 @@ struct RootFeatureDeepLinksTests {
         await store.receive(\.orders.presentation.delegate.aiSettingsRequested)
         await store.receive(\.orders.delegate.aiSettingsRequested) {
             $0.selectedTab = .more
+        }
+        await store.receive(\.more.settingsRequested) {
             $0.more.path[id: 0] = .settings(
                 SettingsFeature.State(
                     snapshot: expectedSnapshot,
@@ -258,6 +260,8 @@ struct RootFeatureDeepLinksTests {
         await store.receive(\.orders.presentation.delegate.aiSettingsRequested)
         await store.receive(\.orders.delegate.aiSettingsRequested) {
             $0.selectedTab = .more
+        }
+        await store.receive(\.more.settingsRequested) {
             $0.more.path.removeAll()
             $0.more.path[id: 3] = .settings(
                 SettingsFeature.State(
@@ -271,6 +275,43 @@ struct RootFeatureDeepLinksTests {
         #expect(store.state.selectedTab == .more)
         #expect(store.state.more.path.count == 1)
         #expect(store.state.more.path[id: 3]?.settings?.snapshot == expectedSnapshot)
+    }
+
+    /// 驗證設定頁已開啟時從 AI 提示前往設定，保留同一個堆疊元素與已調整的月目標，並切到更多頁
+    @Test
+    func orders_更多頁已開啟設定時前往人工智慧設定_保留既有設定頁與欄位() async {
+        // Given
+        var initial = RootFeatureTestSupport.makeIsolatedRootState()
+        initial.selectedTab = .orders
+        initial.more.showSettings()
+        initial.more.path[id: 0, case: \.settings]?.monthlyProfitGoalTWD = 12_345
+        let pathIDs = initial.more.path.ids
+        initial.orders.presentation.destination = .alert(Self.aiDisabledAlert())
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .orders(.presentation(.destination(.presented(.alert(.goToAISettings)))))
+        ) {
+            $0.orders.presentation.destination = nil
+        }
+
+        // Then
+        await store.receive(\.orders.presentation.delegate.aiSettingsRequested)
+        await store.receive(\.orders.delegate.aiSettingsRequested) {
+            $0.selectedTab = .more
+        }
+        await store.receive(\.more.settingsRequested)
+        await store.finish()
+        #expect(store.state.selectedTab == .more)
+        #expect(store.state.more.path.ids == pathIDs)
+        #expect(store.state.more.path.count == 1)
+        #expect(store.state.more.path[id: 0, case: \.settings]?.monthlyProfitGoalTWD == 12_345)
     }
 }
 

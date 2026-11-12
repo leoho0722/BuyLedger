@@ -110,9 +110,12 @@ final class LoadFailureReloadLoopTests: BLUITestCase {
 
         // When
         _ = CustomersScreen.open(from: app)
-        let emptyState = app.descendants(matching: .any)[BLAccessibilityID.Customers.listEmptyState]
-        guard emptyState.waitForExistence(timeout: 10) else {
-            failWithDiagnostics(in: app, "客戶頁未顯示空狀態，無法確認已進入發起讀取的畫面")
+        // 剛進入時可能先顯示上一次的失敗，等 Root 讀完主檔目錄、請求訂單後才轉為載入中，5 秒為估計值
+        let customersLoading = app.descendants(matching: .any)[
+            BLAccessibilityID.Customers.listLoading
+        ]
+        guard customersLoading.waitForExistence(timeout: 5) else {
+            failWithDiagnostics(in: app, "客戶頁未顯示載入中，無法確認已進入發起讀取的畫面")
             return
         }
         navigator.selectTab(.orders)

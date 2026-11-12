@@ -37,12 +37,14 @@ paths:
     - 主檔目錄的寫入者只有 `LookupManagementFeature` 與 `LookupCatalogFeature`，訂單端 (`OrdersFeature`、`OrderListFeature`) 以 `@SharedReader(.lookupCatalog)` 唯讀 (`ServiceOwnershipScanTests` 掃描 `Features/Orders/` 不得出現可寫入的 `Shared(.lookupCatalog)` 或 `Shared<LookupCatalog>`)。所有訂單載入都排在主檔目錄讀取結束之後 (Root 先送 `.more(.catalogLoadRequested)`)；表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 落盤，成功才更新目錄，結果以 `.orders(.rootRequest(.optionAdditionCompleted(_:isStored:)))` 送回容器。
     - 持久層改名成功後，`LookupManagementFeature` 送出 `.delegate(.itemRenamed)`，`MoreFeature` 帶上主檔種類轉成 `.delegate(.lookupItemRenamed(kind:rename:))`，Root 送 `.orders(.rootRequest(.cascade(.lookupItemRenamed(kind:rename:))))`；容器轉給 `OrderWritesFeature`，由 reducer 以 `Features/Orders/OrdersCascadeOperations` 更新共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
     - 新增第五種主檔時編譯器會標出待補的 switch，但 `MoreFeature.Entry` 的 case 與其推入對照、`BLAccessibilityID.More.Row` 是手寫列舉，漏補會靜默缺少管理畫面與入口。
-    - 共享範圍為主檔目錄 (`.lookupCatalog`)、幣別清單 (`.currencyCodes`)、訂單與開團容器的無鍵資料及載入狀態、`MoreFeature.State.orders` 投影；其他跨 feature 狀態 (客戶彙總等) 由 Root 以 `onChange` 投影成副本，跨 feature 意圖以 delegate 交給 Root，擴用前先確認需要共用引用。
+    - 共享範圍為主檔目錄 (`.lookupCatalog`)、幣別清單 (`.currencyCodes`)、訂單與開團容器的無鍵資料及載入狀態、`MoreFeature.State.orders` 與 `MoreFeature.State.ordersLoadState` 投影；其他跨 feature 狀態 (總覽與分析的訂單、開團與載入狀態，偏好等) 由 Root 以 `onChange` 投影成副本，跨 feature 意圖以 delegate 交給 Root，擴用前先確認需要共用引用。
+    - 投影判準：Root 的投影目的地是推入或呈現時才建立的元素、且顯示期間要跟著更新時，才用宿主持有的無鍵 `@Shared` 加元素的 `SharedReader`；常駐的子 State (總覽、分析) 用副本。新增這類投影時在 `ProjectionWriteBoundaryScanner.sharedProjections` 加一列，並把屬性名列進宿主在 `projectionOwners` 的 `properties`，否則守門不涵蓋。
+    - 宿主已因推入的元素持有共用引用時，同一宿主下的常駐子層讀同一份 `SharedReader`，不另存副本 (例如 `CampaignListFeature.State.orders`)。
     - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
 - **開團資料以 `CampaignFeature.State` 的無鍵 `@Shared` 為來源**：`campaigns`、`orders` (訂單投影)、`reminderLinks`、`isShowingUnpaidOnly` 四份，建立容器時同時指派給自己與各子 Feature 的 State，父子共用同一份引用。
     - 子 Feature 的 `init` 對唯讀資料只接 `SharedReader`，由父層以 `SharedReader(_:)` 轉換後傳入：`SharedReader` 沒有 setter 與 `withLock`，列表與詳情在編譯期就無法寫入投影與連結。
     - 開團與「更多」的訂單投影僅由 Root 以 `state.campaigns.$orders.withLock` 與 `state.more.$orders.withLock` 寫入，不能當成訂單資料來源；`Features/Campaigns/` 與 `Features/More/` 內投影的 `$orders` 只能作為 `SharedReader(` 的引數，`ProjectionWriteBoundary*Tests` 守門。
-    - `MoreFeature.State.orders` 是同型的投影，推入客戶頁時以 `SharedReader(state.$orders)` 傳入。
+    - `MoreFeature.State.orders` 是同型的投影，推入客戶頁時以 `SharedReader(state.$orders)` 傳入。`MoreFeature.State.ordersLoadState` 同樣只由 Root 寫入，推入客戶頁時以 `SharedReader(state.$ordersLoadState)` 傳入；它不是載入狀態的來源，「更多」內不得寫入。
     - 共享寫入在 reducer 內同步完成，不移到 effect 裡再回送：`RootFeature` 的 `onChange(of: \.campaigns.campaigns)` 只觀察得到 reducer 內的 `withLock`。
 - **訂單資料以 `OrdersFeature.State.orders` 的無鍵 `@Shared` 為來源**：容器建立同一份引用交給子層，清單與詳情只接 `SharedReader`，容器本身不寫。
     - 只有 `OrdersLoadFeature` (套用讀取結果) 與 `OrderWritesFeature` (寫入結果、cascade、付款方式旗標套用) 在 reducer 內以 `withLock` 更新來源；不在 `.run` effect 內寫，也不外傳可寫引用，`ProjectionWriteBoundary*Tests` 分別守住來源與 Root 的投影寫入。

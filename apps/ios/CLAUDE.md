@@ -109,8 +109,8 @@
 
 - **綁 store 的畫面只吃自己 feature 的 scoped store**：跨 feature 資料走根 feature 單向同步的唯讀投影，純顯示值 (如目前的 App 語言) 走建構參數。
   - `Features/` 內只有 `RootView` 與 `RootNavigationLayout` 可宣告根 store，由 `LayerBoundaryTests.filesDeclaringRootStore_功能目錄_僅由兩個根導覽宿主持有` 鎖住 (App 進入點 `BuyLedgerApp` 建立並持有根 store，不在掃描範圍)；`MoreView` 只持有 `MoreFeature` 的 scoped store。
-  - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.$campaigns`、總覽與分析的副本)、載入狀態、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
-- **跨 feature 意圖由子層 reducer 以 delegate 交給根 feature**：畫面只送自身 Feature 的 `view` action，由 reducer 轉成 delegate；Root 的 view case 與子層 delegate case 呼叫同一個 `RootNavigationOperations` 方法 (如 `showOrders(customer:state:)`、`showCampaign(named:state:)`)，不以 `.send` 轉成另一個根 case，也不新增平行的根 action。
+  - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.$campaigns`、總覽與分析的副本)、載入狀態 (「更多」的 `$ordersLoadState`、總覽與分析的副本)、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
+- **跨 feature 意圖由子層 reducer 以 delegate 交給根 feature**：畫面只送自身 Feature 的 `view` action，由 reducer 轉成 delegate；Root 的 view case 與子層 delegate case 呼叫同一個 `RootNavigationOperations` 方法 (如 `showOrders(customer:state:)`、`showCampaign(named:state:)`)，不以 `.send` 轉成另一個根 case，也不新增平行的根 action；`RootNavigationOperations` 不改「更多」的堆疊，「更多」的深連結送 `MoreFeature` 的請求 action。
 - **父層不以 `.send` 或 reducer case 送出、攔截子層的 `.view(...)` action**。
 - **父層要求子層載入或套用資料時送專用請求 action，子層是有 View 的容器也一樣**：請求只由父層送、子層 reducer 處理，不代替使用者互動。
   - Root 對 Orders 送 `rootRequest(OrdersRootRequest)` (`load`、`cascade`、`receiptStatusChange`、`paymentMethodFlagsApply`、`optionAdditionCompleted`)，由容器轉給載入、寫入或呈現子 Feature；需要父層處理的結果經 delegate 回報，其餘成功結果由共用資料觀察。
@@ -209,14 +209,14 @@
 
 - **`MoreFeature` 是 App 殼層的分頁宿主**，沒有自己的領域資料；它的 `Path` 引用其他 Feature 模組的 Feature 型別，視為 kit「跨 Feature 模組導航只在 App 層」的殼層例外，目錄暫留 `Features/More/`，依第 10 步調整。
 - **設定寫入維持 reducer 內同步呼叫**：讓連續輸入依序保存，避免非同步效果重排快照。
-- **供其他畫面使用的結果，或生命週期由 App 管理的 `Effect`，不依賴 `.task` 取消管理**：`.task` 只送出不等待，讀取由載入器去重，長效監聽以 `CancelID` 加 `cancelInFlight: true` 取代前一次；`ios-navigation.md` 的 `.task` 條目優先於 kit `tca-architecture.md` 的 Effect 條目 (監聽靠離開畫面取消、`CancelID` 只給使用者動作)。
+- **供其他畫面使用的結果、State 比畫面活得久且以載入中旗標去重的讀取，或生命週期由 App 管理的 `Effect`，不依賴 `.task` 取消管理**：`.task` 只送出不等待，讀取由載入器去重，長效監聽以 `CancelID` 加 `cancelInFlight: true` 取代前一次；`ios-navigation.md` 的 `.task` 條目優先於 kit `tca-architecture.md` 的 Effect 條目 (監聽靠離開畫面取消、`CancelID` 只給使用者動作)。
   - 只該在畫面存在時執行的工作仍可等待 `finish()`，呼叫點要寫 `task-finish-exempt` 理由。
 
 ### 依 kit、例外先個案討論
 
 - **`@Shared` 依 kit 規範，要用 `.inMemory` key 時先與使用者個案討論**：現行的 `.inMemory` key 有主檔目錄 `.lookupCatalog` 與幣別清單 `.currencyCodes`；另有容器內的無鍵共享資料，寫入責任見 `ios-data-layer.md`。
   - `OrdersFeature` 持有無鍵共享訂單，建立時把同一引用交給子層；只有 `OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內以 `withLock` 更新，容器不寫，清單與詳情只拿 `SharedReader`；載入狀態也由 `OrdersLoadFeature` 共享給容器與清單。
-  - `CampaignFeature` 以無鍵 `@Shared` 持有開團、訂單投影、提醒連結與只看未收款；`MoreFeature.State.orders` 是客戶頁讀取的訂單投影。開團與「更多」的訂單投影僅由 Root 更新，不能與 Orders 的資料來源混用。
+  - `CampaignFeature` 以無鍵 `@Shared` 持有開團、訂單投影、提醒連結與只看未收款；`MoreFeature.State.orders` 與 `MoreFeature.State.ordersLoadState` 是客戶頁讀取的訂單投影與訂單載入狀態投影。開團與「更多」的訂單投影及載入狀態投影僅由 Root 更新，不能與 Orders 的資料來源混用。
   - `OrdersFeature.State.campaigns` 是無鍵 `@Shared` 開團投影，清單以同一份 `SharedReader` 讀取；容器可寫，但只有 Root 在 reducer 內以 `orders.$campaigns.withLock` 同步，`Guards/ProjectionWriteBoundary/` 的守門測試 (`ProjectionWriteBoundary*Tests`) 守住訂單範圍的寫入、可寫引用外傳與重綁。
   - Root 的 `RootLaunchFeature` 載入幣別快取，非空才寫入 `.currencyCodes`；Orders 以 `@SharedReader(.currencyCodes)` 建立表單選項，讀取失敗或空結果保留原值。
 - **格式化依 kit 用 `FormatStyle`，要用 `<Feature>Formatters` 靜態函式時先與使用者個案討論**：`FormatStyle` 較接近 SwiftUI 原生寫法；現有的靜態函式見下方「過渡例外」。

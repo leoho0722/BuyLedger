@@ -214,6 +214,9 @@ struct RootFeature {
             return .none
         }
         .onChange(of: \.orders.loadState) { _, state in
+            state.more.$ordersLoadState.withLock {
+                $0 = state.orders.loadState
+            }
             state.dashboard.loadState = state.orders.loadState
             state.insights.loadState = state.orders.loadState
             return .none
@@ -355,8 +358,7 @@ private extension RootFeature {
 
         case .orders(.delegate(.aiSettingsRequested)):
             state.selectedTab = .more
-            state.more.showSettings()
-            return .none
+            return .send(.more(.settingsRequested))
 
         case .orders:
             return .none

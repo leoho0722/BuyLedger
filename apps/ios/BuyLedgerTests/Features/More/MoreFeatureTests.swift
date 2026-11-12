@@ -44,7 +44,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 驗證推入客戶頁時，客戶頁從推入當下就讀到更多頁的同一份訂單投影
+    /// 驗證推入客戶頁時讀到相同訂單，推入後來源載入狀態改變也立即反映到客戶頁
     @Test
     func entrySelected_推入客戶頁_讀取同一份訂單投影() async {
         // Given
@@ -58,12 +58,29 @@ struct MoreFeatureTests {
         // When
         await store.send(.view(.entrySelected(.customers))) {
             $0.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.$orders),
+                        loadState: SharedReader(initial.$ordersLoadState)
+                    )
+                )
             )
         }
 
         // Then
+        store.state.$ordersLoadState.withLock {
+            $0 = .failed("orders.general.message.ordersLoadedTry")
+        }
+        store.assert {
+            $0.$ordersLoadState.withLock {
+                $0 = .failed("orders.general.message.ordersLoadedTry")
+            }
+        }
         #expect(store.state.path[id: 0, case: \.customers]?.orders == orders)
+        #expect(
+            store.state.path[id: 0, case: \.customers]?.loadState
+                == .failed("orders.general.message.ordersLoadedTry")
+        )
         #expect(store.state.path.count == 1)
         await store.finish()
     }

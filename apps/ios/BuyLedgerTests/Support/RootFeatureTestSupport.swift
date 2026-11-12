@@ -399,6 +399,9 @@ extension RootFeatureTestSupport {
                 $0.orders.load.$errorMessage.withLock {
                     $0 = nil
                 }
+                $0.more.$ordersLoadState.withLock {
+                    $0 = .loading
+                }
             }
         }
         await Self.receiveCatalogFinished(in: store)
@@ -436,6 +439,9 @@ extension RootFeatureTestSupport {
                 $0.orders.load.$errorMessage.withLock {
                     $0 = "orders.general.message.ordersLoadedTry"
                 }
+                $0.more.$ordersLoadState.withLock {
+                    $0 = .failed("orders.general.message.ordersLoadedTry")
+                }
                 $0.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
                 $0.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
             } else {
@@ -452,6 +458,9 @@ extension RootFeatureTestSupport {
                 $0.insights.orders = []
                 $0.orders.load.$hasLoaded.withLock {
                     $0 = true
+                }
+                $0.more.$ordersLoadState.withLock {
+                    $0 = .loaded
                 }
                 $0.dashboard.loadState = .loaded
                 $0.insights.loadState = .loaded

@@ -43,7 +43,12 @@ struct RootFeatureOrderFiltersTests {
             initial.orders.list.selectedCategories = ["snacks", "books"]
             initial.orders.detail.showDetail(orderID: "CUSTOMER-2")
             initial.more.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.more.$orders),
+                        loadState: SharedReader(initial.more.$ordersLoadState)
+                    )
+                )
             )
             return initial
         }
@@ -115,7 +120,12 @@ struct RootFeatureOrderFiltersTests {
             }
             initial.orders.detail.showDetail(orderID: "CUSTOMER-1")
             initial.more.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.more.$orders),
+                        loadState: SharedReader(initial.more.$ordersLoadState)
+                    )
+                )
             )
             return initial
         }
@@ -186,7 +196,12 @@ struct RootFeatureOrderFiltersTests {
             initial.orders.list.selectedCategories = ["snacks"]
             initial.orders.detail.showDetail(orderID: "CUSTOMER-1")
             initial.more.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.more.$orders),
+                        loadState: SharedReader(initial.more.$ordersLoadState)
+                    )
+                )
             )
             return initial
         }
@@ -263,7 +278,12 @@ struct RootFeatureOrderFiltersTests {
             initial.orders.list.selectedCategories = ["snacks"]
             initial.orders.detail.showDetail(orderID: "CUSTOMER-2")
             initial.more.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.more.$orders),
+                        loadState: SharedReader(initial.more.$ordersLoadState)
+                    )
+                )
             )
             return initial
         }
@@ -412,7 +432,12 @@ struct RootFeatureOrderFiltersTests {
         }
         state.more.catalog.hasLoaded = true
         state.more.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
+            .customers(
+                CustomersFeature.State(
+                    orders: SharedReader(state.more.$orders),
+                    loadState: SharedReader(state.more.$ordersLoadState)
+                )
+            )
         )
 
         let store = TestStore(initialState: state) {
@@ -462,7 +487,12 @@ struct RootFeatureOrderFiltersTests {
                 $0 = sourceOrders
             }
             initial.more.path.append(
-                .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader(initial.more.$orders),
+                        loadState: SharedReader(initial.more.$ordersLoadState)
+                    )
+                )
             )
             return initial
         }

@@ -18,8 +18,10 @@ paths:
 - **畫面的 `.task` 掛在 body 根為單一、非條件容器的 view 上，只呼叫 `store.send(.view(.task))`，不等待 `finish()`**：
     - 不掛在 `Group`、`switch`、`if` 等條件內容上 (body 本身是條件內容的自訂 View 也算)：官方註明 `Group` 的修飾器套用到各成員，載入中與失敗互換時 `.task` 重跑並送出新的載入請求；沒有 `Group` 的條件內容官方沒有保證行為，一律比照處理。總覽與分析掛在 `NavigationStack` 這一層，開團清單掛在包住條件內容的單一容器上。
     - 結果要給其他畫面用、或必須比畫面活得久的工作只送出不等待：view 消失或身分改變時 SwiftUI 取消 `.task`，等待中的 `finish()` 會連帶取消這次送出衍生的 effect，包括經 Root 串起的共用讀取 (`RootFeatureLoadCancellationTests` 固定此 TCA 行為)。
-    - 以「只由回應清除的載入中旗標」去重的載入器 (`OrdersLoadFeature`、`LookupCatalogFeature`、`CampaignLoadFeature`) 不可在會被取消的 `.task` 底下發起：回應一次被丟棄，旗標就停在載入中，之後的請求與重試全被擋下。
-    - 只該在畫面存在時執行的工作，才等待 `finish()` 或由 reducer 以 cancel id 管理；等待 `finish()` 的呼叫點在同一行或上一行寫 `// task-finish-exempt: <理由>`，由 `TaskFinishConventionScanTests` 掃描 `Features/` 守門。
+    - 以「只由回應清除的載入中旗標」去重的載入器 (`OrdersLoadFeature`、`LookupCatalogFeature`、`CampaignLoadFeature`，匯率讀取為 `FxFeature`、`QuoteRateFeature`) 不可在會被取消的 `.task` 底下發起：回應一次被丟棄，旗標就停在載入中，之後的請求與重試全被擋下。State 在畫面消失後仍保留時 (根分頁、堆疊元素)，effect 的壽命不可短於去重旗標所在的 State。
+    - 只該在畫面存在時執行的工作，才等待 `finish()` 或由 reducer 以 cancel id 管理；等待 `finish()` 的呼叫點在同一行或上一行寫 `// task-finish-exempt: <理由>`，由 `TaskFinishConventionScanTests` 掃描 `Features/` 守門；寫豁免理由前先確認 reducer 不以載入中旗標去重 (以 `hasLoaded` 這類成功後才設的旗標去重，或不去重，才可等待)。
+    - 元素會發起非同步 effect 的堆疊，路徑只由宿主 Feature 的 reducer 改動 (目前是「更多」：匯率、報價、主檔管理、設定都有讀取或寫入)；父層要改時送宿主的請求 action (`MoreFeature` 的 `settingsRequested`)，不直接呼叫宿主 State 的方法，元素移除時由 `forEach` 當下取消其 effect (`MoreFeatureToolLoadCancellationTests`、`RootFeatureToolLoadCancellationTests` 守門)。理由：繞過宿主 reducer 改路徑時，`forEach` 要等下一個經過它的 action 才取消，期間的回應會送給已移除的元素。
+        - 開團與訂單詳情的元素只同步送出 delegate，路徑仍由 Root 或容器呼叫 State 方法在同一次更新內改動 (見同檔開團與訂單詳情的條目)；要在這兩種詳情元素加入 `.run` 前，先把該堆疊的路徑變更改成經宿主 reducer。
     - `RootView` 的根層 `.task` 掛在持久層正常分支內、包住鎖定切換的單一 `ZStack` 上，只送出不等待，不以 `task-finish-exempt` 豁免 (持久層正常分支在同一個 process 內出現後不會消失)：
         - 容器不可改成條件內容：鎖定切換若讓 `.task` 重跑，每次上鎖與解鎖都會重送啟動鏈並重讀失敗的讀取，違反「App 鎖定」的不發起讀取規則。
         - 不可等待 `finish()`：啟動讀取與時間監聽屬於 App 持有的 store，根畫面重建 (含 iPad 關閉其中一個視窗) 時不可隨之取消。
@@ -38,7 +40,7 @@ paths:
     - 不綁 `columnVisibility`、不指定 split view style：側邊欄是否並排由系統決定 (窄的 iPad 直向會收起，由「顯示側邊欄」鈕或左緣滑動叫出，叫出後覆蓋在清單上)；`.balanced` 改變不了三欄直向的覆蓋。
     - **欄寬在宣告欄位的地方設定** (欄位閉包或欄位根 view)：掛在 `.searchable` 內層的 `navigationSplitViewColumnWidth` 不生效。直向的 content 欄有系統上限，動態要求超過上限時系統會收起清單欄，所以不以量到的欄寬回寫欄寬。
     - **含 `.searchable` 的並排清單欄用 inline 標題**：大標題在搜尋結束 (收鍵盤或清除文字) 後會留白不顯示標題並把搜尋欄下推。收合時的窄版清單維持大標題：搜尋中由系統收起標題，關閉搜尋後回到原位 (由 `OrdersListTests` 的三條 `testCloseSearch_…` 守門：直接關閉、收鍵盤後關閉、清除文字後關閉)。regular 訂單清單欄的標題固定為「訂單」，多選筆數一律放欄內頂部 (`OrdersRegularListColumn.selectionSummary`)：直向窄欄放不下 inline 標題與多選工具列，兩處都顯示又會重複。
-- **每個目的地只有一條抵達路徑**：清單選取與深連結寫入同一條路徑；「更多」分頁以 `MoreFeature.State.path` 的 `StackState<Path.State>` 驅動，入口清單的選取由 `path` 投影 (`currentEntry`)，setter 送 `entrySelected(_:)`，深連結 (`showSettings()`) 與選取都經 `open(_:)`：同一工具不動 `path` (保留子狀態與元素識別值)，不同工具在同一次狀態更新內先清空再推入。
+- **每個目的地只有一條抵達路徑**：清單選取與深連結寫入同一條路徑；「更多」分頁以 `MoreFeature.State.path` 的 `StackState<Path.State>` 驅動，入口清單的選取由 `path` 投影 (`currentEntry`)，setter 送 `entrySelected(_:)`，深連結由 Root 送 `MoreFeature` 的 `settingsRequested`，`MoreFeature` 呼叫 `showSettings()`，與選取同樣經 `open(_:)`：同一工具不動 `path` (保留子狀態與元素識別值)，不同工具在同一次狀態更新內先清空再推入。
     - 工具的子階層由 `MoreView` 詳情欄的 `NavigationStack` 承載，以 `.id(pathID)` 讓換工具時重建、重選同一工具時保留；工具 View 本身不自帶 stack。
     - 用堆疊狀態而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
     - **切分頁不清空「更多」堆疊**：`RootFeature` 的 `tabSelected` 只更新 `selectedTab`，「更多」的 `path` 原樣保留，切回後回到原目的地；從「更多」堆疊交出跨分頁意圖的子畫面 (目前只有客戶頁) 也不先清空。

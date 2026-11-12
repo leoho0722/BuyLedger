@@ -101,7 +101,7 @@ private extension DependencyValues {
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
             }
 
-        case .none, .campaigns, .lookups:
+        case .none, .campaigns, .lookups, .exchangeRatesDelayed:
             break
         }
 
@@ -166,9 +166,19 @@ private extension DependencyValues {
     ///
     /// - Parameter configuration: UI 測試設定
     mutating func applyNetworkOverrides(_ configuration: BLUITestConfiguration) {
-        self.exchangeRateService = BLUITestStubs.makeExchangeRateService(
+        var exchangeRateService = BLUITestStubs.makeExchangeRateService(
             referenceDate: configuration.referenceDate
         )
+
+        if configuration.loadFailure == .exchangeRatesDelayed {
+            let readDelay = Duration.seconds(8)
+            exchangeRateService.fetchLatest = { _ throws(APIError) in
+                try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                throw BLUITestErrorFactory.exchangeRateLoadFailed()
+            }
+        }
+
+        self.exchangeRateService = exchangeRateService
         self.aiSummaryService = BLUITestStubs.makeAISummaryService()
         // 兜底：上面兩個 Service 已不經過 HTTP，真的走到這裡代表有漏網的網路路徑
         self.httpClient = PreviewHTTPClient()
