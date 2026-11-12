@@ -141,6 +141,9 @@ struct RootFeatureCampaignLoadingTests {
             $0.orders.load.$hasLoaded.withLock {
                 $0 = true
             }
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loaded
+            }
             $0.dashboard.loadState = .loaded
             $0.insights.loadState = .loaded
         }

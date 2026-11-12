@@ -11,8 +11,36 @@ import Testing
 
 @testable import BuyLedger
 
-/// `CustomersFeature` 的單元測試，涵蓋客戶彙總、強調區塊，以及客戶頁送給更多頁的載入與點選事件
+/// `CustomersFeature` 的單元測試，涵蓋客戶彙總、載入畫面狀態，以及送給更多頁的載入與點選事件
+@MainActor
 struct CustomersFeatureTests {
+
+    // MARK: - Properties
+
+    /// 規格四列訂單載入狀態、訂單資料與預期畫面內容
+    ///
+    /// - Note: `nonisolated` 讓 `@Test(arguments:)` 在進入主執行緒隔離前讀取案例
+    nonisolated private static let screenStateScenarios: [ScreenStateScenario] = [
+        ScreenStateScenario(loadState: .loaded, orders: [], expectedScreenState: .empty),
+        ScreenStateScenario(
+            loadState: .loaded,
+            orders: [
+                LedgerOrder.fixture(
+                    id: "AMY-1",
+                    customer: LedgerCustomer(name: "Amy", initials: "AM", tier: .regular),
+                    date: TestDependencies.fixedNow,
+                    chargedAmount: 300
+                ),
+            ],
+            expectedScreenState: .customers
+        ),
+        ScreenStateScenario(loadState: .loading, orders: [], expectedScreenState: .loading),
+        ScreenStateScenario(
+            loadState: .failed("orders.general.message.ordersLoadedTry"),
+            orders: [],
+            expectedScreenState: .failed("orders.general.message.ordersLoadedTry")
+        ),
+    ]
 
     /// 驗證客戶名單依訂單彙總，並依累計消費由高到低排序，筆數與最近訂單日期各自計算
     ///
@@ -46,7 +74,10 @@ struct CustomersFeatureTests {
                 chargedAmount: 100
             ),
         ]
-        let state = CustomersFeature.State(orders: SharedReader(value: orders))
+        let state = CustomersFeature.State(
+            orders: SharedReader(value: orders),
+            loadState: SharedReader(value: .loaded)
+        )
 
         // When
         let customers = state.customers
@@ -74,7 +105,10 @@ struct CustomersFeatureTests {
     @Test
     func customers_沒有訂單_回傳空名單() {
         // Given
-        let state = CustomersFeature.State(orders: SharedReader(value: []))
+        let state = CustomersFeature.State(
+            orders: SharedReader(value: []),
+            loadState: SharedReader(value: .loaded)
+        )
 
         // When
         let customers = state.customers
@@ -113,7 +147,10 @@ struct CustomersFeatureTests {
                 chargedAmount: 100
             ),
         ]
-        let state = CustomersFeature.State(orders: SharedReader(value: orders))
+        let state = CustomersFeature.State(
+            orders: SharedReader(value: orders),
+            loadState: SharedReader(value: .loaded)
+        )
 
         // When
         let topCustomers = state.topCustomers
@@ -141,7 +178,10 @@ struct CustomersFeatureTests {
                 chargedAmount: 400
             ),
         ]
-        let state = CustomersFeature.State(orders: SharedReader(value: orders))
+        let state = CustomersFeature.State(
+            orders: SharedReader(value: orders),
+            loadState: SharedReader(value: .loaded)
+        )
 
         // When
         let topCustomers = state.topCustomers
@@ -153,10 +193,12 @@ struct CustomersFeatureTests {
 
     /// 驗證客戶頁出現時，向更多頁送出訂單載入請求
     @Test
-    @MainActor
     func task_客戶頁出現_委派訂單載入() async {
         // Given
-        let initial = CustomersFeature.State(orders: SharedReader(value: []))
+        let initial = CustomersFeature.State(
+            orders: SharedReader(value: []),
+            loadState: SharedReader(value: .loaded)
+        )
         let store = TestStore(initialState: initial) {
             CustomersFeature()
         }
@@ -168,12 +210,57 @@ struct CustomersFeatureTests {
         await store.receive(\.delegate.ordersLoadRequested)
     }
 
+    /// 驗證失敗畫面要求重試時，向更多頁送出訂單載入請求，保留原失敗狀態直到根功能同步新結果
+    @Test
+    func retryTapped_客戶頁載入失敗_委派訂單載入() async {
+        // Given
+        let initial = CustomersFeature.State(
+            orders: SharedReader(value: []),
+            loadState: SharedReader(value: .failed("orders.general.message.ordersLoadedTry"))
+        )
+        let store = TestStore(initialState: initial) {
+            CustomersFeature()
+        }
+
+        // When
+        await store.send(.view(.retryTapped))
+
+        // Then
+        await store.receive(\.delegate.ordersLoadRequested)
+        await store.finish()
+        #expect(store.state.screenState == .failed("orders.general.message.ordersLoadedTry"))
+    }
+
+    /// 驗證載入中與失敗時不顯示空名單，只有訂單載入完成後才依資料決定空名單或唯一的 Amy 客戶列
+    ///
+    /// - Parameter scenario: 規格四列中的訂單載入狀態、訂單資料與預期畫面內容
+    @Test(arguments: Self.screenStateScenarios)
+    func screenState_訂單載入狀態與資料四種組合_顯示對應內容(scenario: ScreenStateScenario) {
+        // Given
+        let state = CustomersFeature.State(
+            orders: SharedReader(value: scenario.orders),
+            loadState: SharedReader(value: scenario.loadState)
+        )
+
+        // When
+        let screenState = state.screenState
+
+        // Then
+        #expect(screenState == scenario.expectedScreenState)
+        if case .customers = scenario.expectedScreenState {
+            #expect(state.customers.map(\.name) == ["Amy"])
+            #expect(state.customers.map(\.totalSpent) == [300])
+        }
+    }
+
     /// 驗證點選客戶時，向更多頁送出 `customerSelected`，帶出被點選的客戶名稱
     @Test
-    @MainActor
     func customerTapped_點選客戶_委派選取名稱() async {
         // Given
-        let initial = CustomersFeature.State(orders: SharedReader(value: []))
+        let initial = CustomersFeature.State(
+            orders: SharedReader(value: []),
+            loadState: SharedReader(value: .loaded)
+        )
         let store = TestStore(initialState: initial) {
             CustomersFeature()
         }
@@ -183,5 +270,23 @@ struct CustomersFeatureTests {
 
         // Then
         await store.receive(\.delegate.customerSelected, "Alice")
+    }
+}
+
+// MARK: - Nested Types
+
+extension CustomersFeatureTests {
+
+    /// 一列訂單載入狀態與客戶畫面預期，不包含由受測程式計算的值
+    nonisolated struct ScreenStateScenario: Sendable {
+
+        /// 根功能提供的訂單載入狀態
+        let loadState: OrdersLoadState
+
+        /// 客戶頁讀到的固定訂單資料
+        let orders: [LedgerOrder]
+
+        /// 規格明列的畫面內容種類
+        let expectedScreenState: CustomersFeature.State.ScreenState
     }
 }

@@ -51,6 +51,7 @@ private extension FxStatusBanner {
         HStack(spacing: BLSpacing.small) {
             ProgressView()
                 .controlSize(.small)
+                .accessibilityIdentifier(BLAccessibilityID.Fx.loading)
 
             Text("fx.rates.label.updatingExchangeRates")
                 .blTextStyle(.footnote)
@@ -76,11 +77,13 @@ private extension FxStatusBanner {
             Text(message)
                 .blTextStyle(.footnote)
                 .foregroundStyle(.blLabel)
+                .accessibilityIdentifier(BLAccessibilityID.Fx.loadFailure)
 
             Spacer()
 
             Button("common.action.button.retry", action: onRetry)
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
+                .accessibilityIdentifier(BLAccessibilityID.Fx.retryButton)
         }
         .padding(.horizontal, BLSpacing.medium)
         .padding(.vertical, BLSpacing.small)

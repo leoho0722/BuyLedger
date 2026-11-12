@@ -47,18 +47,52 @@ struct CustomersView: View {
 
 private extension CustomersView {
 
-    /// 客戶資料為空時顯示的內容，或顯示前三名與完整清單
+    /// 依訂單載入結果顯示進度、失敗原因、空狀態，或前三名與完整清單
+    ///
+    /// - Note: 狀態來源是 `CustomersFeature.State.screenState`，這裡只讀一次
     @ViewBuilder
     var content: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.large) {
-            if store.customers.isEmpty {
-                emptyState
-            } else {
+        switch store.screenState {
+        case .loading:
+            loadingIndicator
+
+        case .failed(let message):
+            loadFailure(message: message)
+
+        case .empty:
+            emptyState
+
+        case .customers:
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
                 topThree(topCustomers: store.topCustomers)
 
                 customerList(customers: store.customers)
             }
         }
+    }
+
+    /// 訂單載入中的進度指示
+    var loadingIndicator: some View {
+        ProgressView()
+            .accessibilityIdentifier(BLAccessibilityID.Customers.listLoading)
+            .frame(maxWidth: .infinity)
+            .containerRelativeFrame(.vertical)
+    }
+
+    /// 顯示訂單載入失敗的原因與重試鍵
+    ///
+    /// - Parameter message: 持續顯示的失敗訊息
+    /// - Returns: 載入失敗 view
+    func loadFailure(message: LocalizedStringResource) -> some View {
+        BLLoadFailureView(
+            message: message,
+            onRetry: {
+                store.send(.view(.retryTapped))
+            },
+            retryIdentifier: BLAccessibilityID.Customers.listLoadFailureRetryButton
+        )
+        .accessibilityIdentifier(BLAccessibilityID.Customers.listLoadFailure)
+        .containerRelativeFrame(.vertical)
     }
 
     /// 沒有訂單時的客戶空狀態
@@ -189,7 +223,10 @@ private extension CustomersView {
 // MARK: - Preview
 
 #Preview("settings.more.label.customers") {
-    let previewState = CustomersFeature.State(orders: SharedReader(value: LedgerOrder.sampleOrders))
+    let previewState = CustomersFeature.State(
+        orders: SharedReader(value: LedgerOrder.sampleOrders),
+        loadState: SharedReader(value: .loaded)
+    )
 
     return NavigationStack {
         CustomersView(
@@ -203,7 +240,44 @@ private extension CustomersView {
 #Preview("客戶名單空狀態") {
     NavigationStack {
         CustomersView(
-            store: Store(initialState: CustomersFeature.State(orders: SharedReader(value: []))) {
+            store: Store(
+                initialState: CustomersFeature.State(
+                    orders: SharedReader(value: []),
+                    loadState: SharedReader(value: .loaded)
+                )
+            ) {
+                CustomersFeature()
+            }
+        )
+    }
+}
+
+#Preview("客戶名單載入中") {
+    NavigationStack {
+        CustomersView(
+            store: Store(
+                initialState: CustomersFeature.State(
+                    orders: SharedReader(value: []),
+                    loadState: SharedReader(value: .loading)
+                )
+            ) {
+                CustomersFeature()
+            }
+        )
+    }
+}
+
+#Preview("客戶名單載入失敗") {
+    NavigationStack {
+        CustomersView(
+            store: Store(
+                initialState: CustomersFeature.State(
+                    orders: SharedReader(value: []),
+                    loadState: SharedReader(
+                        value: .failed("orders.general.message.ordersLoadedTry")
+                    )
+                )
+            ) {
                 CustomersFeature()
             }
         )

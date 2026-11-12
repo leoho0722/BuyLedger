@@ -26,6 +26,9 @@ struct MoreFeature {
         /// 客戶頁的訂單投影來源，只由根功能寫入
         @Shared var orders: [LedgerOrder]
 
+        /// 客戶頁讀取的訂單載入狀態投影，只由根功能寫入
+        @Shared var ordersLoadState: OrdersLoadState
+
         /// 建立設定頁使用的偏好投影，只由根功能同步
         var preferences: SettingsSnapshot = .default
 
@@ -63,10 +66,13 @@ struct MoreFeature {
         /// - Parameter appVersion: 設定頁要呈現的 App 版本
         init(appVersion: String) {
             _orders = Shared<[LedgerOrder]>(value: [])
+            _ordersLoadState = Shared<OrdersLoadState>(value: .loading)
             self.appVersion = appVersion
         }
 
         /// 開啟設定頁；設定頁已開啟時保留既有狀態
+        ///
+        /// - Note: 根功能透過 `settingsRequested` 請求開啟，讓堆疊變更經過更多頁的 reducer
         mutating func showSettings() {
             open(.settings)
         }
@@ -97,7 +103,12 @@ struct MoreFeature {
                 .fx(FxFeature.State())
 
             case .customers:
-                .customers(CustomersFeature.State(orders: SharedReader($orders)))
+                .customers(
+                    CustomersFeature.State(
+                        orders: SharedReader($orders),
+                        loadState: SharedReader($ordersLoadState)
+                    )
+                )
 
             case .quote:
                 .quote(QuoteFeature.State())
@@ -149,6 +160,9 @@ struct MoreFeature {
         ///
         /// - Parameter request: 發起表單的識別值、主檔種類與新增項目
         case optionAdditionRequested(LookupAdditionRequest)
+
+        /// 根功能要求開啟設定頁，例如從訂單頁的 AI 設定提示前往設定
+        case settingsRequested
 
         /// 更多頁可送出的使用者操作
         @CasePathable
@@ -278,7 +292,7 @@ extension MoreFeature.Path.State: Equatable {}
 
 private extension MoreFeature {
 
-    /// 開啟或清空入口對應的工具，或轉送子畫面的跨功能委派
+    /// 開啟或清空入口對應的工具，處理根功能請求並轉送子畫面的跨功能委派
     ///
     /// - Parameters:
     ///   - state: 更多頁的導覽與投影
@@ -338,6 +352,10 @@ private extension MoreFeature {
 
         case .optionAdditionRequested(let request):
             return .send(.catalog(.additionRequested(request)))
+
+        case .settingsRequested:
+            state.showSettings()
+            return .none
         }
     }
 }

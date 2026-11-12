@@ -27,7 +27,7 @@ enum ProjectionWriteBoundaryScanner {
             name: "MoreFeature",
             rootStateKey: "more",
             homeFileRelativePath: "Features/More/Presentation/Root/MoreFeature.swift",
-            properties: ["preferences", "biometryType"]
+            properties: ["orders", "ordersLoadState", "preferences", "biometryType"]
         ),
         ProjectionOwner(
             name: "AppLockFeature",
@@ -45,7 +45,7 @@ enum ProjectionWriteBoundaryScanner {
             name: "CustomersFeature",
             rootStateKey: "customers",
             homeFileRelativePath: "Features/Customers/Presentation/Root/CustomersFeature.swift",
-            properties: ["orders"]
+            properties: ["orders", "loadState"]
         ),
         ProjectionOwner(
             name: "DashboardFeature",
@@ -60,11 +60,42 @@ enum ProjectionWriteBoundaryScanner {
             properties: ["orders", "campaigns", "loadState"]
         ),
     ]
+
+    /// 共享投影的名稱、合法寫入者與只能轉成唯讀參考的目錄
+    private static let sharedProjections: [SharedProjection] = [
+        SharedProjection(
+            name: "orders",
+            writerPaths: [
+                rootFeatureRelativePath,
+                "Features/Orders/Presentation/OrdersLoad/OrdersLoadFeature.swift",
+                "Features/Orders/Presentation/OrderWrites/OrderWritesFeature.swift",
+            ],
+            readerOnlyDirectories: ["Features/Campaigns/", "Features/More/"]
+        ),
+        SharedProjection(
+            name: "ordersLoadState",
+            writerPaths: [rootFeatureRelativePath],
+            readerOnlyDirectories: ["Features/More/"]
+        ),
+    ]
 }
 
 // MARK: - Nested Types
 
 extension ProjectionWriteBoundaryScanner {
+
+    /// 一份共享投影的寫入與唯讀轉換邊界
+    private struct SharedProjection {
+
+        /// 投影屬性名稱，不含 `$` 前綴
+        let name: String
+
+        /// 允許以 `withLock` 寫入的原始碼相對路徑
+        let writerPaths: [String]
+
+        /// 可寫參考只能作為 `SharedReader` 引數的目錄前綴
+        let readerOnlyDirectories: [String]
+    }
 
     /// 一個投影持有 feature 與它持有的唯讀投影屬性名
     struct ProjectionOwner {
@@ -160,14 +191,17 @@ extension ProjectionWriteBoundaryScanner {
         return violations
     }
 
-    /// 依檔案路徑與原始碼找出共享訂單投影的違規位置，套用兩條守門規則
+    /// 依共用投影表找出共享資料的非法寫入與可寫參考外傳位置
     ///
     /// - Parameters:
     ///   - relativePath: 相對於 App 原始碼根目錄的路徑
     ///   - source: 原始碼內容
-    /// - Returns: 非擁有者寫入與開團或更多功能可寫參考外傳的違規位置
+    /// - Returns: 非合法寫入者的寫入與唯讀目錄中可寫參考外傳的違規位置
     /// - Throws: 正規表示式建立失敗時丟出錯誤
-    static func sharedOrderViolations(relativePath: String, source: String) throws -> [Violation] {
+    static func sharedProjectionViolations(
+        relativePath: String,
+        source: String
+    ) throws -> [Violation] {
         var mode = SwiftSourceStripping.StripMode.normal
         let stripped = source.components(separatedBy: "\n")
             .map {
@@ -177,53 +211,61 @@ extension ProjectionWriteBoundaryScanner {
         let text = stripped as NSString
         var violations: [Violation] = []
 
-        let writerPaths = [
-            rootFeatureRelativePath,
-            "Features/Orders/Presentation/OrdersLoad/OrdersLoadFeature.swift",
-            "Features/Orders/Presentation/OrderWrites/OrderWritesFeature.swift",
-        ]
-        if !writerPaths.contains(relativePath) {
-            let writes = try NSRegularExpression(pattern: #"\$orders\b\s*\.\s*withLock\b"#)
-            for match in writes.matches(
-                in: stripped,
-                range: ProjectionWriteBoundaryPatterns.fullRange(of: stripped)
-            ) {
-                let prefix = text.substring(to: match.range.location)
-                let line = prefix.components(separatedBy: "\n").count
-                violations.append(
-                    Violation(file: relativePath, line: line, property: "$orders.withLock")
-                )
-            }
-        }
-
-        let readerOnlyDirectories = ["Features/Campaigns/", "Features/More/"]
-        guard readerOnlyDirectories.contains(where: relativePath.hasPrefix) else {
-            return violations
-        }
-        let references = try NSRegularExpression(pattern: #"\$orders\b"#)
         let readerPrefix = try NSRegularExpression(
             pattern: #"\bSharedReader\s*\(\s*(?:[\p{L}_$][\p{L}\p{N}_$]*\s*\.\s*)*$"#
         )
         let readerSuffix = try NSRegularExpression(pattern: #"^\s*\)"#)
-        for match in references.matches(
-            in: stripped,
-            range: ProjectionWriteBoundaryPatterns.fullRange(of: stripped)
-        ) {
-            let prefix = text.substring(to: match.range.location)
-            let suffix = text.substring(from: NSMaxRange(match.range))
-            let prefixMatch = readerPrefix.firstMatch(
-                in: prefix,
-                range: ProjectionWriteBoundaryPatterns.fullRange(of: prefix)
-            )
-            let suffixMatch = readerSuffix.firstMatch(
-                in: suffix,
-                range: ProjectionWriteBoundaryPatterns.fullRange(of: suffix)
-            )
-            if prefixMatch == nil || suffixMatch == nil {
-                let line = prefix.components(separatedBy: "\n").count
-                violations.append(
-                    Violation(file: relativePath, line: line, property: "$orders 可寫參考")
+        for projection in sharedProjections {
+            let escapedName = NSRegularExpression.escapedPattern(for: projection.name)
+            let referencePattern = #"\$"# + escapedName + #"\b"#
+            if !projection.writerPaths.contains(relativePath) {
+                let writes = try NSRegularExpression(
+                    pattern: referencePattern + #"\s*\.\s*withLock\b"#
                 )
+                for match in writes.matches(
+                    in: stripped,
+                    range: ProjectionWriteBoundaryPatterns.fullRange(of: stripped)
+                ) {
+                    let prefix = text.substring(to: match.range.location)
+                    let line = prefix.components(separatedBy: "\n").count
+                    violations.append(
+                        Violation(
+                            file: relativePath,
+                            line: line,
+                            property: "$\(projection.name).withLock"
+                        )
+                    )
+                }
+            }
+
+            guard projection.readerOnlyDirectories.contains(where: relativePath.hasPrefix) else {
+                continue
+            }
+            let references = try NSRegularExpression(pattern: referencePattern)
+            for match in references.matches(
+                in: stripped,
+                range: ProjectionWriteBoundaryPatterns.fullRange(of: stripped)
+            ) {
+                let prefix = text.substring(to: match.range.location)
+                let suffix = text.substring(from: NSMaxRange(match.range))
+                let prefixMatch = readerPrefix.firstMatch(
+                    in: prefix,
+                    range: ProjectionWriteBoundaryPatterns.fullRange(of: prefix)
+                )
+                let suffixMatch = readerSuffix.firstMatch(
+                    in: suffix,
+                    range: ProjectionWriteBoundaryPatterns.fullRange(of: suffix)
+                )
+                if prefixMatch == nil || suffixMatch == nil {
+                    let line = prefix.components(separatedBy: "\n").count
+                    violations.append(
+                        Violation(
+                            file: relativePath,
+                            line: line,
+                            property: "$\(projection.name) 可寫參考"
+                        )
+                    )
+                }
             }
         }
         return violations

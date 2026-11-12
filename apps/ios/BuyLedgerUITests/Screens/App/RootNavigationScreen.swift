@@ -194,6 +194,8 @@ private extension RootNavigationScreen {
             || hasHittableRow(withIdentifierPrefix: BLAccessibilityID.OptionPicker.optionRow(""))
             || hasForegroundElements([
                 BLAccessibilityID.Customers.listEmptyState,
+                BLAccessibilityID.Customers.listLoadFailureRetryButton,
+                BLAccessibilityID.Customers.listLoading,
                 BLAccessibilityID.Fx.convertedValue,
                 BLAccessibilityID.Fx.statusBanner,
                 BLAccessibilityID.Quote.suggestedPriceValue,

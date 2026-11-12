@@ -84,7 +84,6 @@ struct OrdersFeature {
             self.list = OrderListFeature.State(
                 orders: SharedReader(sharedOrders),
                 campaigns: SharedReader(_campaigns),
-                isLoading: SharedReader(load.$isLoading),
                 hasLoaded: SharedReader(load.$hasLoaded),
                 errorMessage: SharedReader(load.$errorMessage)
             )

@@ -44,8 +44,9 @@ paths:
 - **等待 effect 的操作放在 Then**：`store.finish()`、`clock.advance`、`continuation.finish()` 與 `continuation.yield(...)` 都屬此類。
 - **斷言由效果派送的 action 造成的變更前，先 `await store.receive(\.actionName)`**：`store.finish()` 不代替回應與 delegate 的接收，例如訂單狀態寫入要接收 `writes.statusResponse`，有後續 delegate 時也須接收。
     - 省略這步的斷言可能只是還沒跑到就通過，屬假測試；寫法參考 `CampaignReminderFeatureTests`。
-- **effect 鏈裡 reducer 以 `withLock` 寫入的共享變更，寫在觸發該鏈的 `send` 之後的第一個 `receive`**：`send` 自己的 closure 看不到 (effect 尚未執行)，鏈中實際寫入的那個 `receive` 又太晚，TestStore 會在斷言前先處理完整條鏈；預期放錯位置時，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
+- **effect 鏈經過 `.run` 時，reducer 以 `withLock` 寫入的共享變更寫在觸發該鏈的 `send` 之後的第一個 `receive`**：`send` 自己的 closure 看不到 (effect 尚未執行)，鏈中實際寫入的那個 `receive` 又太晚，TestStore 會在斷言前先處理完整條鏈；預期放錯位置時，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
     - reducer 在 `send` 的同一步同步寫入 (沒有經過 effect) 的共享變更，照一般 State 寫在該 `send` 的 closure。
+    - 觸發的 `send` 之後整條鏈只有 `.send` (沒有 `.run` 或替身閘門) 時，`Effect.send` 是同步送出，鏈中的共享寫入在該 `send` 的 closure 就看得到，寫在那裡 (參考 `RootFeatureLoadCancellationTests`)；鏈中出現 `.run` 時才延到之後的 `receive`。
     - 鏈中有測試閘門 (替身等待 `continuation.yield`、`finish()` 才回傳) 時，TestStore 只處理到閘門前；閘門釋放後的共享寫入寫在承接回應的那個 `receive` (參考 `OrdersLoadStateTests` 的重讀測試)。
     - 非共享欄位維持在各自的步驟斷言。
 - **`StackState` 的 id 由測試用的 `StackElementID` 產生器從 0 起依序配發**：`send` 的預期 closure 可直接 `append`；`receive` 的預期 closure 取號時 reducer 已配過號，`append` 會多算一號，要以 `path[id: N] = …` 明指 id。

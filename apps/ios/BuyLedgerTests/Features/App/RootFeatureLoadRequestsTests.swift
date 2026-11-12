@@ -182,7 +182,12 @@ struct RootFeatureLoadRequestsTests {
         var initial = Self.makeOrdersLoadFailedState()
         initial.selectedTab = .more
         initial.more.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            .customers(
+                CustomersFeature.State(
+                    orders: SharedReader(initial.more.$orders),
+                    loadState: SharedReader(initial.more.$ordersLoadState)
+                )
+            )
         )
         let id = try #require(initial.more.path.ids.first)
         let reads = LockIsolated(0)
@@ -235,6 +240,9 @@ private extension RootFeatureLoadRequestsTests {
         var initial = RootFeatureTestSupport.makeIsolatedRootState()
         initial.orders.load.$errorMessage.withLock {
             $0 = "orders.general.message.ordersLoadedTry"
+        }
+        initial.more.$ordersLoadState.withLock {
+            $0 = .failed("orders.general.message.ordersLoadedTry")
         }
         initial.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
         initial.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
@@ -327,6 +335,9 @@ private extension RootFeatureLoadRequestsTests {
             $0.orders.load.$errorMessage.withLock {
                 $0 = nil
             }
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loading
+            }
         }
         await store.receive(\.more.catalog.delegate.loadFinished)
         await store.receive(\.more.delegate.catalogLoadFinished)
@@ -353,6 +364,9 @@ private extension RootFeatureLoadRequestsTests {
                 $0 = [loaded]
             }
             $0.dashboard.orders = [loaded]
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loaded
+            }
             $0.dashboard.loadState = .loaded
             $0.insights.orders = [loaded]
             $0.insights.loadState = .loaded

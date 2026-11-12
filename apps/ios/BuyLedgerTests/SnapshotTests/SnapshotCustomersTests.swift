@@ -27,7 +27,8 @@ struct SnapshotCustomersTests {
         TestDependencies.withFixedNow {
             // Given
             let state = CustomersFeature.State(
-                orders: SharedReader(value: LedgerOrder.sampleOrders)
+                orders: SharedReader(value: LedgerOrder.sampleOrders),
+                loadState: SharedReader(value: .loaded)
             )
 
             // When
@@ -55,7 +56,10 @@ struct SnapshotCustomersTests {
     func customersView_無客戶資料_顯示空狀態() {
         TestDependencies.withFixedNow {
             // Given
-            let state = CustomersFeature.State(orders: SharedReader(value: []))
+            let state = CustomersFeature.State(
+                orders: SharedReader(value: []),
+                loadState: SharedReader(value: .loaded)
+            )
 
             // When
             let view = NavigationStack {

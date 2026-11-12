@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 訂單、首頁與分析畫面共用的載入狀態
+/// 訂單、首頁、分析與客戶畫面共用的載入狀態
 enum OrdersLoadState: Equatable, Sendable {
 
     /// 已完成載入，顯示正常內容

@@ -27,6 +27,9 @@ enum BLUITestLoadFailure: String, CaseIterable, Sendable {
 
     /// 主檔載入失敗
     case lookups
+
+    /// 匯率每次讀取都先延遲再失敗，用來驗證讀取中切分頁
+    case exchangeRatesDelayed
 }
 
 #endif

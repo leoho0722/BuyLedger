@@ -45,6 +45,9 @@ struct RootFeatureSharedOrdersTests {
                 $0 = loaded
             }
             $0.dashboard.orders = loaded
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loaded
+            }
             $0.dashboard.loadState = .loaded
             $0.insights.orders = loaded
             $0.insights.loadState = .loaded
@@ -82,6 +85,9 @@ struct RootFeatureSharedOrdersTests {
             }
             $0.orders.load.$errorMessage.withLock {
                 $0 = "orders.general.message.ordersLoadedTry"
+            }
+            $0.more.$ordersLoadState.withLock {
+                $0 = .failed("orders.general.message.ordersLoadedTry")
             }
             $0.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
             $0.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
@@ -159,7 +165,12 @@ struct RootFeatureSharedOrdersTests {
         let updated = RootFeatureTestSupport.rebuiltOrder(order, paymentReceiptStatus: .received)
         var initial = CampaignIntegrationTestSupport.makeRootState(campaigns: [], orders: [order])
         initial.more.path.append(
-            .customers(CustomersFeature.State(orders: SharedReader(initial.more.$orders)))
+            .customers(
+                CustomersFeature.State(
+                    orders: SharedReader(initial.more.$orders),
+                    loadState: SharedReader(initial.more.$ordersLoadState)
+                )
+            )
         )
         let saved = LockIsolated<[LedgerOrder]>([])
         let store = TestStore(initialState: initial) {

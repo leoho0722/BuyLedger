@@ -26,6 +26,9 @@ struct RootFeatureLoadCancellationTests {
         initial.orders.load.$errorMessage.withLock {
             $0 = "orders.general.message.ordersLoadedTry"
         }
+        initial.more.$ordersLoadState.withLock {
+            $0 = .failed("orders.general.message.ordersLoadedTry")
+        }
         initial.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
         initial.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
         let reads = LockIsolated(0)
@@ -55,6 +58,9 @@ struct RootFeatureLoadCancellationTests {
             }
             $0.orders.load.$errorMessage.withLock {
                 $0 = nil
+            }
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loading
             }
         }
         await store.receive(\.insights.delegate.refresh)

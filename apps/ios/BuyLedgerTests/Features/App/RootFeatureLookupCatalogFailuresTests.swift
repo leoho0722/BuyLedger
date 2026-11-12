@@ -25,6 +25,9 @@ struct RootFeatureLookupCatalogFailuresTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.$ordersLoadState.withLock {
+            $0 = .loaded
+        }
         initial.dashboard.loadState = .loaded
         initial.insights.loadState = .loaded
         let reads = LockIsolated<[LookupKind]>([])

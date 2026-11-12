@@ -200,6 +200,9 @@ struct CampaignIntegrationTests {
                 $0 = updatedOrders
             }
             $0.dashboard.orders = updatedOrders
+            $0.more.$ordersLoadState.withLock {
+                $0 = .loaded
+            }
             $0.dashboard.loadState = .loaded
             $0.insights.orders = updatedOrders
             $0.insights.loadState = .loaded

@@ -53,6 +53,19 @@ extension BLUITestErrorFactory {
         )
     }
 
+    /// 產生 UI 測試注入的匯率讀取失敗
+    ///
+    /// - Returns: 帶有測試用原因的傳輸層 ``APIError``
+    static func exchangeRateLoadFailed() -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: "com.leoho.BuyLedger.ui-test",
+                code: 3,
+                userInfo: [NSLocalizedDescriptionKey: "UI 測試注入的匯率讀取失敗"]
+            )
+        )
+    }
+
     /// 產生「匯率替身沒有這個基準幣別」的錯誤
     ///
     /// - Parameter base: 被要求的基準幣別代碼
