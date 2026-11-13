@@ -199,7 +199,7 @@ extension SettingsScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     func goBack(file: StaticString = #filePath, line: UInt = #line) {
-        let back = app.buttons[BLAccessibilityID.Common.backButton].firstMatch
+        let back = app.buttons[SystemAccessibilityID.backButton].firstMatch
         back.tapAfterWaiting(in: app, file: file, line: line)
     }
 

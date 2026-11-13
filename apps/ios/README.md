@@ -159,7 +159,7 @@ apps/ios/
 ├── BuyLedgerTests/               # 單元測試，鏡像正式程式碼目錄
 │   ├── Features/<Feature>/、Core/、Shared/、App/Testing/ # 對應正式程式碼同名目錄的測試
 │   ├── AccessibilityIDs/         # BLAccessibilityID 測試
-│   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門分 ActionGrouping、DependencyConvention、DesignSystemSourceScan、LayerBoundary、LocalizationCatalog、ProjectionWriteBoundary、ServiceOwnership，共用掃描器在 Scanning/
+│   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門分 AccessibilityIdentifier、ActionGrouping、DependencyConvention、DesignSystemSourceScan、LayerBoundary、LocalizationCatalog、ProjectionWriteBoundary、ServiceOwnership，共用掃描器在 Scanning/
 │   ├── SnapshotTests/            # snapshot 測試；baseline 在 __Snapshots__/<測試檔名>/
 │   ├── Mocks/                    # Database、HTTPClient、Store 的 Mock 與 MockURLProtocol
 │   ├── Fixtures/                 # 測試用固定資料

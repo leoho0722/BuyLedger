@@ -293,7 +293,7 @@ extension CampaignDetailScreen {
         let detailBar = app.navigationBars
             .containing(.button, identifier: BLAccessibilityID.Campaigns.detailMoreButton)
             .firstMatch
-        let back = detailBar.buttons[BLAccessibilityID.Common.backButton]
+        let back = detailBar.buttons[SystemAccessibilityID.backButton]
         back.tapAfterWaiting(in: app, file: file, line: line)
     }
 }

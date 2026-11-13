@@ -242,7 +242,10 @@ extension AppNavigator {
     ///
     /// - Returns: 唯一出現的切換按鈕；零個或多個候選時回傳 `nil`
     func rootSidebarToggle() -> XCUIElement? {
-        let identifiers = ["ToggleSideBar", "ToggleSidebar"]
+        let identifiers = [
+            SystemAccessibilityID.sidebarToggleButtonAlternate,
+            SystemAccessibilityID.sidebarToggleButton,
+        ]
         let matches = identifiers.compactMap { identifier in
             let element = app.buttons[identifier].firstMatch
             return element.exists ? element : nil

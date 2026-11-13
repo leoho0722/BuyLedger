@@ -447,7 +447,7 @@ private extension OrderRegularColumnScopeTests {
         let sidebarMarker = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
             .firstMatch
         let sidebarNavigationBar = app.navigationBars
-            .containing(.button, identifier: "ToggleSidebar")
+            .containing(.button, identifier: SystemAccessibilityID.sidebarToggleButton)
             .firstMatch
         guard sidebarMarker.exists || sidebarNavigationBar.exists else {
             return nil

@@ -57,7 +57,7 @@ extension XCUIApplication {
             return false
         }
         return descendants(matching: .any)
-            .matching(identifier: Self.popoverDismissRegionIdentifier)
+            .matching(identifier: SystemAccessibilityID.popoverDismissRegion)
             .firstMatch
             .exists
     }
@@ -170,11 +170,6 @@ func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
 
 @MainActor
 private extension XCUIApplication {
-
-    /// 數字 Popover 的全螢幕關閉區域，系統提供的 identifier，App 端沒有對應常數
-    static var popoverDismissRegionIdentifier: String {
-        "PopoverDismissRegion"
-    }
 
     /// 浮動數字面板的最大高度
     ///

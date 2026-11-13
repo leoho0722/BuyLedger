@@ -7,6 +7,18 @@
 
 import XCTest
 
+// MARK: - Nested Types
+
+private extension XCUIApplication {
+
+    /// 原生 Back 按鈕無法唯一定位時丟出的錯誤
+    enum NativeBackButtonError: Error {
+
+        /// 可互動的候選按鈕數不為 1
+        case candidateCountMismatch
+    }
+}
+
 // MARK: - Internal Method
 
 /// 導覽列原生 Back 按鈕的互動 helper
@@ -21,7 +33,7 @@ extension XCUIApplication {
     /// - Throws: 缺失或存在多個候選按鈕時丟出測試錯誤
     func tapUniqueNativeBackButton(file: StaticString = #filePath, line: UInt = #line) throws {
         let backButtons = navigationBars.buttons.matching(
-            identifier: BLAccessibilityID.Common.backButton
+            identifier: SystemAccessibilityID.backButton
         )
         let deadline = Date.now.addingTimeInterval(10)
         var hittableCandidates: [XCUIElement] = []
@@ -39,17 +51,5 @@ extension XCUIApplication {
             line: line
         )
         throw NativeBackButtonError.candidateCountMismatch
-    }
-}
-
-// MARK: - Nested Types
-
-private extension XCUIApplication {
-
-    /// 原生 Back 按鈕無法唯一定位時丟出的錯誤
-    enum NativeBackButtonError: Error {
-
-        /// 可互動的候選按鈕數不為 1
-        case candidateCountMismatch
     }
 }

@@ -15,9 +15,6 @@ extension BLAccessibilityID {
         /// 鍵盤工具列的完成按鈕
         static let keyboardDoneButton = "common.keyboard.doneButton"
 
-        /// 系統導覽返回按鈕
-        static let backButton = "BackButton"
-
         /// 跨功能共用的未選取或空詳情提示容器識別碼
         static let detailEmptyState = "common.detail.emptyState"
 
