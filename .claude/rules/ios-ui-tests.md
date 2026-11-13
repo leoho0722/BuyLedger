@@ -24,6 +24,7 @@ paths:
 - **一律以 `accessibilityIdentifier` 定位，不用顯示文字或 `accessibilityLabel`**：App 支援中英切換，文字定位在英文模式整批失效。
     - 常數集中在 `BuyLedgerAccessibilityIDs/` (同時編入 App 與 UITests)，`BLAccessibilityID` 依區域分檔為 `BLAccessibilityID+<區域>.swift`，兩端引用常數、不寫字面值。
     - 在 `BuyLedgerAccessibilityIDs/` 定義常數時，固定 identifier 寫完整字串字面值；需要組出的只能由 `option`、`row`、`indexed` 在字面值前綴之後接最後一段變動值，不在中段插入參數，也不在變動值之後再接固定片段，UI 測試失敗訊息印出的值才能以前綴搜到定義；UI 測試也以空字串呼叫這些函式取得 `BEGINSWITH` 前綴。
+    - 固定值與前綴用 2 至 4 段 lowerCamelCase，第一段是所屬巢狀型別名稱 (如 `AISummary` → `aiSummary`)；定義形式、宣告位置、形狀、只含 ASCII、值不重複、不落在其他前綴之下都由 `AccessibilityIdentifierScanTests` 掃描守門，掃描不認得的新寫法先修改 spec `ui-test-element-identity` 的接受清單，並擴充掃描規則與案例再用。系統指定、App 無法改名的 identifier 不進 `BuyLedgerAccessibilityIDs/`，集中在 UI 測試 `Support/SystemAccessibilityID.swift`，其他檔不寫這些值的字面值 (同一組掃描守門)。
 - **identifier 只掛在本身就是無障礙元素的東西上**：按鈕、輸入欄、捲動容器、`accessibilityElement(children: .combine/.contain)` 後的容器。
     - 掛在純 `VStack` 等版面容器會把子元素併吞成單一字串；容器需要 identifier 時先加 `.accessibilityElement(children: .contain)`。
 - **合併朗讀的列以 `accessibilityValue` 承載主要數值**，不為了測試把 `.combine` 拆開。
@@ -44,7 +45,7 @@ paths:
     - iPadOS 27 的 `Menu` 內 `Picker(.inline)` 選項帶不出 identifier，呼叫 `tapMenuItem` 一律傳可見標籤作回退 (計畫已鎖語言)。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。
 - **sheet 疊在有搜尋欄的畫面上時，`app.searchFields.firstMatch` 會取到底層那一個**：iPad 的側邊欄版面讓底層 Orders 搜尋欄排在前面，iPhone 恰好順序相反所以不會中；改用 `app.searchFields.allElementsBoundByIndex.first(where: \.isHittableOnScreen)` 取第一個可互動的，取不到就 `failWithDiagnostics`。同型陷阱也適用於其他在 sheet 內重複出現的系統元件。
-    - 系統返回鍵帶語言無關的 identifier `BackButton` (`Common.backButton`)。
+    - 系統返回鍵帶語言無關的 identifier `BackButton` (`SystemAccessibilityID.backButton`)。
 
 ## 資料與相依
 

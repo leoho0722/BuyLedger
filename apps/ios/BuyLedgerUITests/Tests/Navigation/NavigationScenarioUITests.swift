@@ -158,7 +158,7 @@ final class NavigationScenarioUITests: BLUITestCase {
 
         // Then
         let backButton = app.navigationBars.buttons
-            .matching(identifier: BLAccessibilityID.Common.backButton)
+            .matching(identifier: SystemAccessibilityID.backButton)
             .firstMatch
         try requireCondition(backButton.waitForExistence(timeout: 10), in: app, "設定頁的返回鈕不存在")
         let matchesMoreTitle = backButton.wait(

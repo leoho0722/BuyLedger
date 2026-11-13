@@ -83,30 +83,6 @@ struct BLAccessibilityIDTests {
         #expect(identifier == scenario.expectedIdentifier)
     }
 
-    /// 驗證每個靜態識別碼都只含 ASCII 字元且不為空
-    ///
-    /// - Parameter identifier: 要檢查的靜態識別碼
-    @Test(arguments: [
-        BLAccessibilityID.Root.sidebar,
-        BLAccessibilityID.Dashboard.root,
-        BLAccessibilityID.Dashboard.emptyState,
-        BLAccessibilityID.Insights.heatmap,
-        BLAccessibilityID.Settings.languagePicker,
-        BLAccessibilityID.Settings.monthlyGoalField,
-        BLAccessibilityID.Common.keyboardDoneButton,
-        BLAccessibilityID.Common.detailEmptyState,
-    ])
-    func staticIdentifiers_靜態識別碼_皆為ASCII字元(_ identifier: String) {
-        // Given
-
-        // When
-        let isASCIIOnly = identifier.unicodeScalars.allSatisfy { $0.isASCII }
-
-        // Then
-        #expect(isASCIIOnly)
-        #expect(!identifier.isEmpty)
-    }
-
     /// 驗證 `feature` 作用域的選取項目識別碼格式正確且皆為 ASCII 字元
     ///
     /// - Parameter scenario: 功能模組案例與預期的完整識別碼

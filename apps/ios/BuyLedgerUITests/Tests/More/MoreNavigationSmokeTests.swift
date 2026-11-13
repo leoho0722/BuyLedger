@@ -30,7 +30,6 @@ final class MoreNavigationSmokeTests: BLUITestCase {
         let fxRoot = app.descendants(matching: .any)[BLAccessibilityID.Fx.root].firstMatch
         let quoteRoot = app.descendants(matching: .any)[BLAccessibilityID.Quote.root].firstMatch
 
-        // When
         try requireCondition(fxRow.waitUntilHittable(timeout: 10), in: app, "更多頁匯率入口列未就緒")
         fxRow.tap()
         try requireCondition(fxRoot.waitForExistence(timeout: 10), in: app, "點選匯率入口後匯率頁未出現")
@@ -73,14 +72,13 @@ final class MoreNavigationSmokeTests: BLUITestCase {
             .firstMatch
         let fxRow = app.descendants(matching: .any)[BLAccessibilityID.More.row(.fx)].firstMatch
 
-        // When
         try requireCondition(settingsRow.waitUntilHittable(timeout: 10), in: app, "設定入口列未就緒")
         settingsRow.tap()
         try requireCondition(settingsRoot.waitForExistence(timeout: 10), in: app, "設定頁未出現")
 
         // When
         let backButton = app.navigationBars.buttons
-            .matching(identifier: BLAccessibilityID.Common.backButton)
+            .matching(identifier: SystemAccessibilityID.backButton)
             .firstMatch
         try requireCondition(backButton.waitUntilHittable(timeout: 10), in: app, "收合版設定頁的原生返回鍵不可點")
         backButton.tap()

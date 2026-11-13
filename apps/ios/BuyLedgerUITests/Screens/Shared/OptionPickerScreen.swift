@@ -131,7 +131,7 @@ extension OptionPickerScreen {
     func tapBack(file: StaticString = #filePath, line: UInt = #line) {
         // sheet 底層畫面 (如推入的訂單詳情) 的返回鍵仍在可及性樹上，只點畫面上可互動的那一個
         let backButtons = app.navigationBars.buttons
-            .matching(identifier: BLAccessibilityID.Common.backButton)
+            .matching(identifier: SystemAccessibilityID.backButton)
         let deadline = Date.now.addingTimeInterval(10)
         while Date.now < deadline {
             if let back = backButtons.allElementsBoundByIndex.first(where: \.isHittableOnScreen) {

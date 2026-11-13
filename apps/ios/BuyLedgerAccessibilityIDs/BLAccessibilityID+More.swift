@@ -68,7 +68,7 @@ extension BLAccessibilityID {
         static let listLoadFailure = "customers.list.loadFailure"
 
         /// 客戶清單載入失敗畫面的重試鍵
-        static let listLoadFailureRetryButton = "customers.list.loadFailureRetryButton"
+        static let listLoadFailureRetryButton = "customers.list.loadFailure.retryButton"
 
         /// 取得 Top 3 卡片的識別碼，以客戶名稱識別
         ///

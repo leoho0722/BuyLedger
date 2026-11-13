@@ -58,7 +58,7 @@ extension PhotoViewerScreen {
         let viewerBar = app.navigationBars
             .matching(NSPredicate(format: "identifier CONTAINS '/'"))
             .firstMatch
-        let back = viewerBar.buttons[BLAccessibilityID.Common.backButton]
+        let back = viewerBar.buttons[SystemAccessibilityID.backButton]
         back.tapAfterWaiting(
             in: app,
             timeout: 5,

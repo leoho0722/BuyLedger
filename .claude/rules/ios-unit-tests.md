@@ -9,6 +9,7 @@ paths:
     - `Core/<能力>/`、`Shared/<模組>/`、`App/Testing/` 同樣鏡像；原始碼掃描與守門測試放 `Guards/`，snapshot 測試放 `SnapshotTests/`；共用 helper 與 fixture 的位置依 kit `file-templates.md` tests 一節。
 - **Guards 子資料夾之間共用的掃描型別放 `Guards/Scanning/`**：Guards 自己的掃描 helper 依職責命名成型別 (如 `LayerBoundaryScanner`)，不併進 TestSupport。
 - **讀原始碼或設定檔的測試以 `TestPaths.iosRoot` 取得 `apps/ios`**，不以 `#filePath` 往上退固定層數：測試檔搬到其他層級時，固定層數會指錯目錄。
+    - 多個測試共用一次掃描結果 (`static let` 快取) 時，前提不成立 (如目錄讀到 0 個檔) 要丟自有錯誤並以 `mapError` 包住快取的錯誤，不用 `#require`：`ExpectationFailedError` 只在第一個觸發初始化的測試記錄問題，其他測試重丟同一個錯誤時不記錄、算通過 (參考 `AccessibilityIdentifierScanTests` 的 `ProductionScanError`)。
 - **helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK**。
 - **`Bool` 命名規則 (以 `is`／`has`／`can`／`should` 開頭) 同樣適用測試**。
     - 屬性、區域變數、測試參數與 `@Test(arguments:)` 的欄位都用描述事實的名稱。
@@ -22,6 +23,7 @@ paths:
     - 無參數寫 `()`，例如 `BuyLedgerTests/OrderServiceReadsTests/fetchOrders_讀取清單_不載入照片位元組()`；省略括號會安靜地選不到方法。
     - 參數化測試 (`@Test(arguments:)`) 要寫出參數標籤，例如 `refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(scenario:)`；只寫 `()` 同樣會選到 0 條。
 - **選擇性測試與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
+    - 參數化測試有多筆案例失敗時，xcresult 摘要的 `testFailures` 只列一筆；要確認 RED 涵蓋哪些案例，在同目錄放量完即刪的探針測試，逐筆比對後以一個 `Issue.record` 列出全部不符的案例。
 - **測試替身的共享可變狀態使用 `LockIsolated`**：同步記錄呼叫與取消訊號，避免自訂 actor 或 class box 帶來不必要的隔離與排程問題。
 - **非同步結果不得以 `Task.yield` 輪詢**：用 `TestStore.receive`、`finish` 或注入的 clock 等待明確事件，避免排程快慢造成偶發假失敗。
 
