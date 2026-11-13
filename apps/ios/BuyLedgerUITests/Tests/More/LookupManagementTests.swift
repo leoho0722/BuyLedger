@@ -128,6 +128,7 @@ final class LookupManagementTests: BLUITestCase {
         // Given
         var options = LaunchOptions(seed: .lookupsOnly)
         options.shouldFailLookupWrites = true
+        options.shouldKeepViewAnimations = true
         let app = launch(options)
         let lookupManagement = LookupManagementScreen(app: app)
         lookupManagement.openCategoryManagement()
@@ -168,6 +169,7 @@ final class LookupManagementTests: BLUITestCase {
         // Given
         var options = LaunchOptions(seed: .lookupsOnly)
         options.shouldFailLookupWrites = true
+        options.shouldKeepViewAnimations = true
         let app = launch(options)
         let lookupManagement = LookupManagementScreen(app: app)
         lookupManagement.openCategoryManagement()
@@ -206,6 +208,7 @@ final class LookupManagementTests: BLUITestCase {
         // Given
         var options = LaunchOptions(seed: .lookupsOnly)
         options.shouldFailLookupWrites = true
+        options.shouldKeepViewAnimations = true
         let app = launch(options)
         let lookupManagement = LookupManagementScreen(app: app)
         lookupManagement.openCategoryManagement()
@@ -297,6 +300,7 @@ final class LookupManagementTests: BLUITestCase {
         // Given
         var options = LaunchOptions(seed: .lookupsOnly)
         options.shouldFailLookupWrites = true
+        options.shouldKeepViewAnimations = true
         let app = launch(options)
         let lookupManagement = LookupManagementScreen(app: app)
         lookupManagement.openCategoryManagement()

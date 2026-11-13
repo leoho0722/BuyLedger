@@ -56,6 +56,12 @@ paths:
 - **`DependencyValues+BLUITestOverrides.swift` 以注入的 `BuyLedgerDatabase` 組出 Service，不得在 `prepareDependencies` 的 closure 內讀 `$0.xxxService` 當底座**：`@Dependency` 在 `liveValue` 建立時擷取當下的 `_current`，不是正在準備的 `$0`，會拿到正式 store。
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
+- **UI 測試模式關閉 UIView 動畫，App 與 harness 都不重新開啟；驗證呈現競態的測試以 `LaunchOptions.shouldKeepViewAnimations` 保留動畫**：iPad 模擬器上轉向、鍵盤輸入或搜尋欄切換之後，同一個 App 程序可能每次等閒置都等滿 60 秒 (log 出現 `App animations complete notification not received`)，直到 App 被終止；關閉動畫後不再出現，機制推測是 XCTest 對動畫的追蹤失步。
+    - 驗證「sheet、確認框或提示關閉之後接著呈現提示或確認框」的測試要帶 `shouldKeepViewAnimations`：這類競態只發生在關閉動畫期間，沒有動畫時測試偵測不到 (參考 `LookupManagementTests` 的刪除寫入失敗案例)。
+    - 等框線穩定、鍵盤就位、等視窗轉向等 helper 照常保留：保留動畫的測試仍需要它們，也是日後移除這個設定的前提。
+    - UI 測試不驗證動畫本身 (時長、減少動態效果的替代動畫)，這類行為改由單元測試或正式模式、實機確認。
+    - 判讀：未保留動畫的測試再出現這段訊息時，先確認 harness 的設定仍在；設定仍在，或訊息出現在保留動畫的測試，就記錄觸發前的步驟並回報，不自行改 helper 或 App。
+    - 升級 Xcode 或 iPad 模擬器執行環境時，重新確認是否仍需要關閉動畫：暫時拿掉 harness 的呼叫，跑一次 iPad 完整 UI 回歸，訊息 0 次且全部通過才可移除。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。
     - iPadOS 數字 Popover 的關閉區域會攔截再次點同一欄位的點擊：驗證再次點擊的測試在 Popover 呈現時可明確 skip，並寫明原因。
 - **版面差異由 `AppNavigator` 吸收**：`rootLayout` 只依側邊欄標記與五個根分頁的位置判定 (側邊欄或頂部分頁列為 `.regular`，底部分頁列為 `.compact`)，不以裝置類型或系統版本推測；compact 含 iPhone 任何方向與 iPad 窄視窗。
@@ -105,9 +111,6 @@ paths:
 - **鍵盤常在打字後才升起，表單隨之上移，輸入前後都要等**：`clearAndType` 在輸入前後各等一次，且每段等待都有上限。
     - 輸入前等鍵盤就位：完整鍵盤框線落在視窗內且連續不變，或浮動面板、數字 Popover 連續不變。逾時照樣輸入，並附上鍵盤狀態供失敗時判讀。
     - 輸入後等欄位框線連續相同才返回。
-- **iPad 模擬器上 XCUITest 可能多次等滿 60 秒閒置 (log 出現 `App animations complete notification not received`)，步驟多的旅程可能因此超過 10 分鐘執行上限**：App CPU 接近 0、主執行緒停在 run loop，不是 App 空轉；同一條測試每次碰到的次數不同。
-    - 同一台模擬器長時間連續執行後，這類等待會變多；單獨重跑前先依「轉向測試」一節的重開機方式重開模擬器。
-    - 判讀：逾時前沒有斷言失敗且 log 有這段訊息時單獨重跑，至多兩次，完整走完才算通過；兩次都走不完、有斷言失敗或 CPU 持續偏高就當問題回報，不繼續重跑。
 
 ## 轉向測試
 

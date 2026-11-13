@@ -8,6 +8,7 @@
 import Dependencies
 import Foundation
 import SwiftData
+import UIKit
 
 #if DEBUG
 
@@ -29,12 +30,16 @@ enum BLUITestHarness {
 extension BLUITestHarness {
 
     /// 帶 UI 測試啟動參數時完成全部前置注入，否則直接返回不影響正式路徑
+    ///
+    /// - Note: UI 測試模式預設關閉 UIView 動畫，帶 `-BLUITestKeepViewAnimations` 時保留
     static func prepareIfNeeded() {
         let configuration = BLUITestConfiguration.current
 
         guard configuration.isEnabled else {
             return
         }
+
+        applyViewAnimationPolicy(for: configuration) { UIView.setAnimationsEnabled($0) }
 
         let container: ModelContainer
         let storeLocation: BuyLedgerDatabase.StoreLocation
@@ -87,6 +92,23 @@ extension BLUITestHarness {
                 storeLocation: storeLocation
             )
         }
+    }
+
+    /// 測試模式且未要求保留動畫時關閉一次 UIView 動畫，其餘情況不碰動畫開關
+    ///
+    /// - Parameters:
+    ///   - configuration: UI 測試啟動設定
+    ///   - setAnimationsEnabled: 設定動畫開關的函式，正式路徑傳入 `UIView.setAnimationsEnabled`
+    /// - Note: 介面變化後 XCTest 的閒置等待可能一直逾時，關閉動畫可避免
+    /// - Note: 保留參數供驗證呈現競態的測試使用，這類競態只發生在動畫期間
+    static func applyViewAnimationPolicy(
+        for configuration: BLUITestConfiguration,
+        setAnimationsEnabled: (Bool) -> Void
+    ) {
+        guard configuration.isEnabled, !configuration.shouldKeepViewAnimations else {
+            return
+        }
+        setAnimationsEnabled(false)
     }
 }
 

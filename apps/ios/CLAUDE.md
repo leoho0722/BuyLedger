@@ -81,6 +81,7 @@
   - 一閃即過的畫面 (如自動解鎖) 用 `simulator record-video` 錄影逐格確認。
   - 回傳的 OSLog 檔只擷取啟動後一小段時間，Runtime Logs 檔 (stdout) 才持續到 App 結束：需要跨背景與前景觀察的暫時診斷用 `print`。
 - **`--launch-args`／`--extra-args` 的純數字值會驗證失敗** (如 `-test-iterations 3`)，改用 `--json '{"launchArgs":[...]}'`／`--json '{"extraArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。
+  - `-BLUITest` 模式會關閉 UIView 動畫：要看轉場或逐格確認動畫時加 `-BLUITestKeepViewAnimations`，或改用正式模式。
 - **列位於分頁列範圍下方時 `touch` 會點到分頁列**，先捲動讓目標露出再點。
 - **sheet 內 `List` 最後一列的 `touch`／`tap` 可能回報成功卻沒觸發** (同一 sheet 其他列正常)：改以 XCUITest 驗證 (正式 UI 測試，或量完即刪的暫時測試)，不反覆重試。
 - **iPad 模擬器多工模式維持「全螢幕 App」**：「視窗 App」模式下 `snapshot-ui` 取不到可及性樹。

@@ -41,6 +41,32 @@ struct BLUITestConfigurationTests {
         #expect(configuration.shouldFailCampaignWrites == false)
     }
 
+    /// 驗證帶入保留動畫旗標時，設定要求保留 UIView 動畫
+    @Test
+    func init_帶保留動畫旗標_保留動畫() {
+        // Given
+        let arguments = ["-BLUITest", "-BLUITestKeepViewAnimations"]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.shouldKeepViewAnimations == true)
+    }
+
+    /// 驗證只帶測試旗標時，設定不要求保留 UIView 動畫
+    @Test
+    func init_未帶保留動畫旗標_不保留動畫() {
+        // Given
+        let arguments = ["-BLUITest"]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.shouldKeepViewAnimations == false)
+    }
+
     /// 驗證沒有任何啟動參數時，UI 測試停用，其餘設定皆為預設值
     @Test
     func init_空啟動參數_停用測試並保留預設值() {
@@ -67,6 +93,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.biometricScenario == .success)
         #expect(configuration.persistenceMode == .inMemory)
         #expect(configuration.shouldResetPersistentStore == false)
+        #expect(configuration.shouldKeepViewAnimations == false)
     }
 
     /// 驗證啟動參數含執行檔路徑與 `-BLUITest` 時，啟用 UI 測試設定
@@ -116,6 +143,7 @@ struct BLUITestConfigurationTests {
             "JPY",
             "-BLUITestMonthlyGoal",
             "80000",
+            "-BLUITestKeepViewAnimations",
         ]
         let expectedReferenceDate = Date(timeIntervalSince1970: 1_768_465_800)
 
@@ -132,6 +160,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.shouldFailLookupWrites)
         #expect(configuration.defaultCurrencyCode == "JPY")
         #expect(configuration.monthlyProfitGoalTWD == 80_000)
+        #expect(configuration.shouldKeepViewAnimations)
     }
 
     /// 驗證 ISO8601 參考時間含小數秒時，解析結果保留小數秒

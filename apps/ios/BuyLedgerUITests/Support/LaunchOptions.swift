@@ -61,6 +61,9 @@ struct LaunchOptions {
 
     /// 是否清除本機測試資料庫 (`-BLUITestResetPersistentStore`)；僅在 `.persistent` 模式有效
     var shouldResetPersistentStore = false
+
+    /// 是否保留 UIView 動畫 (`-BLUITestKeepViewAnimations`)；只給驗證關閉後接著呈現提示或確認框的測試使用
+    var shouldKeepViewAnimations = false
 }
 
 // MARK: - Nested Types
@@ -229,6 +232,9 @@ extension LaunchOptions {
         }
         if shouldResetPersistentStore {
             arguments.append("-BLUITestResetPersistentStore")
+        }
+        if shouldKeepViewAnimations {
+            arguments.append("-BLUITestKeepViewAnimations")
         }
 
         return arguments

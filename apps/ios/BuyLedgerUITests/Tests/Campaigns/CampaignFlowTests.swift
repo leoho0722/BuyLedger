@@ -70,7 +70,13 @@ final class CampaignFlowTests: BLUITestCase {
     /// - Note: 關閉同次儲存失敗的提示後才看得到列表，後續檢查用來確認失敗開團未被加入
     func testSaveButtonTapped_開團寫入失敗_表單關閉後顯示失敗提示() throws {
         // Given
-        let app = launch(LaunchOptions(seed: .empty, shouldFailCampaignWrites: true))
+        let app = launch(
+            LaunchOptions(
+                seed: .empty,
+                shouldFailCampaignWrites: true,
+                shouldKeepViewAnimations: true
+            )
+        )
         let root = RootNavigationScreen(app: app)
         try requireCondition(root.goToCampaigns(), in: app, "開團分頁未就緒")
         let add = app.buttons[BLAccessibilityID.Campaigns.addButton]
@@ -110,7 +116,13 @@ final class CampaignFlowTests: BLUITestCase {
     /// - Throws: 開團詳情、刪除確認或失敗提示未就緒時丟出測試錯誤
     func testConfirmDelete_失敗提示關閉後再次刪除_確認框仍可開啟() throws {
         // Given
-        let app = launch(LaunchOptions(seed: .campaignsWithOrders, shouldFailCampaignWrites: true))
+        let app = launch(
+            LaunchOptions(
+                seed: .campaignsWithOrders,
+                shouldFailCampaignWrites: true,
+                shouldKeepViewAnimations: true
+            )
+        )
         let detail = try openCampaignDetail(app)
         detail.openMoreMenu()
         try requireCondition(detail.tapDelete(), in: app, "詳情更多選單沒有刪除項目")
