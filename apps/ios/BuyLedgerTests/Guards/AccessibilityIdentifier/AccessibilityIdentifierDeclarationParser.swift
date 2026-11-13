@@ -253,8 +253,7 @@ private extension AccessibilityIdentifierDeclarationParser {
         of declaration: AccessibilityIdentifierDeclaration
     ) -> ContainerShape? {
         guard ["extension", "enum"].contains(declaration.texts[0]),
-              declaration.isIdentifier(at: 1)
-        else {
+              declaration.isIdentifier(at: 1) else {
             return nil
         }
         var components = [declaration.texts[1]]
@@ -367,8 +366,7 @@ private extension AccessibilityIdentifierDeclarationParser {
     ) -> String? {
         guard let funcOffset = declaration.texts.firstIndex(of: "func"),
               !declaration.texts[..<funcOffset].contains("{"),
-              declaration.isIdentifier(at: funcOffset + 1)
-        else {
+              declaration.isIdentifier(at: funcOffset + 1) else {
             return nil
         }
         return declaration.texts[funcOffset + 1]
@@ -389,8 +387,7 @@ private extension AccessibilityIdentifierDeclarationParser {
     ) -> Bool {
         guard declaration.count >= 4,
               declaration.isIdentifier(at: 1),
-              declaration.texts[1] != "BLAccessibilityID"
-        else {
+              declaration.texts[1] != "BLAccessibilityID" else {
             return false
         }
         let allowedConformances: Set<String> = ["String", "Sendable"]
@@ -441,8 +438,7 @@ private extension AccessibilityIdentifierDeclarationParser {
               count >= 2,
               count % 2 == 0,
               declaration.hasTriviaGaps(in: 1..<count),
-              declaration.tail == .trivia
-        else {
+              declaration.tail == .trivia else {
             return false
         }
         return stride(from: 1, to: count, by: 2).allSatisfy { offset in
@@ -468,8 +464,7 @@ private extension AccessibilityIdentifierDeclarationParser {
               declaration.isIdentifier(at: 2),
               texts[3] == "(",
               let headerClose = declaration.closingOffset(forOpeningAt: 3),
-              Array(texts.dropFirst(headerClose + 1).prefix(signatureTail.count)) == signatureTail
-        else {
+              texts.dropFirst(headerClose + 1).starts(with: signatureTail) else {
             return nil
         }
         let bodyOpen = headerClose + signatureTail.count
@@ -555,8 +550,7 @@ private extension AccessibilityIdentifierDeclarationParser {
               case .literal(let prefix) = declaration.gap(before: commaOffset),
               declaration.text(at: cursor + 3) == composer.argumentLabel,
               declaration.text(at: cursor + 4) == ":",
-              declaration.isIdentifier(at: cursor + 5)
-        else {
+              declaration.isIdentifier(at: cursor + 5) else {
             return nil
         }
         let parameterTexts = declaration.texts[4..<shape.headerClose]
@@ -573,8 +567,7 @@ private extension AccessibilityIdentifierDeclarationParser {
         }
         guard declaration.text(at: end) == ")",
               end + 1 == shape.bodyClose,
-              hasLiteralOnlyInPrefix
-        else {
+              hasLiteralOnlyInPrefix else {
             return nil
         }
         return (composer, prefix, isQualified ? nil : name)

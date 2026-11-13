@@ -214,8 +214,7 @@ private extension AccessibilityIdentifierLocationChecker {
         guard tokens[cursor].text == "`",
               cursor + 2 < tokens.count,
               tokens[cursor + 1].kind == .identifier,
-              tokens[cursor + 2].text == "`"
-        else {
+              tokens[cursor + 2].text == "`" else {
             return nil
         }
         return (tokens[cursor + 1].text, cursor + 3)

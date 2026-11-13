@@ -15,19 +15,21 @@ struct AccessibilityIdentifierScanTests {
 
     // MARK: - Properties
 
-    /// 合成案例使用的分隔符號，以字面值寫死，`row` 改分隔符號時案例的預期不會跟著漂移
-    private static let separators = AccessibilityIdentifierScanner.Separators(
-        option: ".",
-        row: ":",
-        indexed: ".index."
-    )
-
     /// 共用的正式原始碼掃描結果，失敗一律包成自有錯誤，由每個測試各自回報
+    ///
+    /// - Note: Swift Testing 每個測試各建一個實例，寫成 `static let` 才能讓正式掃描的測試共用同一次掃描
     private static let productionResult = Result {
         try AccessibilityIdentifierScanTests.scanProduction()
     }.mapError {
         ProductionScanError.scanFailed(underlying: $0)
     }
+
+    /// 合成案例使用的分隔符號，以字面值寫死，`row` 改分隔符號時案例的預期不會跟著漂移
+    private let separators = AccessibilityIdentifierScanner.Separators(
+        option: ".",
+        row: ":",
+        indexed: ".index."
+    )
 
     /// 驗證合成違規案例回報的規則集合等於案例宣告的預期集合，證明每條規則都會在對應寫法上失敗
     ///
@@ -36,7 +38,6 @@ struct AccessibilityIdentifierScanTests {
     @Test(arguments: AccessibilityIdentifierScanCases.violationCases)
     func scan_違規案例_回報的規則集合與案例宣告相同(scenario: AccessibilityIdentifierScanCases.ViolationCase) {
         // Given
-        let separators = Self.separators
 
         // When
         let result = AccessibilityIdentifierScanner.scan(
@@ -75,7 +76,6 @@ struct AccessibilityIdentifierScanTests {
     @Test(arguments: AccessibilityIdentifierScanCases.compliantCases)
     func scan_合規案例_沒有違規(scenario: AccessibilityIdentifierScanCases.CompliantCase) {
         // Given
-        let separators = Self.separators
 
         // When
         let result = AccessibilityIdentifierScanner.scan(
@@ -100,7 +100,6 @@ struct AccessibilityIdentifierScanTests {
     @Test(arguments: AccessibilityIdentifierScanCases.compliantCases)
     func scan_合規案例_掃到的固定值與前綴等於案例宣告(scenario: AccessibilityIdentifierScanCases.CompliantCase) {
         // Given
-        let separators = Self.separators
 
         // When
         let result = AccessibilityIdentifierScanner.scan(
@@ -136,7 +135,7 @@ struct AccessibilityIdentifierScanTests {
             outsideFiles: [],
             outsideRoots: [],
             systemIdentifierPath: nil,
-            separators: Self.separators
+            separators: separators
         )
 
         // Then
@@ -161,7 +160,7 @@ struct AccessibilityIdentifierScanTests {
             outsideFiles: [],
             outsideRoots: [],
             systemIdentifierPath: nil,
-            separators: Self.separators
+            separators: separators
         )
 
         // Then
@@ -181,7 +180,6 @@ struct AccessibilityIdentifierScanTests {
         scenario: AccessibilityIdentifierScanCases.DescriptionPrefixCase
     ) {
         // Given
-        let separators = Self.separators
 
         // When
         let result = AccessibilityIdentifierScanner.scan(

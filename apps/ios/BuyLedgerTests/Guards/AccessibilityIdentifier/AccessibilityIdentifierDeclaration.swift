@@ -73,8 +73,7 @@ extension AccessibilityIdentifierDeclaration {
               let close = closingOffset(forOpeningAt: offset),
               close == count - 1,
               hasTriviaGaps(in: 1...offset),
-              tail == .trivia
-        else {
+              tail == .trivia else {
             return nil
         }
         return close
@@ -145,15 +144,13 @@ extension AccessibilityIdentifierDeclaration {
         guard count >= 4,
               texts[0] == "static",
               texts[1] == "let",
-              isIdentifier(at: 2)
-        else {
+              isIdentifier(at: 2) else {
             return nil
         }
         let suffix = Array(texts[3...])
         guard suffix == ["="] || suffix == [":", "String", "="],
               hasTriviaGaps(in: 1..<count),
-              case .literal(let value) = tail
-        else {
+              case .literal(let value) = tail else {
             return nil
         }
         return (texts[2], value)

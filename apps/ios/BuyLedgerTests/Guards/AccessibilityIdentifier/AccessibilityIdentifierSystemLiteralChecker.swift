@@ -97,8 +97,7 @@ private extension AccessibilityIdentifierSystemLiteralChecker {
             }
             guard let open = declaration.texts.firstIndex(of: "{"),
                   let close = declaration.closingOffset(forOpeningAt: open),
-                  close == declaration.count - 1
-            else {
+                  close == declaration.count - 1 else {
                 continue
             }
             let bodyStart = declaration.range.lowerBound + open + 1
@@ -146,8 +145,7 @@ private extension AccessibilityIdentifierSystemLiteralChecker {
         var violations: [AccessibilityIdentifierScanner.Violation] = []
         for (start, end) in zip(gapStarts, gapEnds) {
             guard case .literal(let value) = model.gap(from: start, to: end),
-                  let name = names[value]
-            else {
+                  let name = names[value] else {
                 continue
             }
             violations.append(
