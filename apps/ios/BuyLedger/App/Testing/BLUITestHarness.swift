@@ -39,7 +39,9 @@ extension BLUITestHarness {
             return
         }
 
-        applyViewAnimationPolicy(for: configuration) { UIView.setAnimationsEnabled($0) }
+        applyViewAnimationPolicy(for: configuration) {
+            UIView.setAnimationsEnabled($0)
+        }
 
         let container: ModelContainer
         let storeLocation: BuyLedgerDatabase.StoreLocation

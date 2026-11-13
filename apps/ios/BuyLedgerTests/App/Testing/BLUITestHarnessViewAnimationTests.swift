@@ -42,7 +42,9 @@ struct BLUITestHarnessViewAnimationTests {
         var calls: [Bool] = []
 
         // When
-        BLUITestHarness.applyViewAnimationPolicy(for: configuration) { calls.append($0) }
+        BLUITestHarness.applyViewAnimationPolicy(for: configuration) {
+            calls.append($0)
+        }
 
         // Then
         #expect(calls == scenario.expectedCalls)
