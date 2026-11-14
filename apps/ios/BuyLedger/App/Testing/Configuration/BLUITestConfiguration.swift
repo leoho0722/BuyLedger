@@ -81,6 +81,9 @@ struct BLUITestConfiguration: Equatable, Sendable {
     /// 是否清除本機測試資料庫 (`-BLUITestResetPersistentStore`)；僅在 `.persistent` 模式有效
     let shouldResetPersistentStore: Bool
 
+    /// 是否保留 UIView 動畫 (`-BLUITestKeepViewAnimations`)；未帶時 UI 測試模式會關閉動畫
+    let shouldKeepViewAnimations: Bool
+
     // MARK: - Init
 
     /// 從啟動參數陣列解析設定
@@ -104,6 +107,7 @@ struct BLUITestConfiguration: Equatable, Sendable {
             ?? .success
         persistenceMode = Self.option(for: "-BLUITestPersistence", in: arguments) ?? .inMemory
         shouldResetPersistentStore = arguments.contains("-BLUITestResetPersistentStore")
+        shouldKeepViewAnimations = arguments.contains("-BLUITestKeepViewAnimations")
     }
 }
 
