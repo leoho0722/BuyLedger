@@ -1364,3 +1364,146 @@ code:
 tests:
   - shared/data-model/generator/test/datamodel-gen.test.ts
 -->
+
+---
+### Requirement: Value shapes stored in persisted records are locked by a test
+
+Value types that a SwiftData record stores as embedded values, and enums or codes whose raw strings a record stores, SHALL have their stored shape locked by a unit test that compares against literal values. When retained schema versions reference such a type directly instead of freezing a copy, a change to its keys or stored properties changes how every retained version reads existing rows at once, and opening a store that the same build created does not detect it.
+
+The locked shape SHALL cover the encoded keys and the stored property list of each embedded struct, the raw value of every case of each persisted enum, and the code strings of the built-in currency constants. Adding an enum case SHALL only require updating the literal values. Removing or renaming a key, a stored property, or a raw value SHALL be made deliberately, together with the schema migration it requires. A value type that becomes embedded in a persisted record SHALL be added to the test in the same change.
+
+#### Scenario: An embedded item keeps its encoded keys
+
+- **WHEN** an order item is encoded, and an encoded item without an identifier is decoded
+- **THEN** the encoded output contains exactly the name, quantity, and unit price keys and no identifier key, and the decoded item has the same name, quantity, and unit price
+
+##### Example: order item encoding
+
+- **GIVEN** an order item with a fixed identifier, named "Tote", with quantity 2 and unit price 1200
+- **WHEN** it is encoded with sorted keys
+- **THEN** the output is {"name":"Tote","quantity":2,"unitPrice":1200}
+
+#### Scenario: An embedded customer keeps its keys and stored properties
+
+- **WHEN** an order customer is encoded and its stored properties are listed in declaration order
+- **THEN** the encoded keys are initials, name, and tier, and the stored properties are name, initials, and tier with the types text, text, and customer tier
+
+#### Scenario: Persisted raw values stay fixed
+
+- **WHEN** the raw values of every case of the order status, customer tier, campaign status, and payment receipt status are listed, together with the codes of the built-in currency constants
+- **THEN** each set equals its literal expectation, and a case added to an enum that cannot enumerate its cases is caught because the test maps every case exhaustively
+
+#### Scenario: An accidental shape change fails the test
+
+- **GIVEN** the shape test passes on the current source
+- **WHEN** the order item's custom encoding is temporarily replaced by the synthesized encoding
+- **THEN** the shape test fails
+
+<!-- @trace
+source: remove-data-model-codegen
+updated: 2026-11-15
+code:
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
+  - shared/data-model/schema/CustomerTier.yaml
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder.swift
+  - shared/data-model/README.md
+  - shared/data-model/fixtures/expected/swift/SampleGrade.generated.swift
+  - shared/data-model/generator/bun.lock
+  - shared/data-model/fixtures/expected/swift/SampleSequence.generated.swift
+  - CLAUDE.md
+  - shared/data-model/fixtures/expected/swift/SampleMetadata.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleProfile.ts
+  - shared/data-model/fixtures/expected/kotlin/SamplePreference.kt
+  - shared/data-model/schema/OrderStatus.yaml
+  - shared/data-model/generator/tsconfig.json
+  - apps/ios/BuyLedger/Core/Domain/CurrencyCode.swift
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats+Trend.swift
+  - .github/workflows/ci.yml
+  - apps/ios/BuyLedgerTests/Guards/TaskFinishConventionScanTests.swift
+  - shared/data-model/fixtures/expected/typescript/SampleTag.ts
+  - shared/data-model/generator/package.json
+  - shared/data-model/schema/PaymentReceiptStatus.yaml
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryScanner.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleQuote.kt
+  - apps/ios/BuyLedgerTests/Core/Persistence/PersistedValueShapeTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleQuote.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - shared/data-model/fixtures/expected/typescript/SampleQuote.ts
+  - shared/data-model/schema/LedgerCustomer.yaml
+  - shared/data-model/fixtures/codegen.yaml
+  - shared/data-model/fixtures/expected/typescript/SamplePreference.ts
+  - shared/data-model/schema/LedgerOrderItem.yaml
+  - AGENTS.md
+  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
+  - apps/ios/BuyLedgerTests/Guards/BottomBarPlacementScanTests.swift
+  - shared/data-model/fixtures/expected/swift/SamplePreference.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleStatus.ts
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleSequence.kt
+  - shared/data-model/fixtures/schema/sample-enums.yaml
+  - apps/ios/BuyLedgerTests/Guards/AccessibilityConventionScanTests.swift
+  - README.md
+  - apps/ios/BuyLedger/Core/Domain/CustomerTier.swift
+  - shared/data-model/fixtures/expected/typescript/SampleMetadata.ts
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsTrend.swift
+  - apps/ios/BuyLedgerTests/Guards/Scanning/SwiftSourceFiles.swift
+  - shared/data-model/fixtures/expected/swift/SampleReceipt.generated.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerCustomer.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
+  - apps/ios/BuyLedgerTests/Guards/NumericInputGroupingScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/FxRateSnapshot.generated.swift
+  - shared/data-model/fixtures/schema/sample-orders.yaml
+  - shared/data-model/schema/CurrencyCode.yaml
+  - apps/ios/BuyLedger/Core/Domain/CampaignStatus.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleOrder.ts
+  - shared/data-model/fixtures/expected/typescript/SampleReceipt.ts
+  - shared/data-model/schema/Money.yaml
+  - shared/data-model/schema/PaymentMethodInfo.yaml
+  - shared/data-model/CLAUDE.md
+  - shared/data-model/fixtures/expected/kotlin/SampleMetadata.kt
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentMethodInfo.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleTag.kt
+  - shared/data-model/fixtures/schema/sample-trait-matrix.yaml
+  - .archify/architecture-buyledger-20261115-181531/candidate.json
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift
+  - shared/data-model/codegen.yaml
+  - shared/data-model/fixtures/expected/kotlin/SampleProfile.kt
+  - shared/data-model/fixtures/expected/kotlin/SampleReceipt.kt
+  - shared/data-model/fixtures/expected/kotlin/SampleStatus.kt
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift
+  - .archify/architecture-buyledger-20261115-181531/buyledger.html
+  - .archify/architecture-buyledger-20261024-115559/candidate.json
+  - apps/ios/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleProfile.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleGrade.kt
+  - shared/data-model/generator/src/datamodel-gen.ts
+  - .archify/architecture-buyledger-20261024-115559/buyledger.html
+  - apps/ios/BuyLedger/Core/Domain/Generated/Money.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleTag.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleSequence.ts
+  - shared/data-model/schema/FxRateSnapshot.yaml
+  - apps/ios/BuyLedger/Core/Domain/LedgerCustomer.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
+  - shared/data-model/schema/Campaign.yaml
+  - shared/data-model/schema/LedgerOrder.yaml
+  - apps/ios/BuyLedgerTests/Guards/ViewAnimationSwitchScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CustomerTier.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleOrder.kt
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanner.swift
+  - apps/ios/BuyLedgerTests/Guards/AccessibilityIdentifier/AccessibilityIdentifierScanTests.swift
+  - shared/data-model/schema/CampaignStatus.yaml
+  - apps/ios/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleGrade.ts
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleOrder.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
+tests:
+  - shared/data-model/generator/test/datamodel-gen.test.ts
+-->

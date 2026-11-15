@@ -67,7 +67,7 @@ private extension NumericInputGroupingScanTests {
         /// 相對於掃描根目錄的檔案路徑
         let file: String
 
-        /// 命中所在的行號 (1-based)
+        /// 命中所在的行號，從 1 開始
         let line: Int
 
         /// `.number` 後方的 `FormatStyle` 內容
@@ -84,7 +84,7 @@ private extension NumericInputGroupingScanTests {
         TestPaths.iosRoot
     }
 
-    /// 受掃描的產品程式碼目錄；只含 App target 本身，排除生成檔目錄
+    /// 受掃描的產品程式碼目錄；只含 App target 本身
     static var productionRoot: URL {
         iosRoot.appending(path: "BuyLedger")
     }

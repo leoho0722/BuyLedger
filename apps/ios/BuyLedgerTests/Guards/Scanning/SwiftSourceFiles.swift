@@ -9,7 +9,9 @@ import Foundation
 import Testing
 
 /// 列舉守門掃描的 Swift 檔案並轉換顯示路徑
-enum SwiftSourceFiles {}
+enum SwiftSourceFiles {
+
+}
 
 // MARK: - Internal Method
 
@@ -17,20 +19,15 @@ extension SwiftSourceFiles {
 
     /// 列出根目錄下的 Swift 原始檔
     ///
-    /// - Parameters:
-    ///   - root: 掃描根目錄
-    ///   - shouldIncludeGenerated: 是否納入生成檔目錄
-    /// - Returns: 根目錄下的 Swift 檔案，預設排除路徑中含 Generated 目錄的檔案
+    /// - Parameter root: 掃描根目錄
+    /// - Returns: 根目錄下的全部 Swift 檔案
     /// - Throws: 無法列舉目錄時丟出測試需求失敗
-    static func swiftFiles(under root: URL, shouldIncludeGenerated: Bool = false) throws -> [URL] {
+    static func swiftFiles(under root: URL) throws -> [URL] {
         let enumerator = try #require(
             FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
         )
         var files: [URL] = []
         for case let file as URL in enumerator {
-            if !shouldIncludeGenerated && file.pathComponents.contains("Generated") {
-                continue
-            }
             if file.pathExtension == "swift" {
                 files.append(file)
             }

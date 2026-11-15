@@ -7,9 +7,10 @@
 
 import Foundation
 
-// MARK: - Properties
+/// 某個時間點的匯率快照
+struct FxRateSnapshot: Equatable, Sendable {
 
-extension FxRateSnapshot {
+    // MARK: - Properties
 
     /// Preview 與測試使用的預設匯率快照
     static let fallback: FxRateSnapshot = {
@@ -22,12 +23,17 @@ extension FxRateSnapshot {
         }
         rates[CurrencyCode.twd] = 1
 
-        return FxRateSnapshot(
-            date: Date(timeIntervalSince1970: 0),
-            base: .twd,
-            rates: rates
-        )
+        return FxRateSnapshot(date: Date(timeIntervalSince1970: 0), base: .twd, rates: rates)
     }()
+
+    /// 匯率時間
+    let date: Date
+
+    /// 計算匯率的基準幣別
+    let base: CurrencyCode
+
+    /// 各目標幣別的匯率，表示 1 單位基準幣別可換多少目標幣別
+    let rates: [CurrencyCode: Decimal]
 }
 
 // MARK: - Internal Method

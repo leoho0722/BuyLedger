@@ -1643,7 +1643,7 @@ This constraint is narrower than the layer rule that forbids Core and Shared fro
 
 An automated scan SHALL enforce both halves of this constraint, and the scan SHALL be shown to fail when a violation is introduced.
 
-The scan's inventory of domain type names SHALL include types whose declaration exists only in generated sources. A scan that inherits an exclusion of generated files silently omits those names and passes regardless of what the design system references, which is indistinguishable from a passing scan by its result alone.
+The scan's inventory of domain type names SHALL be built from every source file under the domain directory, with no directory-based exclusion. A scan that silently skips part of the domain directory omits those names and passes regardless of what the design system references, which is indistinguishable from a passing scan by its result alone.
 
 #### Scenario: A design system component does not name a domain type
 
@@ -1670,166 +1670,131 @@ The scan's inventory of domain type names SHALL include types whose declaration 
 #### Scenario: The scan detects an introduced violation
 
 - **GIVEN** the boundary scan passes on the current source
-- **WHEN** a design system file is temporarily changed to reference a domain type declared only in a generated source, and separately to import the architecture framework
+- **WHEN** a design system file is temporarily changed to reference a domain value type that declares only stored properties, and separately to import the architecture framework
 - **THEN** the corresponding scan reports a failure in each case, confirming the guard is effective rather than vacuously green
 
-#### Scenario: Generated declarations are part of the scanned inventory
+#### Scenario: Every domain file is part of the scanned inventory
 
 - **WHEN** the scan builds its list of domain type names
-- **THEN** the list contains the names declared only in generated sources, so that referencing one of them from the design system is detected rather than ignored
+- **THEN** the list contains the order and order status types, and contains, for every source file in the domain directory whose file name has no plus sign, the type named after that file, where the files are listed independently of the scan's own file listing
+
+##### Example: file names map to inventory entries
+
+| Domain file | Name required in the inventory |
+| ----------- | ------------------------------ |
+| LedgerCustomer.swift | LedgerCustomer |
+| OrderStatus.swift | OrderStatus |
+| PaymentMethodFlags.swift | PaymentMethodFlags |
+| LedgerOrder+Samples.swift | none, the file extends a type declared elsewhere |
+
 
 <!-- @trace
-source: shared-designsystem-style-compliance
-updated: 2026-09-21
+source: remove-data-model-codegen
+updated: 2026-11-15
 code:
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
-  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Decimal+Extensions.swift
-  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataRecord.swift
-  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
-  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
-  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderMerge.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Color+Extensions.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutSegment.swift
-  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
-  - apps/ios/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - apps/ios/BuyLedger/Core/Diagnostics/AppLogger.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Badges/BLBadge.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
-  - apps/ios/BuyLedger/Shared/Localization/AppLanguage.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
-  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTone.swift
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/FxRatesTests.swift
-  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift
-  - apps/ios/BuyLedger/Core/Networking/URLRequestBuilder.swift
-  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressViewStyle.swift
-  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLDelayedProgressView.swift
-  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
-  - apps/ios/BuyLedger/Core/Domain/FxRates.swift
-  - apps/ios/BuyLedgerUITests/Screens/OptionPickerScreen.swift
-  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
-  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
+  - shared/data-model/schema/CustomerTier.yaml
   - apps/ios/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
-  - apps/ios/BuyLedger/Core/Networking/APIError.swift
-  - apps/ios/BuyLedger/Core/Networking/ExchangeRateLatestResponse.swift
-  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLCardShadow.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift
-  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLHeatmapDepth.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderSourceRecord.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantine.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - shared/data-model/README.md
+  - shared/data-model/fixtures/expected/swift/SampleGrade.generated.swift
+  - shared/data-model/generator/bun.lock
+  - shared/data-model/fixtures/expected/swift/SampleSequence.generated.swift
+  - CLAUDE.md
+  - shared/data-model/fixtures/expected/swift/SampleMetadata.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleProfile.ts
+  - shared/data-model/fixtures/expected/kotlin/SamplePreference.kt
+  - shared/data-model/schema/OrderStatus.yaml
+  - shared/data-model/generator/tsconfig.json
   - apps/ios/BuyLedger/Core/Domain/CurrencyCode.swift
-  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - apps/ios/BuyLedgerTests/CurrencyDisplayNameTests.swift
-  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Tools/CurrencyPickerTests.swift
-  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLFormatters.swift
-  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLStatusHue.swift
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet.swift
-  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrderEditScreen.swift
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats+Trend.swift
+  - .github/workflows/ci.yml
+  - apps/ios/BuyLedgerTests/Guards/TaskFinishConventionScanTests.swift
+  - shared/data-model/fixtures/expected/typescript/SampleTag.ts
+  - shared/data-model/generator/package.json
+  - shared/data-model/schema/PaymentReceiptStatus.yaml
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryScanner.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleQuote.kt
+  - apps/ios/BuyLedgerTests/Core/Persistence/PersistedValueShapeTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleQuote.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - shared/data-model/fixtures/expected/typescript/SampleQuote.ts
+  - shared/data-model/schema/LedgerCustomer.yaml
+  - shared/data-model/fixtures/codegen.yaml
+  - shared/data-model/fixtures/expected/typescript/SamplePreference.ts
+  - shared/data-model/schema/LedgerOrderItem.yaml
+  - AGENTS.md
+  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
+  - apps/ios/BuyLedgerTests/Guards/BottomBarPlacementScanTests.swift
+  - shared/data-model/fixtures/expected/swift/SamplePreference.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleStatus.ts
   - apps/ios/README.md
-  - apps/ios/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/RecordDecodingError.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressBar.swift
-  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTypography.swift
-  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/ios/BuyLedger/Core/Networking/ExchangeRateCodesResponse.swift
-  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
-  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
-  - apps/ios/BuyLedger/Shared/Localization/CurrencyDisplayName.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLLoadFailureView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLPalette.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - apps/ios/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - apps/ios/BuyLedger/Core/Persistence/CategoryRecord.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLTypographyModifier.swift
-  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
-  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
-  - apps/ios/BuyLedgerTests/PersistenceErrorTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChartValue.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderSummary.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Core/Networking/HTTPMethod.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignRecord.swift
-  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
-  - apps/ios/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerList.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
-  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Domain/CampaignStatus.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
-  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
-  - apps/ios/BuyLedger/Features/FX/FxView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressView.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnailButtonStyle.swift
-  - apps/ios/BuyLedgerTests/TestDependencies.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleSequence.kt
+  - shared/data-model/fixtures/schema/sample-enums.yaml
+  - apps/ios/BuyLedgerTests/Guards/AccessibilityConventionScanTests.swift
+  - README.md
   - apps/ios/BuyLedger/Core/Domain/CustomerTier.swift
-  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecordProtocol.swift
-  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
-  - apps/ios/BuyLedger/Core/Domain/PaymentMethodFlags.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Avatar/BLAvatar.swift
-  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/BLSearchableModifier.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Status/BLStatusPill.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLHeroCardBackground.swift
-  - apps/ios/BuyLedger/Core/Diagnostics/CrashDiagnosticsClient.swift
-  - apps/ios/BuyLedgerTests/LayerBoundaryTests.swift
-  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - shared/data-model/fixtures/expected/typescript/SampleMetadata.ts
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsTrend.swift
+  - apps/ios/BuyLedgerTests/Guards/Scanning/SwiftSourceFiles.swift
+  - shared/data-model/fixtures/expected/swift/SampleReceipt.generated.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerCustomer.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
+  - apps/ios/BuyLedgerTests/Guards/NumericInputGroupingScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/FxRateSnapshot.generated.swift
+  - shared/data-model/fixtures/schema/sample-orders.yaml
+  - shared/data-model/schema/CurrencyCode.yaml
+  - apps/ios/BuyLedger/Core/Domain/CampaignStatus.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleOrder.ts
+  - shared/data-model/fixtures/expected/typescript/SampleReceipt.ts
+  - shared/data-model/schema/Money.yaml
+  - shared/data-model/schema/PaymentMethodInfo.yaml
+  - shared/data-model/CLAUDE.md
+  - shared/data-model/fixtures/expected/kotlin/SampleMetadata.kt
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentMethodInfo.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleTag.kt
+  - shared/data-model/fixtures/schema/sample-trait-matrix.yaml
+  - .archify/architecture-buyledger-20261115-181531/candidate.json
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift
+  - shared/data-model/codegen.yaml
+  - shared/data-model/fixtures/expected/kotlin/SampleProfile.kt
+  - shared/data-model/fixtures/expected/kotlin/SampleReceipt.kt
+  - shared/data-model/fixtures/expected/kotlin/SampleStatus.kt
+  - apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift
+  - .archify/architecture-buyledger-20261115-181531/buyledger.html
+  - .archify/architecture-buyledger-20261024-115559/candidate.json
+  - apps/ios/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleProfile.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleGrade.kt
+  - shared/data-model/generator/src/datamodel-gen.ts
+  - .archify/architecture-buyledger-20261024-115559/buyledger.html
+  - apps/ios/BuyLedger/Core/Domain/Generated/Money.generated.swift
+  - shared/data-model/fixtures/expected/swift/SampleTag.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleSequence.ts
+  - shared/data-model/schema/FxRateSnapshot.yaml
+  - apps/ios/BuyLedger/Core/Domain/LedgerCustomer.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
+  - shared/data-model/schema/Campaign.yaml
+  - shared/data-model/schema/LedgerOrder.yaml
+  - apps/ios/BuyLedgerTests/Guards/ViewAnimationSwitchScanTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CustomerTier.generated.swift
+  - shared/data-model/fixtures/expected/kotlin/SampleOrder.kt
+  - apps/ios/BuyLedgerTests/Guards/ActionGrouping/ActionGroupingScanner.swift
+  - apps/ios/BuyLedgerTests/Guards/AccessibilityIdentifier/AccessibilityIdentifierScanTests.swift
+  - shared/data-model/schema/CampaignStatus.yaml
+  - apps/ios/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
+  - shared/data-model/fixtures/expected/typescript/SampleGrade.ts
+  - apps/ios/BuyLedgerTests/Guards/LayerBoundary/LayerBoundaryTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleOrder.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
+tests:
+  - shared/data-model/generator/test/datamodel-gen.test.ts
 -->
 
 ---

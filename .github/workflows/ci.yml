@@ -1,6 +1,6 @@
 name: CI
 
-# 版本庫層級守門：codegen 與 iOS 單元測試在每次推送、拉取請求與手動觸發時強制執行；
+# 版本庫層級守門：iOS 單元測試在每次推送、拉取請求與手動觸發時強制執行；
 # UI 回歸僅在手動觸發時執行 (需 macOS runner 與模擬器、單輪約數十分鐘，故不掛 push/PR)
 on:
   push:
@@ -17,33 +17,6 @@ env:
   MOBILEBUILDMCP_VERSION: "2.7.1"
 
 jobs:
-  codegen:
-    name: Data Model Codegen
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: shared/data-model/generator
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: "1.3.14"
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Check schema/output drift
-        run: bun run check
-
-      - name: Run generator tests (includes production sync assertion)
-        run: bun test
-
-      - name: Type check
-        run: bun run typecheck
-
   ios-unit-tests:
     name: iOS Unit Tests
     # 專案檔是 Xcode 27 的 JSON 格式，macos-26 只有 Xcode 26 讀不到；GitHub 目前只有預覽版 xcode-27 映像

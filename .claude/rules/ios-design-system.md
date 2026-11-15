@@ -73,7 +73,7 @@ paths:
     - 呼叫端不內嵌狀態到顏色的映射；新增訂單狀態時窮舉 switch 會逼出色調指派。
 - **資料型別帶語意色調與方向，不持有 `Color`，由畫面換算色彩**：如 `InsightsCostSegment.tone`、走勢方向 `BLTrend` (`init(delta:)` 依差值正負判定)；綠、紅、三級文字色等換算留在畫面的 Private Method。
 - **`Shared/DesignSystem/` 不得引用 `Core/Domain/` 的領域型別，也不得 import `ComposableArchitecture`**：領域值由呼叫端轉成 primitive 或 Design System 自有型別，架構框架的依賴容器只留在 Feature 層。
-    - `LayerBoundaryTests` 掃描 `Shared/DesignSystem/` 與包含 `Generated/` 的 `Core/Domain/` 宣告清單，並以 mutation test 驗證兩條分層規則會轉紅；TCA import 比對必須涵蓋前置 attribute、限定 import 與子符號。
+    - `LayerBoundaryTests` 掃描 `Shared/DesignSystem/` 與 `Core/Domain/` 全部檔案的宣告清單，並以 mutation test 驗證兩條分層規則會轉紅；TCA import 比對必須涵蓋前置 attribute、限定 import 與子符號。
 - **幣別顯示名稱只能由 `CurrencyDisplayName` 提供**：`DesignSystemSourceScanTests` 掃描完整 production root，allowlist 僅為 `Shared/Localization/CurrencyDisplayName.swift`，避免任何 Feature 或其他 Shared 模組重新建立 Foundation 查表。
 - **語言判斷只能由 `AppLanguage(locale:)` 提供**：`DesignSystemSourceScanTests` 同樣掃描完整 production root，allowlist 僅為 `Shared/Localization/AppLanguage.swift`；畫面不得自行以 `languageCode?.identifier` 比對 locale，否則兩個畫面的語言判斷不一致時沒有任何測試會偵測到。
 - **彩底 hero 卡一律用 `.blHeroCardBackground()`**，不以系統色自組漸層，也不在其他地方讀取 `BLHeroGradientStart`／`End` 資源 (由 `BLHeroCardBackground.gradientColors` 直接讀這兩個 asset)。

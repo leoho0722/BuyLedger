@@ -6,7 +6,7 @@
 
 | 規則檔 | 涵蓋 |
 | --- | --- |
-| `ios-data-layer.md` | 容器與注入、訂單寫入、跨檔不變式、生成型別、SwiftData 遷移 |
+| `ios-data-layer.md` | 容器與注入、訂單寫入、跨檔不變式、SwiftData 遷移 |
 | `ios-navigation.md` | 根導覽與啟動、App 鎖定、呈現、焦點與鍵盤 |
 | `ios-design-system.md` | Design System 結構、格式化與字級、色彩、系統元件 |
 | `ios-accessibility-localization.md` | Dynamic Type、無障礙、本地化 |
@@ -103,7 +103,7 @@
   - 只有程式碼依賴算違規，文件註解以反引號引用 Feature 符號不算。
   - `LayerBoundaryTests` 動態掃描 `Core/` 與 `Shared/` 守門，`App/` 刻意不掃。
 - **`Shared/DesignSystem/` 不引用 `Core/Domain/` 的領域型別，也不 import `ComposableArchitecture`**：可重用元件以 primitive 或 Design System 自有型別接收資料，架構相依留在 Feature 端。
-  - `LayerBoundaryTests` 納入 `Core/Domain/Generated/` 的宣告名稱，並以變異驗證確認兩條守門真的會轉紅。
+  - `LayerBoundaryTests` 掃描 `Core/Domain/` 全部檔案的宣告名稱，並以變異驗證確認兩條守門真的會轉紅。
 - **商業邏輯與資料計算 (彙總、分組、排序、格式化) 放 reducer 或可測試的 helper**，View (含 Swift Charts) 只負責呈現。
 
 ### Feature 之間

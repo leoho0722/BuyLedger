@@ -75,7 +75,7 @@ struct ViewAnimationSwitchScanTests {
 
 private extension ViewAnimationSwitchScanTests {
 
-    /// 遞迴掃描含生成檔的 Swift 原始碼，剝除註解與字串後按相對路徑計算命中次數
+    /// 遞迴掃描 Swift 原始碼，剝除註解與字串後按相對路徑計算命中次數
     ///
     /// - Parameters:
     ///   - expression: 要比對剝除後原始碼的正規表示式
@@ -86,7 +86,7 @@ private extension ViewAnimationSwitchScanTests {
         of expression: NSRegularExpression,
         under root: URL
     ) throws -> (fileCount: Int, matchCounts: [String: Int]) {
-        let files = try SwiftSourceFiles.swiftFiles(under: root, shouldIncludeGenerated: true)
+        let files = try SwiftSourceFiles.swiftFiles(under: root)
         var matchCounts: [String: Int] = [:]
         for file in files {
             let source = try String(contentsOf: file, encoding: .utf8)

@@ -7,6 +7,19 @@
 
 import Foundation
 
+/// 客戶的分級 (新客、常客、VIP)，顯示在客戶名單的列與 Top 卡片上
+enum CustomerTier: String, Codable, Sendable {
+
+    /// 新客戶
+    case new
+
+    /// 一般客戶
+    case regular
+
+    /// 高價值或高頻客戶
+    case vip
+}
+
 // MARK: - Nested Types
 
 extension CustomerTier {

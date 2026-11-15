@@ -30,8 +30,7 @@ apps/ios/
 │   │       ├── TestDoubles/      # 幣別 API、設定、照片快取等依賴替身
 │   │       └── Overrides/        # 依啟動設定換上替身的 DependencyValues extension
 │   ├── Core/
-│   │   ├── Domain/               # LedgerOrder、Campaign、FxRateSnapshot、CurrencyCode 等領域 model 與手寫 extension
-│   │   │   └── Generated/        # 由 shared/data-model schema 產生的型別 (不可手改)
+│   │   ├── Domain/               # LedgerOrder、Campaign、FxRateSnapshot、CurrencyCode 等領域 model
 │   │   ├── Persistence/
 │   │   │   ├── Database/         # BuyLedgerDatabase (actor)、PersistenceContainer、BuyLedgerSchema (版本與遷移)
 │   │   │   ├── Records/          # SwiftData @Model Record
@@ -176,7 +175,7 @@ apps/ios/
 
 ## 開發環境設定
 
-需要 Xcode 27+ 與 `mobilebuildmcp` CLI (`npm install -g mobilebuildmcp@<版本>`，版本與 `.github/workflows/ci.yml` 的 `MOBILEBUILDMCP_VERSION` 相同)；改 data model 時另需 Bun (見第 6 節)。
+需要 Xcode 27+ 與 `mobilebuildmcp` CLI (`npm install -g mobilebuildmcp@<版本>`，版本與 `.github/workflows/ci.yml` 的 `MOBILEBUILDMCP_VERSION` 相同)。
 
 ### 1. API 金鑰 (Config.xcconfig)
 
@@ -292,27 +291,11 @@ UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出
 
 ### 5. 持續整合 (CI)
 
-`.github/workflows/ci.yml` 在 push 到 `main`、每個 PR 與手動觸發時執行兩個 job：`codegen` (Linux runner，相依安裝 → 漂移檢查 → generator 測試 → 型別檢查) 與 `ios-unit-tests` (macOS runner，以釘選版本的 `mobilebuildmcp` 執行主 scheme 測試，排除 snapshot 與效能測試)；UI 回歸只在手動觸發時執行。repo 為公開專案，macOS runner 不計費。
+`.github/workflows/ci.yml` 在 push 到 `main`、每個 PR 與手動觸發時執行 `ios-unit-tests` job (macOS runner，以釘選版本的 `mobilebuildmcp` 執行主 scheme 測試，排除 snapshot 與效能測試)；UI 回歸 (`ui-regression` job) 只在手動觸發時執行。repo 為公開專案，macOS runner 不計費。
 
 CI 不使用任何 repository secret：建置前把 `Config.example.xcconfig` 與 `GoogleService-Info.example.plist` 兩個入庫範本 (值皆為明顯假字串) 複製成正式檔名，讓 build 不缺設定檔。
 
-### 6. 重新產生 data model (codegen)
-
-`Core/Domain/Generated/` 的型別由 `shared/data-model` 的跨平台 schema 產生，**不可手改**；schema 格式、完整指令與改欄位流程見 [shared/data-model/README.md](../../shared/data-model/README.md)。常用指令 (需 Bun >= 1.3，`brew install bun`)：
-
-```bash
-cd shared/data-model/generator && bun install   # 首次安裝產生器依賴
-bun run generate                                # 改 schema/ 後重新產生
-bun run check                                   # 提交前確認生成檔與 schema 同步 (exit 0 才算同步)
-```
-
-iOS 端注意事項：
-
-- 生成檔與 schema 一起 commit；生成檔在磁碟上預設唯讀，Xcode 編譯不受影響。
-- 新增或刪除型別後 iOS 與 iPadOS 各 build 一次，確認 synchronized group 拾取新檔。
-- 手寫業務邏輯 (computed properties、display title、自訂 `Codable`) 放在 `Core/Domain/` 與型別同名的 extension 檔，不放生成檔。
-
-### 7. 發佈 TestFlight
+### 6. 發佈 TestFlight
 
 先在 `project.xcproj` 改好 `BuyLedger` target 的 `MARKETING_VERSION` 與 `CURRENT_PROJECT_VERSION` (兩個測試 target 同步為相同值) 並提交、標 `ios-v<版號>` tag，再從 repo 根目錄執行：
 
@@ -362,7 +345,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 - **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態)：以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService`；寫入者只有 `LookupCatalogFeature` (載入與表單新增選項) 與 `LookupManagementFeature` (管理頁 CRUD)，訂單端唯讀。改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單，Root 再以 `.orders(.rootRequest(.cascade(...)))` 同步共用訂單。
 - **啟動順序**：Root 先讀主檔目錄，讀取結束後才載入訂單；開團載入與自動結單由 `CampaignLoadFeature` 負責，幣別快取載入到 `@Shared(.currencyCodes)`。訂單表單的選項 (主檔、開團、幣別與行事曆) 一律由容器建立 `OrderEditOptions` 交入，表單不自行讀取。
 - **範例資料**：`liveValue` 是純本機 SwiftData、**不自動 seed**，首次啟動是真正的空狀態；`BuyLedgerDatabaseKey.previewValue` 是 seed 過 `LedgerOrder.sampleOrders` 與 `CurrencyCode.defaults` 的記憶體資料庫，以資料庫為下層的 Service 的 `previewValue` 共用它，只能在 Preview 與測試使用。`LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` runtime 不讀取。
-- **Schema 版本化**：`BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) 與 `BuyLedgerMigrationPlan` 管理遷移，新增欄位／表走 lightweight，改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表，不入跨平台 schema。
+- **Schema 版本化**：`BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) 與 `BuyLedgerMigrationPlan` 管理遷移，新增欄位／表走 lightweight，改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。行事曆事件識別碼是裝置本機資料，存在獨立的 `CampaignReminderRecord`，不進 `Campaign` 領域型別。
 
 ### 隱私與遙測
 

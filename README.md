@@ -19,7 +19,7 @@
 ```text
 BuyLedger (repo)/
 ├── .github/                              # 版本庫層級自動化 (CI workflow)
-│   └── workflows/ci.yml                  # codegen 漂移檢查 + iOS 單元測試 (push / PR / 手動觸發)
+│   └── workflows/ci.yml                  # iOS 單元測試 (push / PR / 手動觸發)
 ├── .claude/                              # AI 協作設定：rules/ (依目錄載入的規則)、skills/
 ├── .archify/                             # 整體與各 Feature 的架構圖 (HTML) 與繪製來源
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
@@ -31,16 +31,12 @@ BuyLedger (repo)/
 │   │   ├── BuyLedgerUITests/             # UI 與啟動畫面測試
 │   │   └── scripts/                      # TestFlight 打包上傳腳本
 │   └── android/                          # (未來，尚未建立) Android App
-├── shared/                               # 跨平台共享內容
-│   └── data-model/                       # 跨平台 Data Model schema 與產生器
-│       ├── schema/                       # 統一 schema (YAML，一型一檔)
-│       ├── generator/                    # datamodel-gen 產生器 (TypeScript + Bun)
-│       └── fixtures/                     # 產生器 golden file 測試素材
+├── shared/                               # (未來，尚未建立) 跨平台共享內容
 ├── openspec/                             # Spectra 規格與變更提案
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元放 `apps/<platform>/`，跨平台共享內容放 `shared/`，管轄所有平台的 `openspec/`、`assets/`、`.github/` 留在根目錄。尚未動工的平台 (如 `apps/android`) 只在文件中保留位置，動工時才建立目錄，repo 不放 stub。
+**佈局契約**：可部署單元放 `apps/<platform>/`，跨平台共享內容放 `shared/`，管轄所有平台的 `openspec/`、`assets/`、`.github/` 留在根目錄。尚未動工的平台與共享目錄 (如 `apps/android`、`shared/`) 只在文件中保留位置，動工時才建立目錄，repo 不放 stub。
 
 ## 平台導覽
 
@@ -49,7 +45,7 @@ BuyLedger (repo)/
 | Apple (iOS / iPadOS) | `apps/ios/` | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、CI、發佈、架構速覽 |
 | Android | `apps/android/` | (未來，尚未建立) |
 
-各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，只涉特定子目錄的規則在 `.claude/rules/`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
+各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`)，只涉特定子目錄的規則在 `.claude/rules/`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
 
 ## 產品政策
 

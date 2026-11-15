@@ -253,10 +253,7 @@ struct AccessibilityIdentifierScanTests {
         let violations = result.violations.filter { $0.rule == .declarationLocation }
 
         // Then
-        #expect(
-            violations.isEmpty,
-            "宣告位置違規：\(AccessibilityIdentifierScanner.describe(violations))"
-        )
+        #expect(violations.isEmpty, "宣告位置違規：\(AccessibilityIdentifierScanner.describe(violations))")
     }
 
     /// 驗證系統 identifier 都引用 UI 測試端常數，沒有在其他原始碼重寫字面值
@@ -325,10 +322,7 @@ struct AccessibilityIdentifierScanTests {
         let violations = result.violations.filter { $0.rule == .duplicateValue }
 
         // Then
-        #expect(
-            violations.isEmpty,
-            "值重複違規：\(AccessibilityIdentifierScanner.describe(violations))"
-        )
+        #expect(violations.isEmpty, "值重複違規：\(AccessibilityIdentifierScanner.describe(violations))")
     }
 
     /// 驗證沒有固定值落在查詢前綴之下，也沒有查詢前綴落在另一個查詢前綴之下
@@ -344,10 +338,7 @@ struct AccessibilityIdentifierScanTests {
         let violations = result.violations.filter { $0.rule == .prefixOverlap }
 
         // Then
-        #expect(
-            violations.isEmpty,
-            "前綴重疊違規：\(AccessibilityIdentifierScanner.describe(violations))"
-        )
+        #expect(violations.isEmpty, "前綴重疊違規：\(AccessibilityIdentifierScanner.describe(violations))")
     }
 
     /// 驗證掃描有掃到檔案、固定值與組出前綴，不會因為掃不到東西而誤判通過
@@ -441,7 +432,7 @@ private extension AccessibilityIdentifierScanTests {
         )
     }
 
-    /// 讀取目錄下全部 Swift 檔 (含生成檔)，依路徑排序
+    /// 讀取目錄下全部 Swift 檔，依路徑排序
     ///
     /// - Parameters:
     ///   - directory: 要列舉的目錄
@@ -452,7 +443,7 @@ private extension AccessibilityIdentifierScanTests {
         under directory: URL,
         relativeTo base: URL
     ) throws -> [AccessibilityIdentifierScanner.SourceFile] {
-        let files = try SwiftSourceFiles.swiftFiles(under: directory, shouldIncludeGenerated: true)
+        let files = try SwiftSourceFiles.swiftFiles(under: directory)
         return try files
             .sorted { lhs, rhs in lhs.path < rhs.path }
             .map { file in

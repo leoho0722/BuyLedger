@@ -78,25 +78,43 @@ struct LayerBoundaryTests {
         #expect(violations.isEmpty, "核心與共用層不得引用功能層：\(LayerBoundaryFileScan.describe(violations))")
     }
 
-    /// 驗證領域宣告清單收錄手寫與生成檔中的必要型別
+    /// 驗證領域目錄的宣告清單收錄每個檔名對應的型別，並包含 spec 指定的錨點型別
     ///
-    /// - Throws: 目錄、原始檔讀取或正規表示式建立失敗時丟出錯誤
-    /// - Note: 領域型別可能分散在手寫檔與生成檔，兩者都要納入掃描
+    /// - Throws: 目錄列舉、正規表示式建立或原始檔讀取失敗時丟出錯誤
+    /// - Note: 預期名稱自行列檔，不沿用掃描端的列檔結果，掃描少收檔案時測試會轉紅
     @Test
-    func coreDomainTopLevelDeclarationNames_含生成檔的領域目錄_收錄必要型別() throws {
+    func coreDomainTopLevelDeclarationNames_領域目錄_收錄每個檔名對應的型別() throws {
         // Given
-        let requiredNames: Set<String> = [
+        let domainRoot = LayerBoundaryScanner.coreDomainRoot
+        let relativePaths = try #require(FileManager.default.subpaths(atPath: domainRoot.path))
+        let expectedNames = Set(
+            relativePaths
+                .map { URL(fileURLWithPath: $0) }
+                .filter { $0.pathExtension == "swift" && !$0.lastPathComponent.contains("+") }
+                .map { $0.deletingPathExtension().lastPathComponent }
+        )
+        let anchorNames: Set<String> = [
+            "LedgerCustomer",
+            "LedgerOrder",
             "OrderStatus",
-            "CurrencyCode",
             "PaymentMethodFlags",
         ]
 
         // When
         let names = try LayerBoundaryScanner.coreDomainTopLevelDeclarationNames()
-        let missingNames = requiredNames.subtracting(names)
+        let missingNames = expectedNames.subtracting(names)
+        let missingAnchors = anchorNames.subtracting(names)
 
         // Then
-        #expect(missingNames.isEmpty, "領域目錄掃描遺漏型別：\(missingNames.sorted().joined(separator: "、"))")
+        #expect(!expectedNames.isEmpty, "領域目錄沒有可推導的檔名")
+        #expect(
+            missingNames.isEmpty,
+            "領域目錄掃描遺漏檔名對應的型別：\(missingNames.sorted().joined(separator: "、"))；檔名需與頂層型別同名，extension 檔以 + 命名"
+        )
+        #expect(
+            missingAnchors.isEmpty,
+            "領域目錄掃描遺漏錨點型別：\(missingAnchors.sorted().joined(separator: "、"))"
+        )
     }
 
     /// 驗證設計系統不引用核心領域型別
