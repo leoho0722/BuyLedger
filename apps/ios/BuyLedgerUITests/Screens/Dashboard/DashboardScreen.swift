@@ -32,6 +32,24 @@ extension DashboardScreen {
 @MainActor
 extension DashboardScreen {
 
+    /// 切到總覽分頁，等待目前的前景內容、空狀態或載入失敗就緒
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 已進入前景的總覽畫面
+    /// - Throws: 分頁無法切換或目的地未就緒時丟出測試錯誤
+    @discardableResult
+    static func open(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> DashboardScreen {
+        try RootNavigationScreen(app: app).goToDashboard(file: file, line: line)
+        return DashboardScreen(app: app)
+    }
+
     /// 載入總覽版面所需元素並回傳同一快照要讀取的 identifier
     ///
     /// - Parameters:
@@ -53,37 +71,6 @@ extension DashboardScreen {
         return identifiers
     }
 
-    /// 將總覽日期子標捲入可視區後讀取框線
-    ///
-    /// - Returns: 日期副標框線；元素尚未出現或無有效框線時為 `nil`
-    func currentDateSubtitleFrame() -> CGRect? {
-        frame(for: BLAccessibilityID.Dashboard.currentDateSubtitle)
-    }
-
-    /// 將指定 KPI 卡捲入可視區後讀取框線
-    ///
-    /// - Parameter kpi: KPI 種類
-    /// - Returns: KPI 卡框線；元素尚未出現或無有效框線時為 `nil`
-    func kpiTileFrame(_ kpi: BLAccessibilityID.Dashboard.KPI) -> CGRect? {
-        frame(for: BLAccessibilityID.Dashboard.kpiTile(kpi))
-    }
-
-    /// 將首頁開團卡中指定開團列捲入可視區後讀取框線
-    ///
-    /// - Parameter campaignID: 開團識別值
-    /// - Returns: 開團列框線；元素尚未出現或無有效框線時為 `nil`
-    func ongoingCampaignRowFrame(campaignID: String) -> CGRect? {
-        frame(for: BLAccessibilityID.Dashboard.ongoingCampaignRow(campaignID: campaignID))
-    }
-
-    /// 將近期訂單中指定訂單列捲入可視區後讀取框線
-    ///
-    /// - Parameter orderID: 訂單識別值
-    /// - Returns: 訂單列框線；元素尚未出現或無有效框線時為 `nil`
-    func recentOrderRowFrame(orderID: String) -> CGRect? {
-        frame(for: BLAccessibilityID.Dashboard.recentOrderRow(orderID: orderID))
-    }
-
     /// 等待首頁載入失敗畫面出現
     ///
     /// - Parameter timeout: 等待失敗畫面出現的秒數
@@ -93,14 +80,24 @@ extension DashboardScreen {
             .waitForExistence(timeout: timeout)
     }
 
+    /// 等待總覽頁顯示載入中
+    ///
+    /// - Parameter timeout: 等待載入指示器出現的秒數
+    /// - Returns: 載入指示器是否在逾時前出現
+    func waitForLoading(timeout: TimeInterval = 10) -> Bool {
+        app.descendants(matching: .any)[BLAccessibilityID.Dashboard.loading]
+            .waitForExistence(timeout: timeout)
+    }
+
     /// 點載入失敗畫面的重試按鈕
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapRetry(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.Dashboard.loadFailureRetryButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 等待首頁載入失敗畫面消失
@@ -112,18 +109,35 @@ extension DashboardScreen {
             .waitForDisappearance(timeout: timeout)
     }
 
+    /// 等待指定開團列出現於首頁開團卡
+    ///
+    /// - Parameters:
+    ///   - campaignID: 開團編號
+    ///   - timeout: 等待開團列出現的秒數，立即判斷時傳 0
+    /// - Returns: 開團列是否在逾時前出現
+    /// - Note: 不捲動；需要先捲入可見範圍時由呼叫端先呼叫 `revealOngoingCampaign`
+    func hasOngoingCampaign(campaignID: String, timeout: TimeInterval = 10) -> Bool {
+        ongoingCampaignRow(campaignID: campaignID).waitForExistence(timeout: timeout)
+    }
+
     /// 等待指定開團列出現於首頁開團卡，並捲入可見範圍
     ///
     /// - Parameters:
     ///   - campaignID: 開團編號
-    ///   - timeout: 等待開團列出現的秒數
-    /// - Returns: 開團列是否出現且可見
-    func hasOngoingCampaign(campaignID: String, timeout: TimeInterval = 10) -> Bool {
-        let row = ongoingCampaignRow(campaignID: campaignID)
-        guard row.waitForExistence(timeout: timeout) else {
-            return false
-        }
-        return app.scrollToHittable(row, within: rootElement)
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 開團列未出現或無法捲入可見範圍時丟出測試錯誤
+    func revealOngoingCampaign(
+        campaignID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try revealRow(
+            ongoingCampaignRow(campaignID: campaignID),
+            name: "進行中開團列「\(campaignID)」",
+            file: file,
+            line: line
+        )
     }
 
     /// 取首頁開團卡中指定編號的進行中開團列
@@ -136,14 +150,47 @@ extension DashboardScreen {
         ]
     }
 
-    /// 點空狀態的「建立第一筆訂單」
+    /// 點空狀態的「建立第一筆訂單」，等待訂單編輯表單就緒
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapCreateFirstOrder(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.Dashboard.emptyStateActionButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Returns: 已就緒的訂單編輯表單
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapCreateFirstOrder(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> OrderEditScreen {
+        try emptyStateActionButton.tapAfterWaiting(in: app, file: file, line: line)
+        let screen = OrderEditScreen(app: app)
+        try screen.requireReady(file: file, line: line)
+        return screen
+    }
+
+    /// 等待空狀態行動按鈕出現並讀取其標籤
+    ///
+    /// - Parameter timeout: 等待按鈕出現的秒數
+    /// - Returns: 按鈕的 accessibility label；按鈕未出現時為 `nil`
+    func emptyStateActionLabel(timeout: TimeInterval = 10) -> String? {
+        let button = emptyStateActionButton
+        guard button.waitForExistence(timeout: timeout) else {
+            return nil
+        }
+        return button.label
+    }
+
+    /// 等待總覽頁的日期副標出現並讀取其標籤
+    ///
+    /// - Parameter timeout: 等待日期副標出現的秒數
+    /// - Returns: 日期副標的 accessibility label；元素未出現時為 `nil`
+    func currentDateSubtitle(timeout: TimeInterval = 10) -> String? {
+        let subtitle = app.descendants(matching: .any)[
+            BLAccessibilityID.Dashboard.currentDateSubtitle
+        ]
+        guard subtitle.waitForExistence(timeout: timeout) else {
+            return nil
+        }
+        return subtitle.label
     }
 
     /// 讀取指定 KPI 卡的 `value`
@@ -153,9 +200,8 @@ extension DashboardScreen {
     /// - Note: 卡片尚未建立時會向下捲動首頁，讓 `LazyVGrid` 載入目標卡
     /// - Note: 連續讀取多張 KPI 時，呼叫順序須由畫面上方往下方
     func kpiValue(_ kpi: BLAccessibilityID.Dashboard.KPI) -> String? {
-        // 合併朗讀的卡片在 XCUITest 歸為 `staticText`，故以 `any` 查詢而非 `otherElements`
         let identifier = BLAccessibilityID.Dashboard.kpiTile(kpi)
-        let tile = app.descendants(matching: .any)[identifier].firstMatch
+        let tile = kpiTile(kpi)
         app.loadMissingElements(with: [identifier], within: rootElement)
         guard tile.waitForExistence(timeout: 1) else {
             return nil
@@ -163,25 +209,13 @@ extension DashboardScreen {
         return tile.value as? String
     }
 
-    /// 點近期訂單的「查看全部」
+    /// 取指定 KPI 卡片元素
     ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapSeeAllRecentOrders(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.Dashboard.recentOrdersSeeAllButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
-    }
-
-    /// 點近期訂單中指定訂單編號的列
-    ///
-    /// - Parameters:
-    ///   - orderID: 訂單編號
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapRecentOrder(orderID: String, file: StaticString = #filePath, line: UInt = #line) {
-        let row = recentOrderRow(orderID: orderID)
-        row.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Parameter kpi: KPI 種類
+    /// - Returns: 對應的 KPI 卡片元素
+    func kpiTile(_ kpi: BLAccessibilityID.Dashboard.KPI) -> XCUIElement {
+        // 合併朗讀卡片在 XCUITest 歸為 `staticText`，故以 `any` 查詢
+        app.descendants(matching: .any)[BLAccessibilityID.Dashboard.kpiTile(kpi)].firstMatch
     }
 
     /// 取近期訂單中指定訂單編號的列
@@ -189,16 +223,36 @@ extension DashboardScreen {
     /// - Parameter orderID: 訂單編號
     /// - Returns: 對應的近期訂單列元素
     func recentOrderRow(orderID: String) -> XCUIElement {
-        // 合併朗讀的列在 XCUITest 歸為 `staticText`，故以 `any` 查詢而非 `otherElements`
+        // 合併朗讀列在 XCUITest 歸為 `staticText`，故以 `any` 查詢
         app.descendants(matching: .any)[
             BLAccessibilityID.Dashboard.recentOrderRow(orderID: orderID)
         ]
     }
+
+    /// 等待近期訂單中指定訂單編號的列出現，並捲入可見範圍
+    ///
+    /// - Parameters:
+    ///   - orderID: 訂單編號
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 近期訂單列未出現或無法捲入可見範圍時丟出測試錯誤
+    func revealRecentOrder(
+        orderID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try revealRow(
+            recentOrderRow(orderID: orderID),
+            name: "近期訂單列「\(orderID)」",
+            file: file,
+            line: line
+        )
+    }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension DashboardScreen: Screen {
+extension DashboardScreen: ScreenProtocol {
 
     /// 判定總覽頁已就緒的根元素 identifier
     var rootIdentifier: String {
@@ -211,12 +265,31 @@ extension DashboardScreen: Screen {
 @MainActor
 private extension DashboardScreen {
 
-    /// 將語意識別碼對應元素捲入可視區後讀取穩定框線
+    /// 空狀態的主要行動按鈕
+    var emptyStateActionButton: XCUIElement {
+        app.buttons[BLAccessibilityID.Dashboard.emptyStateActionButton]
+    }
+
+    /// 等待首頁列出現後捲入可見範圍
     ///
-    /// - Parameter identifier: accessibility identifier
-    /// - Returns: 元素穩定且可見的框線；元素不存在或無效時為 `nil`
-    func frame(for identifier: String) -> CGRect? {
-        let element = app.descendants(matching: .any)[identifier]
-        return app.stableVisibleFrame(of: element, within: rootElement)
+    /// - Parameters:
+    ///   - row: 要露出的首頁列
+    ///   - name: 失敗診斷中的列描述
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 列未出現或無法捲入可見範圍時丟出測試錯誤
+    func revealRow(
+        _ row: XCUIElement,
+        name: String,
+        file: StaticString,
+        line: UInt
+    ) throws(UITestError) {
+        guard row.waitForExistence(timeout: 10) else {
+            try app.stopWithDiagnostics("找不到\(name)", file: file, line: line)
+        }
+        guard app.waitUntilHittableByScrolling(row, within: rootElement) else {
+            try app.stopWithDiagnostics("\(name)無法捲入可見範圍", file: file, line: line)
+        }
     }
 }
+

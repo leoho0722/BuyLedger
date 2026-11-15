@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Internal Method
+// MARK: - 測試診斷
 
 extension XCTestCase {
 

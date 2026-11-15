@@ -34,20 +34,19 @@ struct RootNavigationScreen {
 @MainActor
 extension RootNavigationScreen {
 
-    /// 切到總覽頁，待其就緒才回傳
+    /// 切到總覽頁並等待前景就緒
     ///
     /// - Parameters:
     ///   - timeout: 等待總覽頁就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 總覽頁是否在逾時前就緒
-    @discardableResult
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func goToDashboard(
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        go(
+    ) throws(UITestError) {
+        try go(
             to: .dashboard,
             timeout: timeout,
             file: file,
@@ -55,20 +54,19 @@ extension RootNavigationScreen {
         )
     }
 
-    /// 切到訂單頁，待其就緒才回傳
+    /// 切到訂單頁並等待前景就緒
     ///
     /// - Parameters:
     ///   - timeout: 等待訂單頁就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 訂單頁是否在逾時前就緒
-    @discardableResult
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func goToOrders(
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        go(
+    ) throws(UITestError) {
+        try go(
             to: .orders,
             timeout: timeout,
             file: file,
@@ -76,20 +74,19 @@ extension RootNavigationScreen {
         )
     }
 
-    /// 切到開團頁，待其就緒才回傳
+    /// 切到開團頁並等待前景就緒
     ///
     /// - Parameters:
     ///   - timeout: 等待開團頁就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 開團頁是否在逾時前就緒
-    @discardableResult
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func goToCampaigns(
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        go(
+    ) throws(UITestError) {
+        try go(
             to: .campaigns,
             timeout: timeout,
             file: file,
@@ -97,20 +94,19 @@ extension RootNavigationScreen {
         )
     }
 
-    /// 切到分析頁，待其就緒才回傳
+    /// 切到分析頁並等待前景就緒
     ///
     /// - Parameters:
     ///   - timeout: 等待分析頁就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 分析頁是否在逾時前就緒
-    @discardableResult
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func goToInsights(
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        go(
+    ) throws(UITestError) {
+        try go(
             to: .insights,
             timeout: timeout,
             file: file,
@@ -118,33 +114,59 @@ extension RootNavigationScreen {
         )
     }
 
-    /// 切到更多頁，待其就緒才回傳
+    /// 切到更多頁並等待前景就緒
     ///
     /// - Parameters:
     ///   - timeout: 等待更多頁就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 更多頁是否在逾時前就緒
-    @discardableResult
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func goToMore(
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        go(
+    ) throws(UITestError) {
+        try go(
             to: .more,
             timeout: timeout,
             file: file,
             line: line
         )
     }
+
+    /// 等待指定的一組前景元素或資料列可互動
+    ///
+    /// - Parameters:
+    ///   - identifiers: 可判定目的地就緒的固定 identifier
+    ///   - identifierPrefixes: 可判定目的地就緒的資料列 identifier 前綴
+    ///   - message: 目的地未就緒時記錄的訊息
+    ///   - timeout: 等待前景元素就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 目的地前景未就緒時丟出測試錯誤
+    func requireForeground(
+        identifiers: [String],
+        identifierPrefixes: [String] = [],
+        message: String,
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let isReady = Polling.wait(timeout: timeout) {
+            hasForegroundElements(identifiers)
+                || identifierPrefixes.contains { hasHittableRow(withIdentifierPrefix: $0) }
+        }
+        guard isReady else {
+            try app.stopWithDiagnostics(message, file: file, line: line)
+        }
+    }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension RootNavigationScreen: Screen {
+extension RootNavigationScreen: ScreenProtocol {
 
-    /// 根導覽就緒判定用的 identifier，取總覽頁根元素 (啟動後預設停在總覽頁)
+    /// 根導覽就緒判定用的 identifier，取啟動後預設顯示的總覽頁根元素
     var rootIdentifier: String {
         BLAccessibilityID.Dashboard.root
     }
@@ -155,54 +177,12 @@ extension RootNavigationScreen: Screen {
 @MainActor
 private extension RootNavigationScreen {
 
-    /// More 的根入口、目前保留的工具頁或寬版未選取提示是否有可互動前景內容
+    /// More 根入口、保留的工具頁或寬版未選取提示是否有可互動前景內容
     var isMoreDestinationForegroundReady: Bool {
-        hasForegroundElements([
-            BLAccessibilityID.Common.detailEmptyState,
-            BLAccessibilityID.More.row(.fx),
-            BLAccessibilityID.More.row(.customers),
-            BLAccessibilityID.More.row(.quote),
-            BLAccessibilityID.More.row(.orderSources),
-            BLAccessibilityID.More.row(.categories),
-            BLAccessibilityID.More.row(.paymentMethods),
-            BLAccessibilityID.More.row(.reconciliationStatuses),
-            BLAccessibilityID.More.row(.settings),
-            BLAccessibilityID.Settings.languagePicker,
-            BLAccessibilityID.Settings.defaultCurrencyRow,
-            BLAccessibilityID.Settings.monthlyGoalField,
-            BLAccessibilityID.Settings.aiSummaryToggle,
-            BLAccessibilityID.Settings.appLockToggle,
-            BLAccessibilityID.Fx.amountField,
-            BLAccessibilityID.Fx.currencyPickerButton,
-            BLAccessibilityID.Quote.principalField,
-            BLAccessibilityID.Quote.currencyPickerButton,
-            BLAccessibilityID.Quote.retryButton,
-            BLAccessibilityID.LookupManagement.addButton,
-            BLAccessibilityID.LookupManagement.nameField,
-            BLAccessibilityID.LookupManagement.paymentMethodNameField,
-            BLAccessibilityID.LookupManagement.paymentMethodSaveButton,
-            BLAccessibilityID.OptionPicker.addButton,
-            BLAccessibilityID.OptionPicker.doneButton,
-        ])
-            || hasHittableRow(
-                withIdentifierPrefix: BLAccessibilityID.Customers.row(customerName: "")
-            )
-            || hasHittableRow(
-                withIdentifierPrefix: BLAccessibilityID.Customers.topCard(customerName: "")
-            )
-            || hasHittableRow(withIdentifierPrefix: BLAccessibilityID.LookupManagement.row(""))
-            || hasHittableRow(withIdentifierPrefix: BLAccessibilityID.OptionPicker.optionRow(""))
-            || hasForegroundElements([
-                BLAccessibilityID.Customers.listEmptyState,
-                BLAccessibilityID.Customers.listLoadFailureRetryButton,
-                BLAccessibilityID.Customers.listLoading,
-                BLAccessibilityID.Fx.convertedValue,
-                BLAccessibilityID.Fx.statusBanner,
-                BLAccessibilityID.Quote.suggestedPriceValue,
-                BLAccessibilityID.Quote.statusBanner,
-                BLAccessibilityID.LookupManagement.loadFailureMessage,
-                BLAccessibilityID.LookupManagement.paymentMethodEditorRoot,
-            ])
+        hasForegroundElements(MoreDestinationIdentifiers.foreground)
+            || MoreDestinationIdentifiers.rowPrefixes.contains {
+                hasHittableRow(withIdentifierPrefix: $0)
+            }
     }
 
     /// 切換根目的地後等待該分頁目前的前景內容
@@ -212,41 +192,27 @@ private extension RootNavigationScreen {
     ///   - timeout: 等待前景內容就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 根控制項與目的地前景是否都已就緒
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func go(
         to tab: AppNavigator.Tab,
         timeout: TimeInterval,
         file: StaticString,
         line: UInt
-    ) -> Bool {
+    ) throws(UITestError) {
         if !isForegroundDestinationReady(for: tab) {
-            guard navigator.tapRootTab(tab, timeout: timeout) else {
-                app.failWithDiagnostics(
-                    "找不到或無法點擊根分頁 \(BLAccessibilityID.Root.tab(tab.identifierKey))",
-                    file: file,
-                    line: line
-                )
-                return false
-            }
+            try navigator.tapRootTab(tab, timeout: timeout, file: file, line: line)
         }
 
-        let deadline = Date.now.addingTimeInterval(timeout)
-        while true {
-            if isForegroundDestinationReady(for: tab) {
-                return true
-            }
-            guard Date.now < deadline else {
-                break
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+        let isReady = Polling.wait(timeout: timeout) {
+            isForegroundDestinationReady(for: tab)
         }
-
-        app.failWithDiagnostics(
-            "切換至根分頁 \(BLAccessibilityID.Root.tab(tab.identifierKey)) 後前景內容未就緒",
-            file: file,
-            line: line
-        )
-        return false
+        guard isReady else {
+            try app.stopWithDiagnostics(
+                "根分頁 \(BLAccessibilityID.Root.tab(tab.identifierKey)) 前景內容未就緒",
+                file: file,
+                line: line
+            )
+        }
     }
 
     /// 判斷指定根分頁的實際前景內容是否已就緒

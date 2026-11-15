@@ -80,7 +80,7 @@ struct OrderEditFeaturePhotosTests {
         ]
 
         // When
-        await store.send(.photos(.binding(.set(\.photoPickerSelection, items)))) {
+        await store.send(\.photos.binding.photoPickerSelection, items) {
             $0.photos.photoPickerSelection = items
         }
 
@@ -113,7 +113,7 @@ struct OrderEditFeaturePhotosTests {
         ]
 
         // When
-        await store.send(.photos(.binding(.set(\.photoPickerSelection, items)))) {
+        await store.send(\.photos.binding.photoPickerSelection, items) {
             $0.photos.photoPickerSelection = items
             $0.photos.photoImportFailureCount = 0
         }
@@ -145,7 +145,7 @@ struct OrderEditFeaturePhotosTests {
         ]
 
         // When
-        await store.send(.photos(.binding(.set(\.photoPickerSelection, items)))) {
+        await store.send(\.photos.binding.photoPickerSelection, items) {
             $0.photos.photoPickerSelection = items
         }
 
@@ -156,64 +156,72 @@ struct OrderEditFeaturePhotosTests {
         }
     }
 
-    /// 驗證照片選取經畫面綁定送達匯入服務，先清除舊失敗數，再加入成功照片並回報本批失敗數
+    /// 驗證選取照片時，畫面送出 `photoPickerSelection` 自己的 binding action，先清除舊失敗數，
+    /// 選取的項目送達匯入服務，成功的照片接在既有照片之後並回報本批失敗數
     ///
-    /// - Throws: 匯入請求或完成通知未收到時由 `#require` 丟出測試斷言錯誤
-    /// - Note: 收到匯入請求後才註冊完成通知，避免選取本身的狀態變更提前通過等待
-    @Test(.timeLimit(.minutes(1)))
-    func photos_經畫面綁定選取照片_清除舊失敗數並觸發匯入() async throws {
+    /// - Note: 畫面綁定照片區段的 `$store.photoPickerSelection`，對父表單送出的是
+    ///   `\.photos.binding.photoPickerSelection`；對照見 `binding_修改顧客名稱_不觸發照片匯入`
+    @Test
+    func photos_選取照片_清除舊失敗數並送達匯入服務() async {
         // Given
         let items = [
             PhotosPickerItem(itemIdentifier: "binding-selection-1"),
             PhotosPickerItem(itemIdentifier: "binding-selection-2"),
         ]
-        let requests = AsyncStream<[PhotosPickerItem]>.makeStream()
-        let release = AsyncStream<Void>.makeStream()
-        let completion = AsyncStream<Void>.makeStream()
-        var requestIterator = requests.stream.makeAsyncIterator()
-        var completionIterator = completion.stream.makeAsyncIterator()
+        let receivedItems = LockIsolated<[PhotosPickerItem]>([])
         var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.photos.draftPhotos = [Data([0x01])]
         initial.photos.photoImportFailureCount = 2
-        let store = Store(initialState: initial) {
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         } withDependencies: {
             $0.photoService.importPhotos = { selectedItems in
-                requests.continuation.yield(selectedItems)
-                var iterator = release.stream.makeAsyncIterator()
-                _ = await iterator.next()
+                receivedItems.setValue(selectedItems)
                 return PhotoImportResult(photos: [Data([0xAA])], failedCount: 1)
             }
         }
-        @Bindable var photos = store.scope(state: \.photos, action: \.photos)
 
         // When
-        $photos.photoPickerSelection.wrappedValue = items
+        await store.send(\.photos.binding.photoPickerSelection, items) {
+            $0.photos.photoPickerSelection = items
+            $0.photos.photoImportFailureCount = 0
+        }
 
         // Then
-        defer {
-            requests.continuation.finish()
-            release.continuation.finish()
-            completion.continuation.finish()
+        await store.receive(\.photos.photoImportResponse) {
+            $0.photos.draftPhotos = [Data([0x01]), Data([0xAA])]
+            $0.photos.photoPickerSelection = []
+            $0.photos.hasEditedPhotos = true
+            $0.photos.photoImportFailureCount = 1
         }
-        #expect(store.state.photos.photoPickerSelection == items)
-        #expect(store.state.photos.photoImportFailureCount == 0)
+        #expect(receivedItems.value == items)
+    }
+
+    /// 驗證表單修改顧客名稱時，畫面送出整份草稿的 binding action，只更新草稿，不觸發照片匯入，
+    /// 照片與已編輯標記維持原樣
+    ///
+    /// - Note: 畫面綁定 `$store.draft.customerName`；未覆寫 `photoService.importPhotos`，
+    ///   被呼叫時 `unimplemented` 會讓測試失敗，與 `photos_選取照片_清除舊失敗數並送達匯入服務` 對照
+    @Test
+    func binding_修改顧客名稱_不觸發照片匯入() async {
+        // Given
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+        initial.photos.draftPhotos = [Data([0x01])]
+        var editedDraft = initial.draft
+        editedDraft.customerName = "新客戶"
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        // When
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft.customerName = "新客戶"
+        }
+
+        // Then
         #expect(store.state.photos.draftPhotos == [Data([0x01])])
-        #expect(store.state.photos.hasEditedPhotos == false)
-        let receivedItems = try #require(await requestIterator.next())
-        #expect(receivedItems == items)
-        withObservationTracking {
-            _ = photos.hasEditedPhotos
-        } onChange: {
-            completion.continuation.yield(())
-            completion.continuation.finish()
-        }
-        release.continuation.finish()
-        try #require(await completionIterator.next() != nil)
-        #expect(store.state.photos.draftPhotos == [Data([0x01]), Data([0xAA])])
         #expect(store.state.photos.photoPickerSelection == [])
-        #expect(store.state.photos.photoImportFailureCount == 1)
-        #expect(store.state.photos.hasEditedPhotos)
+        #expect(store.state.photos.hasEditedPhotos == false)
     }
 
     /// 驗證刪除中間的照片時，只移除該張，其餘照片維持原順序，並標記為已編輯
@@ -297,22 +305,24 @@ struct OrderEditFeaturePhotosTests {
         #expect(fetchedPhotoOrderIDs.value == ["BL-2604-018"])
     }
 
-    /// 驗證照片檢視器關閉時，經綁定把 `pickerRoute` 設為 `nil`，路徑清空
+    /// 驗證照片檢視器關閉時，畫面送出 `pickerRoute` 自己的 binding action 設為 `nil`，路徑清空
     ///
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
+    /// - Note: 畫面的導覽路徑綁定 (`OrderEditView.pickerPath`) 把路徑的最後一個元素寫回 `pickerRoute`，
+    ///   路徑清空時寫入 `nil`
     @Test
-    func pickers_關閉照片檢視_清除照片檢視路徑() {
+    func pickers_關閉照片檢視_清除照片檢視路徑() async {
         // Given
         var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.photos.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03])]
         initial.pickers.pickerRoute = .photoViewer(index: 2)
-        let store = Store(initialState: initial) {
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var pickers = store.scope(state: \.pickers, action: \.pickers)
 
         // When
-        $pickers.pickerRoute.wrappedValue = nil
+        await store.send(\.pickers.binding.pickerRoute, nil) {
+            $0.pickers.pickerRoute = nil
+        }
 
         // Then
         #expect(store.state.pickers.pickerRoute == nil)

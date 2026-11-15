@@ -95,9 +95,10 @@ private extension DependencyValues {
             }
 
         case .ordersDelayed:
-            let readDelay = Duration.seconds(8)
             orderService.fetchOrders = { () throws(PersistenceError) in
-                try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                if let readDelay = configuration.readDelay {
+                    try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                }
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
             }
 
@@ -171,9 +172,10 @@ private extension DependencyValues {
         )
 
         if configuration.loadFailure == .exchangeRatesDelayed {
-            let readDelay = Duration.seconds(8)
             exchangeRateService.fetchLatest = { _ throws(APIError) in
-                try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                if let readDelay = configuration.readDelay {
+                    try? await Task.sleep(for: readDelay) // 失敗可忽略，因為延遲被取消時仍回傳固定的失敗結果
+                }
                 throw BLUITestErrorFactory.exchangeRateLoadFailed()
             }
         }

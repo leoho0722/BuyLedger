@@ -6,12 +6,11 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import Testing
 
 @testable import BuyLedger
 
-/// `OrderCategoryPickerFeature` 的單元測試，涵蓋搜尋送出、搜尋清除與輸入綁定
+/// `OrderCategoryPickerFeature` 的單元測試，涵蓋搜尋送出、搜尋清除與輸入綁定，綁定以 `TestStore` 送出畫面實際送出的 action
 @MainActor
 struct OrderCategoryPickerFeatureSearchTests {
 
@@ -67,24 +66,26 @@ struct OrderCategoryPickerFeatureSearchTests {
         #expect(store.state.categoryGroups.first { $0.kind == .closed }?.isExpanded == false)
     }
 
-    /// 驗證輸入搜尋文字的綁定只寫入搜尋欄位，暫存集合與是否有未套用變更都不變
+    /// 驗證輸入搜尋文字時，畫面送出 `searchText` 自己的 binding action，只寫入搜尋欄位，
+    /// 暫存集合與是否有未套用變更都不變
+    ///
+    /// - Note: 畫面綁定 `$store.searchText`
     @Test
-    func binding_輸入搜尋文字_保留暫存集合與未變更狀態() {
+    func binding_輸入搜尋文字_保留暫存集合與未變更狀態() async {
         // Given
-        let store = withDependencies {
+        let store = TestStore(
+            initialState: OrderCategoryPickerFeatureTestSupport.makeState(committed: ["snacks"])
+        ) {
+            OrderCategoryPickerFeature()
+        } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(
-                initialState: OrderCategoryPickerFeatureTestSupport.makeState(committed: ["snacks"])
-            ) {
-                OrderCategoryPickerFeature()
-            }
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.searchText.wrappedValue = "boo"
+        await store.send(\.binding.searchText, "boo") {
+            $0.searchText = "boo"
+        }
 
         // Then
         #expect(store.state.searchText == "boo")
@@ -93,24 +94,26 @@ struct OrderCategoryPickerFeatureSearchTests {
         #expect(store.state.hasUnappliedChanges == false)
     }
 
-    /// 驗證同步原生焦點狀態的綁定只更新搜尋欄焦點，暫存集合與是否有未套用變更都不變
+    /// 驗證同步原生焦點狀態時，畫面送出 `isSearchFieldFocused` 自己的 binding action，
+    /// 只更新搜尋欄焦點，暫存集合與是否有未套用變更都不變
+    ///
+    /// - Note: 畫面綁定 `$store.isSearchFieldFocused`
     @Test
-    func binding_搜尋欄取得焦點_保留選取與未變更狀態() {
+    func binding_搜尋欄取得焦點_保留選取與未變更狀態() async {
         // Given
-        let store = withDependencies {
+        let store = TestStore(
+            initialState: OrderCategoryPickerFeatureTestSupport.makeState(committed: ["snacks"])
+        ) {
+            OrderCategoryPickerFeature()
+        } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(
-                initialState: OrderCategoryPickerFeatureTestSupport.makeState(committed: ["snacks"])
-            ) {
-                OrderCategoryPickerFeature()
-            }
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.isSearchFieldFocused.wrappedValue = true
+        await store.send(\.binding.isSearchFieldFocused, true) {
+            $0.isSearchFieldFocused = true
+        }
 
         // Then
         #expect(store.state.isSearchFieldFocused == true)

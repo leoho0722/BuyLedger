@@ -39,7 +39,7 @@ paths:
     - **清單欄每個可選項目都是 `List(selection:)` 的直接列** (`NavigationLink(value:)`)，selection 的 getter 由功能的 `path` 投影、setter 送功能自己的 view action：多個連結包在同一列的卡片裡時選取不生效，直向覆蓋的側邊欄點選後也不會收起。列要有卡片外觀時用 `BLCardRowBackground`／`BLCardRowPosition` 逐列給背景。
     - 不綁 `columnVisibility`、不指定 split view style：側邊欄是否並排由系統決定 (窄的 iPad 直向會收起，由「顯示側邊欄」鈕或左緣滑動叫出，叫出後覆蓋在清單上)；`.balanced` 改變不了三欄直向的覆蓋。
     - **欄寬在宣告欄位的地方設定** (欄位閉包或欄位根 view)：掛在 `.searchable` 內層的 `navigationSplitViewColumnWidth` 不生效。直向的 content 欄有系統上限，動態要求超過上限時系統會收起清單欄，所以不以量到的欄寬回寫欄寬。
-    - **含 `.searchable` 的並排清單欄用 inline 標題**：大標題在搜尋結束 (收鍵盤或清除文字) 後會留白不顯示標題並把搜尋欄下推。收合時的窄版清單維持大標題：搜尋中由系統收起標題，關閉搜尋後回到原位 (由 `OrdersListTests` 的三條 `testCloseSearch_…` 守門：直接關閉、收鍵盤後關閉、清除文字後關閉)。regular 訂單清單欄的標題固定為「訂單」，多選筆數一律放欄內頂部 (`OrdersRegularListColumn.selectionSummary`)：直向窄欄放不下 inline 標題與多選工具列，兩處都顯示又會重複。
+    - **含 `.searchable` 的並排清單欄用 inline 標題**：大標題在搜尋結束 (收鍵盤或清除文字) 後會留白不顯示標題並把搜尋欄下推。收合時的窄版清單維持大標題：搜尋中由系統收起標題，關閉搜尋後回到原位 (由 `OrdersUITests` 的三條 `testTapSearchEndButton_…` 守門：輸入後關閉、收鍵盤後關閉、清除文字後關閉)。regular 訂單清單欄的標題固定為「訂單」，多選筆數一律放欄內頂部 (`OrdersRegularListColumn.selectionSummary`)：直向窄欄放不下 inline 標題與多選工具列，兩處都顯示又會重複。
 - **每個目的地只有一條抵達路徑**：清單選取與深連結寫入同一條路徑；「更多」分頁以 `MoreFeature.State.path` 的 `StackState<Path.State>` 驅動，入口清單的選取由 `path` 投影 (`currentEntry`)，setter 送 `entrySelected(_:)`，深連結由 Root 送 `MoreFeature` 的 `settingsRequested`，`MoreFeature` 呼叫 `showSettings()`，與選取同樣經 `open(_:)`：同一工具不動 `path` (保留子狀態與元素識別值)，不同工具在同一次狀態更新內先清空再推入。
     - 工具的子階層由 `MoreView` 詳情欄的 `NavigationStack` 承載，以 `.id(pathID)` 讓換工具時重建、重選同一工具時保留；工具 View 本身不自帶 stack。
     - 用堆疊狀態而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
@@ -60,7 +60,7 @@ paths:
 - **背景上鎖的觸發訊號是 `\.scenePhase` 的 `.background`／`.active`**：採場景生命週期的 App 不會呼叫 `AppDelegate` 的 `applicationWillResignActive`／`applicationDidBecomeActive` (且已 deprecated)，掛在那裡完全不生效。
     - `BuyLedgerApp.body` 的 `onChange(of: scenePhase, initial: true)` 經 `AppScenePhase(_:)` 轉成殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`；上鎖、解鎖與是否通知殼層一律由 reducer 決定，App 入口不做判斷。回到前景時 `AppLockFeature` 送 `delegate(.didBecomeActive)`，由 Root 更新開團、訂單清單、首頁與分析頁的日期脈絡。
     - 任何「畫面或系統事件到動作」的接線都要有對應測試 (`AppScenePhaseTests` 守場景階段對應，`AppLockFeatureTests` 守各階段的狀態變化)，不能只靠程式碼看起來合理。
-    - **冷啟動解鎖靠 `initial: true`，這一行沒有 UI 測試守門**：拿掉後現有 `AppLockTests` 的冷啟動測試仍會通過 (啟動時 scenePhase 的後續變更也會觸發)，改動時要另外確認。
+    - **冷啟動解鎖靠 `initial: true`，這一行沒有 UI 測試守門**：拿掉後現有 `AppLockUITests` 的冷啟動測試仍會通過 (啟動時 scenePhase 的後續變更也會觸發)，改動時要另外確認。
     - 背景上鎖不保證多工切換器縮圖不含內容；需要這項保證時要另以獨立 `UIWindow` 遮蔽層處理。
 - **啟用帳本保護前先通過一次驗證**：`SettingsFeature` 收到 `view(.appLockToggled(true))` 先呼叫 `BiometricAuthService`，成功才設 `isBiometricUnlockEnabled`、寫入並送 `delegate(.preferencesChanged)`，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
     - 設定頁 Toggle 用自訂 `Binding` (`get` 讀已生效的值、`set` 只送出意圖)，不用 `$store.xxx`，讓驗證失敗時開關自動彈回。

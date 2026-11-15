@@ -65,6 +65,83 @@ struct BLUITestConfigurationInvalidValuesTests {
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
     }
 
+    /// 驗證延遲失敗缺少秒數參數時不使用內建等待時長
+    ///
+    /// - Parameter loadFailure: 訂單或匯率的延遲失敗情境
+    @Test(arguments: ["ordersDelayed", "exchangeRatesDelayed"])
+    func init_延遲情境缺少秒數參數_不設定延遲(loadFailure: String) {
+        // Given
+        let arguments = ["-BLUITestLoadFailure", loadFailure]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.readDelay == nil)
+    }
+
+    /// 驗證延遲秒數旗標缺值時不使用內建等待時長
+    ///
+    /// - Parameter loadFailure: 訂單或匯率的延遲失敗情境
+    @Test(arguments: ["ordersDelayed", "exchangeRatesDelayed"])
+    func init_延遲秒數旗標缺值_不設定延遲(loadFailure: String) {
+        // Given
+        let arguments = ["-BLUITestLoadFailure", loadFailure, "-BLUITestReadDelaySeconds"]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.readDelay == nil)
+    }
+
+    /// 驗證零、負數、文字、小數、空值與超出整數範圍的秒數皆不套用延遲
+    ///
+    /// - Parameters:
+    ///   - loadFailure: 訂單或匯率的延遲失敗情境
+    ///   - rawSeconds: 無法解析為正整數的秒數字串
+    @Test(
+        arguments: ["ordersDelayed", "exchangeRatesDelayed"],
+        ["0", "-1", "abc", "1.5", "", "999999999999999999999999999999"]
+    )
+    func init_延遲秒數不是正整數_不設定延遲(loadFailure: String, rawSeconds: String) {
+        // Given
+        let arguments = [
+            "-BLUITestLoadFailure",
+            loadFailure,
+            "-BLUITestReadDelaySeconds",
+            rawSeconds,
+        ]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.readDelay == nil)
+    }
+
+    /// 驗證沒有延遲失敗可套用時，指定的秒數不影響讀取
+    ///
+    /// - Parameter loadFailureArguments: 未指定載入失敗或指定非延遲失敗的啟動參數
+    @Test(arguments: [
+        [],
+        ["-BLUITestLoadFailure", "none"],
+        ["-BLUITestLoadFailure", "orders"],
+        ["-BLUITestLoadFailure", "ordersFirstReadOnly"],
+        ["-BLUITestLoadFailure", "campaigns"],
+        ["-BLUITestLoadFailure", "lookups"],
+    ])
+    func init_秒數沒有延遲情境可套用_忽略延遲(loadFailureArguments: [String]) {
+        // Given
+        let arguments = loadFailureArguments + ["-BLUITestReadDelaySeconds", "8"]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.readDelay == nil)
+    }
+
     /// 驗證種子旗標重複出現時，採用最後一次指定的情境
     @Test
     func init_重複種子旗標_採用最後值() {

@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import Testing
 
 @testable import BuyLedger
@@ -36,7 +35,9 @@ struct PaymentMethodEditFormFeatureTests {
         #expect(state.isDraftCashOnDelivery == true)
     }
 
-    /// 驗證草稿名稱經 `BindingAction` 寫入時，`State` 的草稿更新為新值
+    /// 驗證付款方式表單輸入名稱時，畫面送出 `draftName` 自己的 binding action，`State` 的草稿更新為新值
+    ///
+    /// - Note: 畫面綁定 `$editStore.draftName`
     @Test
     func binding_草稿名稱改為新值_寫入草稿() async {
         // Given
@@ -47,7 +48,7 @@ struct PaymentMethodEditFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.draftName, "新卡"))) {
+        await store.send(\.binding.draftName, "新卡") {
             $0.draftName = "新卡"
         }
 
@@ -55,7 +56,9 @@ struct PaymentMethodEditFormFeatureTests {
         #expect(store.state.draftName == "新卡")
     }
 
-    /// 驗證分類旗標經 `BindingAction` 寫入時，`State` 的旗標更新為新值
+    /// 驗證付款方式表單切換貨到付款旗標時，畫面送出旗標自己的 binding action，`State` 的旗標更新為開啟
+    ///
+    /// - Note: 畫面綁定 `$editStore.isDraftCashOnDelivery`
     @Test
     func binding_切換貨到付款旗標_寫入旗標() async {
         // Given
@@ -66,30 +69,12 @@ struct PaymentMethodEditFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDraftCashOnDelivery, true))) {
+        await store.send(\.binding.isDraftCashOnDelivery, true) {
             $0.isDraftCashOnDelivery = true
         }
 
         // Then
         #expect(store.state.isDraftCashOnDelivery == true)
-    }
-
-    /// 驗證經畫面的 `@Bindable` 綁定切換旗標時，Store 的旗標同步更新
-    @Test
-    func binding_經畫面綁定路徑切換旗標_更新旗標() {
-        // Given
-        let store = Store(
-            initialState: PaymentMethodEditFormFeature.State(originalName: "信用卡", flags: .none)
-        ) {
-            PaymentMethodEditFormFeature()
-        }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.isDraftCashOnDelivery.wrappedValue = true
-
-        // Then
-        #expect(store.isDraftCashOnDelivery == true)
     }
 
     /// 驗證草稿與旗標皆未修改時，不算已變更
@@ -154,7 +139,7 @@ struct PaymentMethodEditFormFeatureTests {
 
     /// 驗證送出時名稱使用去除空白後的值，旗標使用動作攜帶的草稿旗標
     @Test
-    func saveButtonTapped_送出修剪名稱與草稿旗標() async {
+    func saveButtonTapped_名稱含前後空白_送出修剪名稱與草稿旗標() async {
         // Given
         let store = TestStore(
             initialState: PaymentMethodEditFormFeature.State(originalName: "信用卡", flags: .none)
@@ -272,7 +257,7 @@ struct PaymentMethodEditFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDiscardConfirmationPresented, false))) {
+        await store.send(\.binding.isDiscardConfirmationPresented, false) {
             $0.isDiscardConfirmationPresented = false
         }
 

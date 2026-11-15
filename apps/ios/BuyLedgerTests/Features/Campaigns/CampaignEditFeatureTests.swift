@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -158,7 +158,7 @@ struct CampaignEditFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.draftName, "五月團"))) {
+        await store.send(\.binding.draftName, "五月團") {
             $0.draft.name = "五月團"
             $0.nameConflictMessage = nil
         }
@@ -168,43 +168,52 @@ struct CampaignEditFeatureTests {
         #expect(store.state.nameConflictMessage == nil)
     }
 
-    /// 驗證切換提醒意圖時，經畫面的 `@Bindable` 綁定路徑更新草稿的提醒開關
+    /// 驗證切換提醒意圖時，畫面送出整份草稿的 binding action，草稿的提醒開關更新為使用者選定的值
     ///
     /// - Parameter isReminderWanted: 使用者選定的提醒意圖
+    /// - Note: 畫面綁定 `$store.draft.wantsReminder`，巢狀欄位送出的是整個 `draft`
     @Test(arguments: [true, false])
     @MainActor
-    func binding_切換提醒意圖_更新草稿提醒開關(isReminderWanted: Bool) {
+    func binding_切換提醒意圖_更新草稿提醒開關(isReminderWanted: Bool) async {
         // Given
         var initial = CampaignEditFeatureTestSupport.makeState()
         initial.draft.wantsReminder = !isReminderWanted
-        let store = Store(initialState: initial) {
+        var editedDraft = initial.draft
+        editedDraft.wantsReminder = isReminderWanted
+        let store = TestStore(initialState: initial) {
             CampaignEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft.wantsReminder.wrappedValue = isReminderWanted
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft.wantsReminder = isReminderWanted
+        }
 
         // Then
-        #expect(store.draft.wantsReminder == isReminderWanted)
+        #expect(store.state.draft.wantsReminder == isReminderWanted)
     }
 
-    /// 驗證修改提醒時間時，經畫面的 `@Bindable` 綁定路徑更新草稿的提醒時間
+    /// 驗證修改提醒時間時，畫面送出整份草稿的 binding action，草稿的提醒時間更新為選定的時間
+    ///
+    /// - Note: 畫面綁定 `$store.draft.reminderTimestamp`，巢狀欄位送出的是整個 `draft`
     @Test
     @MainActor
-    func binding_修改提醒時間_更新草稿提醒時間() {
+    func binding_修改提醒時間_更新草稿提醒時間() async {
         // Given
-        let picked = Date(timeIntervalSince1970: 3_600)
-        let store = Store(initialState: CampaignEditFeatureTestSupport.makeState()) {
+        let initial = CampaignEditFeatureTestSupport.makeState()
+        var editedDraft = initial.draft
+        editedDraft.reminderTimestamp = Date(timeIntervalSince1970: 3_600)
+        let store = TestStore(initialState: initial) {
             CampaignEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft.reminderTimestamp.wrappedValue = picked
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft.reminderTimestamp = Date(timeIntervalSince1970: 3_600)
+        }
 
         // Then
-        #expect(store.draft.reminderTimestamp == Date(timeIntervalSince1970: 3_600))
+        #expect(store.state.draft.reminderTimestamp == Date(timeIntervalSince1970: 3_600))
     }
 
     /// 驗證名稱為空或只有空白時，按下儲存不送出儲存請求，表單狀態不變且不關閉

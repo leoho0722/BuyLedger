@@ -21,13 +21,9 @@ struct SettingsScreen {
 @MainActor
 extension SettingsScreen {
 
-    /// 版本資訊列的合併文字 (`label` 串接 `value`)，列不存在時為 `nil`
-    var versionText: String? {
-        let row = element(BLAccessibilityID.Settings.versionRow)
-        guard row.exists else {
-            return nil
-        }
-        return row.combinedText
+    /// 設定頁的預設幣別列
+    var defaultCurrencyRow: XCUIElement {
+        element(BLAccessibilityID.Settings.defaultCurrencyRow)
     }
 
     /// 每月目標金額欄位
@@ -37,10 +33,11 @@ extension SettingsScreen {
 
     /// 每月目標金額欄目前的文字值
     ///
+    /// - Parameter timeout: 等待欄位出現的秒數
     /// - Returns: 目標金額欄的文字值；元素不存在或值不是字串時為 `nil`
-    var monthlyGoalFieldValue: String? {
+    func monthlyGoalFieldValue(timeout: TimeInterval = 10) -> String? {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        guard field.waitForExistence(timeout: 10) else {
+        guard field.waitForExistence(timeout: timeout) else {
             return nil
         }
         return field.value as? String
@@ -52,43 +49,47 @@ extension SettingsScreen {
 @MainActor
 extension SettingsScreen {
 
-    /// 從「更多」分頁導航到設定頁並回傳就緒的 Page Object
+    /// 從「更多」分頁導到設定頁並等待設定根元素就緒
     ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 已就緒的設定頁 Page Object
-    static func navigate(
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    @discardableResult
+    static func open(
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> SettingsScreen {
-        AppNavigator(app: app).selectTab(.more, file: file, line: line)
-        // 更多根是全頁 CollectionView，iPhone 上可能長期不可點，只等存在後再點入口列
+    ) throws(UITestError) -> SettingsScreen {
+        try RootNavigationScreen(app: app).goToMore(file: file, line: line)
+        // iPhone 上更多根的 CollectionView 可能不可點，故只等存在後再點入口列
         let moreRoot = app.descendants(matching: .any)[BLAccessibilityID.More.root]
         guard moreRoot.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics(
+            try app.stopWithDiagnostics(
                 "更多根 identifier「\(BLAccessibilityID.More.root)」逾時仍未出現",
                 file: file,
                 line: line
             )
-            return SettingsScreen(app: app)
         }
 
         let settingsRow = app.descendants(matching: .any)[BLAccessibilityID.More.row(.settings)]
-        // 橫向 iPhone 的更多清單較短，設定入口列可能在下方未建立或露在視窗外，先捲入可點範圍
+        // 橫向 iPhone 的更多清單較短，先將下方的設定入口列捲入可點範圍
         if !settingsRow.isHittableOnScreen,
-           !app.scrollToHittableGently(settingsRow, within: moreRoot),
-           !app.scrollToHittable(settingsRow, within: moreRoot) {
-            app.failWithDiagnostics("更多清單捲動後仍找不到可點的設定入口列", file: file, line: line)
-            return SettingsScreen(app: app)
+           !app.waitUntilHittableByGentleDrag(settingsRow, within: moreRoot),
+           !app.waitUntilHittableByScrolling(settingsRow, within: moreRoot) {
+            try app.stopWithDiagnostics(
+                "更多清單捲動後仍找不到可點的設定入口列",
+                file: file,
+                line: line
+            )
         }
-        settingsRow.tapAfterWaiting(in: app, file: file, line: line)
+        try settingsRow.tapAfterWaiting(in: app, file: file, line: line)
 
         let screen = SettingsScreen(app: app)
-        if !screen.waitUntilReady() {
-            app.failWithDiagnostics(
+        guard screen.waitUntilReady() else {
+            try app.stopWithDiagnostics(
                 "設定頁根 identifier「\(screen.rootIdentifier)」逾時仍未出現",
                 file: file,
                 line: line
@@ -102,55 +103,31 @@ extension SettingsScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func openLanguagePicker(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func openLanguagePicker(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let picker = element(BLAccessibilityID.Settings.languagePicker)
-        picker.tapAfterWaiting(in: app, file: file, line: line)
+        try picker.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 填入每月目標金額 (清空舊值後輸入再收數字鍵盤)
-    ///
-    /// - Parameters:
-    ///   - value: 每月目標金額
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func setMonthlyGoal(_ value: Int, file: StaticString = #filePath, line: UInt = #line) {
-        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        field.clearAndType(
-            String(value),
-            in: app,
-            file: file,
-            line: line
-        )
-        field.dismissNumericKeyboard(in: app, file: file, line: line)
-    }
-
-    /// 切換 AI 總結開關
+    /// 點預設幣別列並等待幣別選擇器就緒
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func toggleAISummary(file: StaticString = #filePath, line: UInt = #line) {
-        let toggle = app.switches[BLAccessibilityID.Settings.aiSummaryToggle]
-        if !toggle.waitForExistence(timeout: 10) {
-            app.failWithDiagnostics("找不到 AI 總結開關", file: file, line: line)
-            return
-        }
-        let previousValue = toggle.value as? String ?? ""
-        toggle.switches.firstMatch.tapAfterWaiting(in: app, file: file, line: line)
-        let changed = NSPredicate(format: "value != %@", previousValue)
-        if !toggle.wait(for: changed, timeout: 5) {
-            app.failWithDiagnostics("點擊後 AI 總結開關的值沒有改變", file: file, line: line)
-        }
-    }
-
-    /// 點預設幣別列推進到幣別選擇器
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func openDefaultCurrency(file: StaticString = #filePath, line: UInt = #line) {
-        let row = element(BLAccessibilityID.Settings.defaultCurrencyRow)
-        row.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Returns: 已就緒的幣別選擇器
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    @discardableResult
+    func openDefaultCurrency(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> OptionPickerScreen {
+        try defaultCurrencyRow.tapAfterWaiting(in: app, file: file, line: line)
+        let picker = OptionPickerScreen(app: app)
+        try picker.requireReady(file: file, line: line)
+        return picker
     }
 
     /// 清空每月目標金額欄後輸入新文字，之後鍵盤焦點保留在目標金額欄
@@ -159,9 +136,14 @@ extension SettingsScreen {
     ///   - text: 要輸入的文字
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func replaceMonthlyGoal(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func replaceMonthlyGoal(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        field.clearAndType(
+        try field.clearAndType(
             text,
             in: app,
             file: file,
@@ -182,15 +164,16 @@ extension SettingsScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 目標金額欄是否已從左側點擊取得焦點且鍵盤就緒
-    @discardableResult
-    func focusMonthlyGoalFromLeft(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func focusMonthlyGoalFromLeft(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = monthlyGoalField
-        if !field.isHittableOnScreen, !app.scrollToHittable(field, within: rootElement) {
-            app.failWithDiagnostics("捲動後目標金額欄位仍未穩定或不可點", file: file, line: line)
-            return false
+        if !field.isHittableOnScreen {
+            try app.scrollToHittable(field, within: rootElement, file: file, line: line)
         }
-        return field.tapLeftToFocus(in: app, file: file, line: line)
+        try field.tapLeftToFocus(in: app, file: file, line: line)
     }
 
     /// 點返回鍵回到上一層畫面
@@ -198,17 +181,16 @@ extension SettingsScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func goBack(file: StaticString = #filePath, line: UInt = #line) {
-        let back = app.buttons[SystemAccessibilityID.backButton].firstMatch
-        back.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func goBack(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
+        try app.tapUniqueNativeBackButton(file: file, line: line)
     }
 
     /// 判定每月目標金額欄是否取得鍵盤焦點
     ///
     /// - Returns: 目標金額欄是否為鍵盤焦點
     func isMonthlyGoalFieldFocused() -> Bool {
-        let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        return field.exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+        monthlyGoalField.hasKeyboardFocus
     }
 
     /// 收起每月目標金額欄的數字鍵盤
@@ -216,15 +198,19 @@ extension SettingsScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func dismissMonthlyGoalKeyboard(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func dismissMonthlyGoalKeyboard(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        field.dismissNumericKeyboard(in: app, file: file, line: line)
+        try field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension SettingsScreen: Screen {
+extension SettingsScreen: ScreenProtocol {
 
     /// 設定頁的畫面根 identifier
     var rootIdentifier: String {

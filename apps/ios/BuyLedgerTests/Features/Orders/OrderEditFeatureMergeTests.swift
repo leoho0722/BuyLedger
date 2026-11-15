@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -35,12 +35,13 @@ struct OrderEditFeatureMergeTests {
         #expect(isActualMergeContext == testCase.isMergeContext)
     }
 
-    /// 驗證合併草稿、合併結果與已合併舊單的金額與費率欄位，經綁定寫入新值後都會更新
+    /// 驗證合併草稿、合併結果與已合併舊單的金額與費率欄位，經表單輸入新值時都會更新
     ///
     /// - Parameter testCase: 要驗證的合併訂單情境、欄位與值
     /// - Throws: 找不到合併產生的樣本訂單時由 `#require` 丟出
-    /// - Note: 目前 reducer 未針對合併單分流
-    /// - Note: 此測試守住合併單欄位仍可編輯
+    /// - Note: 實收金額送出 `chargedAmount` 自己的 binding action (畫面綁定 `$store.chargedAmount`)，
+    ///   商品成本與刷卡手續費率送出整份草稿的 binding action (畫面綁定 `$store.draft.<欄位>`)；
+    ///   目前 reducer 未針對合併單分流，此測試守住合併單欄位仍可編輯
     @Test(arguments: [
         MergeEditCase(scenario: .mergeDraft, field: .chargedAmount, value: Decimal(9_999)),
         MergeEditCase(scenario: .mergeDraft, field: .itemCost, value: Decimal(1_234)),
@@ -48,24 +49,27 @@ struct OrderEditFeatureMergeTests {
         MergeEditCase(scenario: .mergedAway, field: .chargedAmount, value: Decimal(777)),
     ])
     @MainActor
-    func binding_合併訂單編輯金額與費率欄位_允許更新(testCase: MergeEditCase) throws {
+    func binding_合併訂單編輯金額與費率欄位_允許更新(testCase: MergeEditCase) async throws {
         // Given
         let initial = try OrderEditFeatureTestSupport.makeState(for: testCase.scenario)
-        let store = Store(initialState: initial) {
+        var editedState = initial
+        editedState[keyPath: testCase.field.keyPath] = testCase.value
+        let editedDraft = editedState.draft
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
         switch testCase.field {
         case .chargedAmount:
-            $bindable.chargedAmount.wrappedValue = testCase.value
+            await store.send(\.binding.chargedAmount, testCase.value) {
+                $0[keyPath: testCase.field.keyPath] = testCase.value
+            }
 
-        case .itemCost:
-            $bindable.draft.itemCost.wrappedValue = testCase.value
-
-        case .cardFeeRate:
-            $bindable.draft.cardFeeRate.wrappedValue = testCase.value
+        case .itemCost, .cardFeeRate:
+            await store.send(\.binding.draft, editedDraft) {
+                $0[keyPath: testCase.field.keyPath] = testCase.value
+            }
         }
 
         // Then

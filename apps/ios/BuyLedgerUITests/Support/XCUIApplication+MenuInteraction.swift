@@ -7,13 +7,7 @@
 
 import XCTest
 
-/// 排除的選單觸發鈕 accessibility identifier，標籤回退時不可點擊觸發鈕本身或其子元素
-private let excludedTriggerIdentifiers: Set<String> = [
-    BLAccessibilityID.Orders.filterDateMenuButton,
-    BLAccessibilityID.Orders.filterPaymentMethodMenuButton,
-]
-
-// MARK: - Internal Method
+// MARK: - 選單互動
 
 @MainActor
 extension XCUIApplication {
@@ -26,63 +20,72 @@ extension XCUIApplication {
     ///   - timeout: 等待選單項目可互動的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 是否成功點選選單項目
-    @discardableResult
+    /// - Throws: identifier 與可見標籤都無法點擊時丟出測試錯誤
     func tapMenuItem(
         _ identifier: String,
         label: String? = nil,
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        let deadline = Date.now.addingTimeInterval(timeout)
-        while true {
+    ) throws(UITestError) {
+        var candidate: XCUIElement?
+        var didUseLabelFallback = false
+        let didFindCandidate = Polling.wait(timeout: timeout, interval: 0.1) {
             let identifierQueries = queriesForIdentifier(identifier)
             if let item = firstHittableCandidate(in: identifierQueries) {
-                item.tap()
+                candidate = item
                 return true
             }
 
             if let label, !hasElement(withIdentifier: identifier) {
                 let labelQueries = queriesForLabel(label)
                 if let item = firstHittableCandidate(in: labelQueries, excludingTriggers: true) {
-                    _ = item.waitUntilStableAndHittable(
-                        timeout: 2,
-                        sampleInterval: 0.2,
-                        requiredSamples: 3
-                    )
-                    item.tap()
-                    XCTContext.runActivity(
-                        named: "選單項目以標籤回退：identifier \(identifier)，標籤 \(label)"
-                    ) { _ in }
+                    candidate = item
+                    didUseLabelFallback = true
                     return true
                 }
             }
-
-            guard Date.now < deadline else {
-                break
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+            return false
         }
 
-        let status = hasElement(withIdentifier: identifier) ? "存在但不可點" : "不存在"
-        let labelDesc = label.map { "\"\($0)\"" } ?? "未提供"
-        failWithDiagnostics(
-            """
-            找不到或無法點擊選單項目 \
-            (identifier: "\(identifier)" [\(status)], 標籤: \(labelDesc))
-            """,
-            file: file,
-            line: line
-        )
-        return false
+        guard didFindCandidate, let candidate else {
+            let status = hasElement(withIdentifier: identifier) ? "存在但不可點" : "不存在"
+            let labelDesc = label.map { "\"\($0)\"" } ?? "未提供"
+            try stopWithDiagnostics(
+                """
+                找不到或無法點擊選單項目 \
+                (identifier: "\(identifier)" [\(status)], 標籤: \(labelDesc))
+                """,
+                file: file,
+                line: line
+            )
+        }
+
+        // 選單展開後框線可能移動，逾時不穩時仍照常點擊
+        _ = candidate.waitUntilStableAndHittable(
+            timeout: 2,
+            sampleInterval: 0.2,
+            requiredSamples: 3
+        ) // 選單項目框線逾時仍照常點擊
+        candidate.tap()
+        if didUseLabelFallback, let label {
+            XCTContext.runActivity(
+                named: "選單項目以標籤回退：identifier \(identifier)，標籤 \(label)"
+            ) { _ in }
+        }
     }
 }
 
-// MARK: - Private Method
+// MARK: - 選單候選判定
 
 @MainActor
 private extension XCUIApplication {
+
+    /// 排除的選單觸發鈕 identifier，標籤回退時不可點擊觸發鈕本身或其子元素
+    static let excludedTriggerIdentifiers: Set<String> = [
+        BLAccessibilityID.Orders.filterDateMenuButton,
+        BLAccessibilityID.Orders.filterPaymentMethodMenuButton,
+    ]
 
     /// 目前已呈現的原生選單或 Popover 容器
     var activeMenuContainers: [XCUIElement] {
@@ -98,13 +101,13 @@ private extension XCUIApplication {
 
     /// 畫面上現存選單觸發鈕的有效框線，供排除子元素判斷
     var activeTriggerFrames: [CGRect] {
-        excludedTriggerIdentifiers.compactMap { identifier in
+        Self.excludedTriggerIdentifiers.compactMap { identifier in
             let trigger = descendants(matching: .any)[identifier].firstMatch
             guard trigger.exists else {
                 return nil
             }
             let frame = trigger.frame
-            guard frame.origin.x.isFinite, frame.origin.y.isFinite, !frame.isEmpty else {
+            guard frame.isUsableFrame else {
                 return nil
             }
             return frame
@@ -159,11 +162,11 @@ private extension XCUIApplication {
     ///   - triggerFrames: 目前有效的觸發鈕框線清單
     /// - Returns: 是否應排除此元素
     func isExcludedTrigger(_ element: XCUIElement, triggerFrames: [CGRect]) -> Bool {
-        if excludedTriggerIdentifiers.contains(element.identifier) {
+        if Self.excludedTriggerIdentifiers.contains(element.identifier) {
             return true
         }
         let frame = element.frame
-        guard frame.origin.x.isFinite, frame.origin.y.isFinite, !frame.isEmpty else {
+        guard frame.isUsableFrame else {
             return false
         }
         return triggerFrames.contains {

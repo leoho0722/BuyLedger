@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Internal Method
+// MARK: - 畫面方向控制
 
 @MainActor
 extension XCTestCase {
@@ -16,11 +16,21 @@ extension XCTestCase {
     ///
     /// - Parameter app: 受測 App
     /// - Throws: 逾時仍未轉為橫向時丟出測試錯誤
-    func rotateToLandscape(_ app: XCUIApplication) throws {
+    func rotateToLandscape(
+        _ app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         // 先註冊還原再轉向，測試失敗時方向也會轉回直向
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
         XCUIDevice.shared.orientation = .landscapeLeft
-        try requireCondition(waitForLandscapeWindow(of: app), in: app, "轉向後 App 視窗寬仍未大於高")
+        try requireCondition(
+            waitForLandscapeWindow(of: app),
+            in: app,
+            "轉向後 App 視窗寬仍未大於高",
+            file: file,
+            line: line
+        )
 
         let size = app.windows.firstMatch.frame.size
         let sizeText = "landscape window size: \(size.width) x \(size.height)"
@@ -34,12 +44,18 @@ extension XCTestCase {
     ///
     /// - Parameter app: 受測 App
     /// - Throws: 逾時仍未轉為直向時丟出測試錯誤
-    func rotateToPortrait(_ app: XCUIApplication) throws {
+    func rotateToPortrait(
+        _ app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         XCUIDevice.shared.orientation = .portrait
         try requireCondition(
-            waitForWindow(of: app, timeout: 15) { $0.height > $0.width },
+            waitForPortraitWindow(of: app),
             in: app,
-            "轉向後 App 視窗高仍未大於寬"
+            "轉向後 App 視窗高仍未大於寬",
+            file: file,
+            line: line
         )
     }
 
@@ -52,12 +68,22 @@ extension XCTestCase {
     func waitForLandscapeWindow(of app: XCUIApplication, timeout: TimeInterval = 15) -> Bool {
         waitForWindow(of: app, timeout: timeout) { $0.width > $0.height }
     }
+
+    /// 在逾時內輪詢 App 視窗，直到高大於寬
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - timeout: 等待視窗轉為直向的秒數
+    /// - Returns: 視窗是否在逾時前轉為直向
+    func waitForPortraitWindow(of app: XCUIApplication, timeout: TimeInterval = 15) -> Bool {
+        waitForWindow(of: app, timeout: timeout) { $0.height > $0.width }
+    }
 }
 
-// MARK: - Private Method
+// MARK: - 視窗尺寸等待
 
 @MainActor
-private extension XCTestCase {
+extension XCTestCase {
 
     /// 在逾時內輪詢 App 視窗尺寸，直到符合指定方向
     ///
@@ -75,15 +101,8 @@ private extension XCTestCase {
         guard window.waitForExistence(timeout: timeout) else {
             return false
         }
-
-        let deadline = Date().addingTimeInterval(timeout)
-        repeat {
-            if isOriented(window.frame.size) {
-                return true
-            }
-            // 轉向動畫期間視窗尺寸尚未定案，讓出 run loop 後重查
-            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
-        } while Date() < deadline
-        return false
+        return Polling.wait(timeout: timeout, interval: 0.25) {
+            isOriented(window.frame.size)
+        }
     }
 }
