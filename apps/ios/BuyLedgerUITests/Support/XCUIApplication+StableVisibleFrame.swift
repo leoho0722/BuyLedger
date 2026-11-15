@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Nested Types
+// MARK: - 單一快照框線結果
 
 @MainActor
 extension XCUIApplication {
@@ -26,7 +26,7 @@ extension XCUIApplication {
     }
 }
 
-// MARK: - Internal Method
+// MARK: - 穩定可見框線
 
 /// 捲動元素並等待穩定框線的 UI 測試輔助方法
 @MainActor
@@ -62,13 +62,7 @@ extension XCUIApplication {
             }
             occurrenceCounts[identifier, default: 0] += 1
             let frame = element.frame
-            guard !frame.isNull,
-                  !frame.isInfinite,
-                  !frame.isEmpty,
-                  frame.minX.isFinite,
-                  frame.minY.isFinite,
-                  frame.maxX.isFinite,
-                  frame.maxY.isFinite else {
+            guard frame.isUsableFrame else {
                 continue
             }
             candidateFrames[identifier, default: []].append(frame)
@@ -115,46 +109,52 @@ extension XCUIApplication {
         let elementFrame = element.snapshotFrame
         let containerFrame = container.snapshotFrame
         let isElementInView: Bool
-        if element.isHittableOnScreen {
-            isElementInView = true
-        } else if let elementFrame {
-            let isInUpperHalf = containerFrame.map { elementFrame.midY < $0.midY } ?? false
-            let hasGentleScrollSucceeded: Bool
-            if isInUpperHalf {
-                hasGentleScrollSucceeded = scrollToHittableGently(
-                    element,
-                    within: container,
-                    startY: 0.3,
-                    endY: 0.5
-                )
-            } else {
-                hasGentleScrollSucceeded = scrollToHittableGently(element, within: container)
-            }
+        if !element.isHittableOnScreen {
+            if let elementFrame {
+                let isInUpperHalf = containerFrame.map { elementFrame.midY < $0.midY } ?? false
+                let hasGentleScrollSucceeded: Bool
+                if isInUpperHalf {
+                    hasGentleScrollSucceeded = waitUntilHittableByGentleDrag(
+                        element,
+                        within: container,
+                        startY: 0.3,
+                        endY: 0.5
+                    )
+                } else {
+                    hasGentleScrollSucceeded = waitUntilHittableByGentleDrag(
+                        element,
+                        within: container
+                    )
+                }
 
-            let frameAfterGentleScroll = element.snapshotFrame
-            let containerFrameAfterGentleScroll = container.snapshotFrame
-            let isStillBelowContainer: Bool
-            if let frameAfterGentleScroll, let containerFrameAfterGentleScroll {
-                isStillBelowContainer = frameAfterGentleScroll.maxY
-                    > containerFrameAfterGentleScroll.maxY
+                let frameAfterGentleScroll = element.snapshotFrame
+                let containerFrameAfterGentleScroll = container.snapshotFrame
+                let isStillBelowContainer: Bool
+                if let frameAfterGentleScroll, let containerFrameAfterGentleScroll {
+                    isStillBelowContainer = frameAfterGentleScroll.maxY
+                        > containerFrameAfterGentleScroll.maxY
+                } else {
+                    isStillBelowContainer = false
+                }
+                if !element.isHittableOnScreen,
+                   isStillBelowContainer || frameAfterGentleScroll == nil {
+                    isElementInView = waitUntilHittableByScrolling(element, within: container)
+                } else {
+                    isElementInView = hasGentleScrollSucceeded
+                }
             } else {
-                isStillBelowContainer = false
-            }
-            if !element.isHittableOnScreen, isStillBelowContainer || frameAfterGentleScroll == nil {
-                isElementInView = scrollToHittable(element, within: container)
-            } else {
-                isElementInView = hasGentleScrollSucceeded
+                isElementInView = waitUntilHittableByScrolling(element, within: container)
             }
         } else {
-            isElementInView = scrollToHittable(element, within: container)
+            isElementInView = true
         }
 
         guard isElementInView,
               element.waitUntilStableAndHittable(
-                timeout: 2,
-                sampleInterval: 0.1,
-                requiredSamples: 3
-              ) else {
+                    timeout: 2,
+                    sampleInterval: 0.1,
+                    requiredSamples: 3
+                ) else {
             return nil
         }
         return element.snapshotFrame

@@ -79,11 +79,14 @@ paths:
 
 ## 守門測試 (`TestSuiteIntegrityTests`)
 
-- **三條守門都移除整行註解後以整檔內容比對，並斷言掃到的 `.swift` 檔數大於 0**：掃描路徑失效時測試轉紅，不會因為掃不到檔案而通過。
+- **四條守門都先移除整行註解** (去掉前後空白後以 `//` 開頭的行，含 `///` 與 `// MARK:`)，並斷言掃到的 `.swift` 檔數大於 0：掃描路徑失效時測試轉紅，不會因為掃不到檔案而通過。
+    - 前三條以移除註解後的整檔內容計數；第四條逐行比對，回報每個命中的「相對路徑:行號」。
 - **測試目錄內關閉窮舉檢查恆為 0 處，`exhaustivity = .off` 與 `withExhaustivity(.off)` 都算**：`exhaustivityOffUpperBound` 與實際處數都是 0，只檢查總數、不檢查位置；斷言不全時補 `receive` 或明確覆寫依賴，不以關閉窮舉規避。
 - **App target 內 `default: return .none` 恆為 0**：`default:` 與 `return .none` 之間隔空白、換行或行尾註解也會命中；不得用其他迂迴寫法規避 (如 `return Effect.none`)。
 - **App target 的字串內插中，名稱或成員名稱含 `url`／`request` (不分大小寫) 的運算式恆為 0**：涵蓋 `\(endpoint.url)` 這類成員存取，這是憑證外洩契約的守門。
     - 屬子字串比對，先存成不含 `url`／`request` 名稱的區域變數再內插等迂迴寫法抓不到，仍要人工複核。
+- **`BuyLedgerTests/` 中 `SnapshotTests/` 以外的檔案不建立 `Store`**：比對 `Store(`、`Store<…>(`、`StoreOf<…>(` 的呼叫，前面不可緊接字母、數字、底線或 `.`，因此不會命中 `TestStore(` 與 `seedV15Store(`；泛型參數內可再含一層 `<…>`。
+    - 以 `.init` 搭型別標註、經 typealias 或透過變數傳入的建立方式比對不到，改動這類程式時要人工複核。Feature 測試一律用 `TestStore`，見上方「TCA TestStore」。
 
 ## 完整回歸
 
@@ -118,7 +121,7 @@ paths:
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
 - **編輯表單 (訂單、開團) 逐區段拍攝，含系統 `DatePicker` 的區段不拍**：compact `DatePicker` 的日期膠囊會隨真實時間在數字、年月日與折成兩行之間切換，注入時間控制不到，整張表單的基準圖只在部分時段成立。
     - 區段以 `SnapshotSectionView` 放進分組 `Form` 單獨渲染 (它持有 `@FocusState`，供需要焦點綁定的區段建立)，以 `.image(drawHierarchyInKeyWindow: true)` 拍攝：離屏渲染畫不出系統分段控制的選取狀態。
-    - 含 `DatePicker` 的區段改由單元測試守它顯示的值 (如 `OrderEditDraftOperationsTests`)、UI 測試守日期列與 App 自己格式化的時間戳 (`OrderEditDateRowTests`、`CampaignEditDateRowTests`)。
+    - 含 `DatePicker` 的區段改由單元測試守它顯示的值 (如 `OrderEditDraftOperationsTests`)、UI 測試守日期列與 App 自己格式化的時間戳 (`OrderEditDateRowUITests`、`CampaignEditDateRowUITests`)。
     - 每條 snapshot 只比對一張參考圖，不以替代圖接受不符。
 - **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `ordersCompactView_多選模式_顯示勾選與工具列`。
     - **像素型**徵狀是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數；判斷方式是用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。

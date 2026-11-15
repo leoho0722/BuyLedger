@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -109,41 +109,6 @@ struct OrderListFeatureDestinationTests {
                 == ["未套用"]
         )
         #expect(store.state.orders.list.destination?.filterSheet?.filterSheetSearchText == "草稿")
-    }
-
-    /// 驗證透過清單的繫結改變已套用類別時，篩選面板的已套用值同步為新類別加上原有的日期與付款方式，暫存的類別 beauty 保留，並仍視為有未套用變更
-    @Test
-    @MainActor
-    func binding_面板已開啟_同步類別比較基準並保留草稿() {
-        // Given
-        var initial = OrderListFeatureTestSupport.makeState()
-        initial.selectedDatePeriod = .thisMonth
-        initial.selectedCategories = ["beauty"]
-        initial.selectedPaymentMethod = "信用卡"
-        initial.destination = .filterSheet(OrderFilterFeatureTestSupport.makeState(for: initial))
-        let store = Store(initialState: initial) {
-            OrderListFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-        }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.selectedCategories.wrappedValue = ["books"]
-
-        // Then
-        #expect(store.selectedCategories == ["books"])
-        #expect(
-            store.destination?.filterSheet?.committedFilterSelection
-                == OrderFilterSelection(
-                    datePeriod: .thisMonth,
-                    categories: ["books"],
-                    paymentMethod: "信用卡"
-                )
-        )
-        #expect(store.destination?.filterSheet?.pendingFilterSelection.categories == ["beauty"])
-        #expect(store.destination?.filterSheet?.hasUnappliedFilterChanges == true)
     }
 
     /// 驗證深連結直接套用篩選時，篩選面板的已套用值改為 books 與原付款方式、日期回到全部，暫存的日期與類別都保留

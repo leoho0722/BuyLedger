@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Computed Properties
+// MARK: - 元素框線狀態
 
 extension XCUIElement {
 
@@ -20,13 +20,7 @@ extension XCUIElement {
             return nil
         }
         let frame = snapshot.frame
-        guard !frame.isNull,
-              !frame.isInfinite,
-              !frame.isEmpty,
-              frame.minX.isFinite,
-              frame.minY.isFinite,
-              frame.maxX.isFinite,
-              frame.maxY.isFinite else {
+        guard frame.isUsableFrame else {
             return nil
         }
         return frame
@@ -42,14 +36,14 @@ extension XCUIElement {
             return false
         }
         let frame = target.frame
-        guard frame.origin.x.isFinite, frame.origin.y.isFinite, !frame.isEmpty else {
+        guard frame.isUsableFrame else {
             return false
         }
         return target.isHittable
     }
 }
 
-// MARK: - Internal Method
+// MARK: - 元素等待
 
 extension XCUIElement {
 
@@ -57,7 +51,6 @@ extension XCUIElement {
     ///
     /// - Parameter timeout: 等待元素消失的秒數
     /// - Returns: 元素是否在逾時前消失
-    @discardableResult
     func waitForDisappearance(timeout: TimeInterval = 10) -> Bool {
         wait(for: NSPredicate(format: "exists == false"), timeout: timeout)
     }
@@ -68,7 +61,6 @@ extension XCUIElement {
     ///   - predicate: 要等待成立的述詞
     ///   - timeout: 等待述詞成立的秒數
     /// - Returns: 述詞是否在逾時前成立
-    @discardableResult
     func wait(for predicate: NSPredicate, timeout: TimeInterval) -> Bool {
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: self)
         return XCTWaiter().wait(for: [expectation], timeout: timeout) == .completed
@@ -84,28 +76,32 @@ extension XCUIElement {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Note: 可點後再等框線連續三次取樣相同 (至少 0.4 秒)，逾時仍不穩時照樣點擊
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func tapAfterWaiting(
         in app: XCUIApplication,
         timeout: TimeInterval = 10,
         elementName: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
-        guard waitUntilHittableOrFail(
+    ) throws(UITestError) {
+        try requireHittable(
             in: app,
             timeout: timeout,
             elementName: elementName,
             file: file,
             line: line
-        ) else {
-            return
-        }
+        )
         // 表單 sheet 升起時會整個上移，可點後等框線連續穩定
-        _ = waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.2, requiredSamples: 3)
+        // 框線逾時仍照常點擊
+        _ = waitUntilStableAndHittable(
+            timeout: 2,
+            sampleInterval: 0.2,
+            requiredSamples: 3
+        )
         tap()
     }
 
-    /// 等待元素可點；逾時時直接附診斷失敗
+    /// 確認元素在逾時內可點，否則附診斷並停止目前測試
     ///
     /// - Parameters:
     ///   - app: 受測 App
@@ -114,22 +110,20 @@ extension XCUIElement {
     ///     未提供時使用元素的 `accessibilityIdentifier`
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 元素是否已可點
-    func waitUntilHittableOrFail(
+    /// - Throws: 元素逾時仍不可點時丟出測試錯誤
+    func requireHittable(
         in app: XCUIApplication,
         timeout: TimeInterval,
         elementName: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
+    ) throws(UITestError) {
         if !waitUntilHittable(timeout: timeout) {
             let identifier = self.identifier
             let fallback = identifier.isEmpty ? "未命名元素" : identifier
             let description = elementName ?? fallback
-            app.failWithDiagnostics("找不到或無法點擊 \(description)", file: file, line: line)
-            return false
+            try app.stopWithDiagnostics("找不到或無法點擊 \(description)", file: file, line: line)
         }
-        return true
     }
 
     /// 等待元素連續取得相同的有效框線且可點，避免點擊只停住尚未結束的捲動
@@ -145,10 +139,9 @@ extension XCUIElement {
         requiredSamples: Int = 2
     ) -> Bool {
         let target = firstMatch
-        let deadline = Date.now.addingTimeInterval(timeout)
         var previous: CGRect?
         var streak = 0
-        while true {
+        return Polling.wait(timeout: timeout, interval: sampleInterval) {
             if let current = target.snapshotFrame, target.isHittable {
                 streak = current == previous ? streak + 1 : 1
                 previous = current
@@ -159,10 +152,7 @@ extension XCUIElement {
                 previous = nil
                 streak = 0
             }
-            guard Date.now < deadline else {
-                return false
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: sampleInterval)
+            return false
         }
     }
 
@@ -172,13 +162,8 @@ extension XCUIElement {
     /// - Returns: 元素是否在逾時前可點
     func waitUntilHittable(timeout: TimeInterval = 10) -> Bool {
         // 不用 `isHittable` 述詞輪詢，避免元素還在畫面外時 XCTest 判斷可點性失敗
-        let deadline = Date.now.addingTimeInterval(timeout)
-        while !isHittableOnScreen {
-            guard Date.now < deadline else {
-                return false
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
+        return Polling.wait(timeout: timeout) {
+            isHittableOnScreen
         }
-        return true
     }
 }

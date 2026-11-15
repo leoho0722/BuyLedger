@@ -35,8 +35,7 @@ extension AppLockScreen {
     /// - Parameter timeout: 等待按鈕停用的秒數
     /// - Returns: 按鈕是否在逾時前停用
     func waitForRetryToBegin(timeout: TimeInterval = 10) -> Bool {
-        let retryButton = app.buttons[BLAccessibilityID.AppLock.retryButton]
-        return retryButton.wait(for: NSPredicate(format: "isEnabled == false"), timeout: timeout)
+        retryButton.wait(for: NSPredicate(format: "isEnabled == false"), timeout: timeout)
     }
 
     /// 等待重新驗證完成並再次顯示失敗訊息
@@ -44,7 +43,6 @@ extension AppLockScreen {
     /// - Parameter timeout: 等待按鈕恢復可用的秒數
     /// - Returns: 按鈕恢復可用且失敗訊息存在
     func waitForFailedRetryResult(timeout: TimeInterval = 10) -> Bool {
-        let retryButton = app.buttons[BLAccessibilityID.AppLock.retryButton]
         guard retryButton.wait(
             for: NSPredicate(format: "isEnabled == true"),
             timeout: timeout
@@ -55,23 +53,42 @@ extension AppLockScreen {
         return failedMessage.waitForExistence(timeout: timeout)
     }
 
+    /// 等待重新驗證按鈕可點
+    ///
+    /// - Parameter timeout: 等待按鈕可點的秒數
+    /// - Returns: 按鈕是否在逾時前可點
+    func waitForRetryButton(timeout: TimeInterval = 10) -> Bool {
+        retryButton.waitUntilHittable(timeout: timeout)
+    }
+
     /// 點擊「重新驗證」
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.AppLock.retryButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapRetry(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
+        try retryButton.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension AppLockScreen: Screen {
+extension AppLockScreen: ScreenProtocol {
 
     /// 判定畫面已就緒的根元素 identifier
     var rootIdentifier: String {
         BLAccessibilityID.AppLock.root
+    }
+}
+
+// MARK: - Private Method
+
+@MainActor
+private extension AppLockScreen {
+
+    /// 鎖定畫面的重新驗證按鈕
+    var retryButton: XCUIElement {
+        app.buttons[BLAccessibilityID.AppLock.retryButton]
     }
 }

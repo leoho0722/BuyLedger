@@ -25,14 +25,15 @@ extension XCUIElement {
     /// - Note: 輸入前等鍵盤就位
     /// - Note: 輸入後等欄位框線穩定
     /// - Note: 涵蓋鍵盤在打字後才升起、表單隨之上移的情況
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func clearAndType(
         _ text: String,
         in app: XCUIApplication,
         timeout: TimeInterval = 5,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
-        typeInField(
+    ) throws(UITestError) {
+        try typeInField(
             text,
             in: app,
             shouldReplaceExisting: true,
@@ -53,14 +54,15 @@ extension XCUIElement {
     /// - Note: 文字欄由 App 在聚焦時把游標放在尾端，已聚焦時沿用目前游標而不再點擊
     /// - Note: 數字欄只有已聚焦時才接續輸入，未聚焦時 App 會先清空草稿
     /// - Note: 與 `clearAndType` 共用焦點確認與鍵盤等待，差別只在不主動刪除既有文字
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func appendText(
         _ text: String,
         in app: XCUIApplication,
         timeout: TimeInterval = 5,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
-        typeInField(
+    ) throws(UITestError) {
+        try typeInField(
             text,
             in: app,
             shouldReplaceExisting: false,
@@ -81,22 +83,21 @@ extension XCUIElement {
     /// - Note: 完整鍵盤點過完成鍵仍收不掉則直接附診斷失敗
     /// - Note: 不送 return
     /// - Note: 依畫面元素分流，不依裝置或系統版本分支
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func dismissNumericKeyboard(
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         guard exists else {
-            app.failWithDiagnostics("數字鍵盤目標欄位不存在，無法解除焦點", file: file, line: line)
-            return
+            try app.stopWithDiagnostics("數字鍵盤目標欄位不存在，無法解除焦點", file: file, line: line)
         }
         guard app.waitForNumericKeyboardPresentation(timeout: 10) else {
-            app.failWithDiagnostics(
+            try app.stopWithDiagnostics(
                 "數字鍵盤未呈現，無法收起 (呈現方式：\(app.numericKeyboardPresentation.diagnosticName))",
                 file: file,
                 line: line
             )
-            return
         }
 
         let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
@@ -105,35 +106,137 @@ extension XCUIElement {
         if !app.waitForNumericKeyboardDismissal(timeout: hasTappedDone ? 3 : 0) {
             let presentation = app.numericKeyboardPresentation
             guard !hasTappedDone || presentation != .fullKeyboard else {
-                app.failWithDiagnostics(
+                try app.stopWithDiagnostics(
                     "數字鍵盤工具列的完成鍵未能收起鍵盤 (呈現方式：\(presentation.diagnosticName))",
                     file: file,
                     line: line
                 )
-                return
             }
             if presentation == .floatingPad || presentation == .popover {
                 coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).doubleTap()
-                _ = app.waitForFullKeyboard(timeout: 3)
+                _ = app.waitForFullKeyboard(timeout: 3) // 未出現完整鍵盤時，後續收起檢查會回報失敗
             }
-            doneButton.tapDoneIfFullKeyboard(in: app, timeout: 3)
+            _ = doneButton.tapDoneIfFullKeyboard(in: app, timeout: 3)
         }
 
         guard app.waitForNumericKeyboardDismissal(timeout: 5) else {
-            app.failWithDiagnostics(
+            try app.stopWithDiagnostics(
                 "數字鍵盤或 Popover 未能收起 (呈現方式：\(app.numericKeyboardPresentation.diagnosticName))",
                 file: file,
                 line: line
             )
-            return
         }
-        let isFocusReleased = pollUntil(timeout: 2) {
-            !isKeyboardFocused
+        let isFocusReleased = Polling.wait(timeout: 2) {
+            !hasKeyboardFocus
         }
         guard isFocusReleased else {
-            app.failWithDiagnostics("收起數字鍵盤後欄位仍取得鍵盤焦點", file: file, line: line)
-            return
+            try app.stopWithDiagnostics("收起數字鍵盤後欄位仍取得鍵盤焦點", file: file, line: line)
         }
+    }
+}
+
+// MARK: - Return 鍵收起文字鍵盤
+
+/// 以 Return 解除輸入欄焦點或鍵盤
+@MainActor
+extension XCUIElement {
+
+    /// 送出 Return 後等待欄位失焦或文字鍵盤與 Popover 收起
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 欄位不存在，或 Return 後焦點與鍵盤未解除時丟出 `UITestError.stopped`
+    func dismissKeyboardByReturn(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        guard waitForExistence(timeout: 10) else {
+            try app.stopWithDiagnostics("找不到要解除焦點的輸入欄", file: file, line: line)
+        }
+
+        if hasKeyboardFocus {
+            typeText(XCUIKeyboardKey.return.rawValue)
+        }
+        let hasDismissed = Polling.wait(timeout: 10) {
+            !hasKeyboardFocus
+                || (!app.keyboards.firstMatch.exists && !app.isNumericPopoverPresented)
+        }
+        guard hasDismissed else {
+            try app.stopWithDiagnostics("送出 Return 後輸入欄的鍵盤或焦點仍未解除", file: file, line: line)
+        }
+    }
+}
+
+// MARK: - 點第一行取得焦點
+
+/// 從多行輸入欄第一行取得鍵盤焦點
+@MainActor
+extension XCUIElement {
+
+    /// 點第一行後等待欄位取得焦點且鍵盤框線穩定
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - timeout: 等待欄位與鍵盤就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 欄位不可點，或點擊後焦點與鍵盤未就緒時丟出 `UITestError.stopped`
+    func focusFromFirstLine(
+        in app: XCUIApplication,
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let target = firstMatch
+        guard target.waitUntilStableAndHittable(
+            timeout: timeout,
+            sampleInterval: 0.2,
+            requiredSamples: 3
+        ) else {
+            try app.stopWithDiagnostics(
+                "點第一行前，輸入欄框線未穩定或仍不可點",
+                file: file,
+                line: line
+            )
+        }
+
+        target.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: 0.1)).tap()
+        var previousFrame: CGRect?
+        var matchingFrames = 0
+        let isKeyboardReady = Polling.wait(timeout: timeout) {
+            guard target.hasKeyboardFocus,
+                  let frame = app.presentedKeyboardFrame,
+                  frame.isUsableFrame else {
+                previousFrame = nil
+                matchingFrames = 0
+                return false
+            }
+            matchingFrames = frame == previousFrame ? matchingFrames + 1 : 1
+            previousFrame = frame
+            return matchingFrames >= 3
+        }
+        guard isKeyboardReady else {
+            try app.stopWithDiagnostics(
+                "點第一行後輸入欄未取得焦點或鍵盤框線未穩定",
+                file: file,
+                line: line
+            )
+        }
+    }
+}
+
+// MARK: - 鍵盤焦點
+
+/// 讀取輸入欄目前是否由鍵盤編輯
+@MainActor
+extension XCUIElement {
+
+    /// 欄位本身是否取得鍵盤焦點
+    var hasKeyboardFocus: Bool {
+        exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: self)
     }
 }
 
@@ -141,11 +244,6 @@ extension XCUIElement {
 
 @MainActor
 private extension XCUIElement {
-
-    /// 欄位本身是否取得鍵盤焦點，以 `hasKeyboardFocus` 鍵值判定
-    var isKeyboardFocused: Bool {
-        exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: self)
-    }
 
     /// 必要時聚焦欄位，確認焦點與鍵盤就緒後輸入文字
     ///
@@ -156,6 +254,7 @@ private extension XCUIElement {
     ///   - timeout: 等待欄位可互動的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func typeInField(
         _ text: String,
         in app: XCUIApplication,
@@ -163,24 +262,27 @@ private extension XCUIElement {
         timeout: TimeInterval,
         file: StaticString,
         line: UInt
-    ) {
-        guard waitUntilHittableOrFail(
+    ) throws(UITestError) {
+        try requireHittable(
             in: app,
             timeout: timeout,
             file: file,
             line: line
-        ) else {
-            return
-        }
+        )
         // 表單 sheet 升起時會整個上移，點擊前等框線穩定
-        _ = waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.2, requiredSamples: 3)
-        if !isKeyboardFocused {
+        // 框線逾時仍照常輸入
+        _ = waitUntilStableAndHittable(
+            timeout: 2,
+            sampleInterval: 0.2,
+            requiredSamples: 3
+        )
+        if !hasKeyboardFocus {
             tap()
         }
         var isFocused = waitUntilKeyboardFocused(in: app, timeout: 2)
         var focusAttempts = 0
         while !isFocused && focusAttempts < 3 {
-            if !isKeyboardFocused, isHittableOnScreen {
+            if !hasKeyboardFocus, isHittableOnScreen {
                 tap()
             }
             focusAttempts += 1
@@ -190,27 +292,24 @@ private extension XCUIElement {
             ? "點擊無 identifier 的輸入欄"
             : "點擊 identifier 為 \(identifier) 的輸入欄"
         guard isFocused else {
-            app.failWithDiagnostics(
+            try app.stopWithDiagnostics(
                 "\(target)後未取得鍵盤焦點，\(keyboardFocusSummary(in: app))",
                 file: file,
                 line: line
             )
-            return
         }
 
         let existing = value as? String ?? ""
         let isSearchField = elementType == .searchField
         let searchPlaceholder = placeholderValue ?? ""
         if shouldReplaceExisting, isSearchField, !existing.isEmpty, existing != searchPlaceholder {
-            guard clearSearchField(
+            try clearSearchField(
                 placeholder: searchPlaceholder,
                 timeout: timeout,
                 in: app,
                 file: file,
                 line: line
-            ) else {
-                return
-            }
+            )
         }
 
         // 鍵盤或 Popover 未就位時輸入，字元會落到過渡中的鍵盤；逾時照樣輸入，並把鍵盤狀態附在結果中
@@ -223,6 +322,7 @@ private extension XCUIElement {
         }
         if !isKeyboardSettled {
             let attachment = XCTAttachment(string: keyboardFocusSummary(in: app))
+            attachment.name = "鍵盤未就緒時的焦點狀態"
             attachment.lifetime = .keepAlways
             XCTContext.runActivity(named: "鍵盤未就位即輸入") { $0.add(attachment) }
         }
@@ -244,8 +344,8 @@ private extension XCUIElement {
     ///   - timeout: 等待的秒數
     /// - Returns: 欄位是否在逾時前取得鍵盤焦點且鍵盤或 Popover 已呈現
     func waitUntilKeyboardFocused(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
-        pollUntil(timeout: timeout) {
-            isKeyboardFocused && (app.keyboards.firstMatch.exists || app.isNumericPopoverPresented)
+        Polling.wait(timeout: timeout) {
+            hasKeyboardFocus && (app.keyboards.firstMatch.exists || app.isNumericPopoverPresented)
         }
     }
 
@@ -259,7 +359,7 @@ private extension XCUIElement {
             + app.secureTextFields.allElementsBoundByIndex
             + app.textViews.allElementsBoundByIndex
             + app.searchFields.allElementsBoundByIndex
-        let focusedCandidate = inputs.first { $0.isKeyboardFocused }
+        let focusedCandidate = inputs.first { $0.hasKeyboardFocus }
         guard let focused = focusedCandidate else {
             return "鍵盤呈現方式為\(presentation)，沒有任何輸入欄取得鍵盤焦點"
         }
@@ -277,14 +377,14 @@ private extension XCUIElement {
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
-    /// - Returns: 搜尋欄是否已清空並保有鍵盤焦點
+    /// - Throws: 搜尋欄無法清空或重新取得焦點時丟出測試錯誤
     func clearSearchField(
         placeholder: String,
         timeout: TimeInterval,
         in app: XCUIApplication,
         file: StaticString,
         line: UInt
-    ) -> Bool {
+    ) throws(UITestError) {
         // 搜尋欄中央點擊會移動游標到文字中間，改用清除鈕避免刪除殘留右側文字
         let clearButton = descendants(matching: .button).firstMatch
         guard clearButton.waitUntilHittable(timeout: timeout) else {
@@ -293,12 +393,11 @@ private extension XCUIElement {
             搜尋欄清除按鈕不存在或逾時不可點 \
             (欄位目前 value: \(currentValue))
             """
-            app.failWithDiagnostics(message, file: file, line: line)
-            return false
+            try app.stopWithDiagnostics(message, file: file, line: line)
         }
         clearButton.tap()
 
-        let isSearchFieldCleared = pollUntil(timeout: timeout) {
+        let isSearchFieldCleared = Polling.wait(timeout: timeout) {
             let current = value as? String ?? ""
             return current.isEmpty || current == placeholder
         }
@@ -308,36 +407,62 @@ private extension XCUIElement {
             搜尋欄點擊清除鈕後逾時仍有文字 \
             (欄位目前 value: \(currentValue))
             """
-            app.failWithDiagnostics(message, file: file, line: line)
-            return false
+            try app.stopWithDiagnostics(message, file: file, line: line)
         }
 
         if !waitUntilKeyboardFocused(in: app, timeout: 1) {
             // iPadOS 27 點擊清除鈕後搜尋欄會失去鍵盤焦點，需在欄位上重新聚焦
             tap()
             guard waitUntilKeyboardFocused(in: app, timeout: 2) else {
-                app.failWithDiagnostics(
+                try app.stopWithDiagnostics(
                     "搜尋欄清空後重新聚焦失敗，\(keyboardFocusSummary(in: app))",
                     file: file,
                     line: line
                 )
-                return false
             }
         }
-        return true
+    }
+
+    /// 以取樣間隔連續讀取框線，直到連續相同的次數達標或逾時
+    ///
+    /// - Parameters:
+    ///   - requiredSamples: 需要連續相同的取樣次數，包含第一次
+    ///   - sampleInterval: 兩次取樣之間的間隔秒數
+    ///   - timeout: 等待框線穩定的秒數
+    ///   - frame: 每次取樣讀取的框線，讀不到時為 `nil`
+    /// - Returns: 框線是否在逾時前連續相同
+    func pollFrameStable(
+        requiredSamples: Int,
+        sampleInterval: TimeInterval,
+        timeout: TimeInterval,
+        frame: () -> CGRect?
+    ) -> Bool {
+        var previous: CGRect?
+        var streak = 0
+        return Polling.wait(timeout: timeout, interval: sampleInterval) {
+            if let current = frame() {
+                streak = current == previous ? streak + 1 : 1
+                previous = current
+                if streak >= requiredSamples {
+                    return true
+                }
+            } else {
+                previous = nil
+                streak = 0
+            }
+            return false
+        }
     }
 
     /// 呈現方式連續取樣都是完整鍵盤時點完成鍵
     ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - timeout: 等待完成鍵可點與呈現方式穩定的秒數
+    ///   - timeout: 等待完成鍵與呈現方式穩定的秒數
     /// - Returns: 是否已送出點擊
-    /// - Note: 浮動面板上 XCUI 仍回報完成鍵可點，但點擊到不了按鈕，只會換成完整鍵盤
     /// - Note: 完成鍵存在但不可點時點其框線中心
-    @discardableResult
     func tapDoneIfFullKeyboard(in app: XCUIApplication, timeout: TimeInterval) -> Bool {
-        _ = waitUntilHittable(timeout: timeout)
+        _ = waitUntilHittable(timeout: timeout) // 等待完成鍵載入，但逾時仍依鍵盤狀態嘗試點擊
         guard app.waitForStableFullKeyboard(timeout: timeout), exists else {
             return false
         }
@@ -347,41 +472,5 @@ private extension XCUIElement {
             coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
         }
         return true
-    }
-}
-
-/// 以取樣間隔連續讀取框線，直到連續相同的次數達標或逾時
-///
-/// - Parameters:
-///   - requiredSamples: 需要連續相同的取樣次數，包含第一次
-///   - sampleInterval: 兩次取樣之間的間隔秒數
-///   - timeout: 等待框線穩定的秒數
-///   - frame: 每次取樣讀取的框線，讀不到時為 `nil`
-/// - Returns: 框線是否在逾時前連續相同
-@MainActor
-private func pollFrameStable(
-    requiredSamples: Int,
-    sampleInterval: TimeInterval,
-    timeout: TimeInterval,
-    frame: () -> CGRect?
-) -> Bool {
-    let deadline = Date.now.addingTimeInterval(timeout)
-    var previous: CGRect?
-    var streak = 0
-    while true {
-        if let current = frame() {
-            streak = current == previous ? streak + 1 : 1
-            previous = current
-            if streak >= requiredSamples {
-                return true
-            }
-        } else {
-            previous = nil
-            streak = 0
-        }
-        guard Date.now < deadline else {
-            return false
-        }
-        _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: sampleInterval)
     }
 }

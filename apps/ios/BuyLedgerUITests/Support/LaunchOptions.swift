@@ -64,6 +64,9 @@ struct LaunchOptions {
 
     /// 是否保留 UIView 動畫 (`-BLUITestKeepViewAnimations`)；只給驗證關閉後接著呈現提示或確認框的測試使用
     var shouldKeepViewAnimations = false
+
+    /// 訂單或匯率讀取失敗前等待的秒數
+    var readDelaySeconds: Int = 8
 }
 
 // MARK: - Nested Types
@@ -208,6 +211,9 @@ extension LaunchOptions {
         }
         arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
         arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
+        if loadFailure == .ordersDelayed || loadFailure == .exchangeRatesDelayed {
+            arguments += ["-BLUITestReadDelaySeconds", String(readDelaySeconds)]
+        }
         if shouldFailLookupWrites {
             arguments.append("-BLUITestLookupWriteFailure")
         }
@@ -238,6 +244,13 @@ extension LaunchOptions {
         }
 
         return arguments
+    }
+
+    /// 延遲讀取失敗情境等待畫面出現的秒數
+    ///
+    /// - Note: 固定加 7 秒，涵蓋 App 啟動與根層主檔目錄讀取時間
+    var delayedReadFailureTimeout: TimeInterval {
+        TimeInterval(readDelaySeconds) + 7
     }
 }
 

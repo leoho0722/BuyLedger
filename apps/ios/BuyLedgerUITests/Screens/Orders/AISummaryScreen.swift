@@ -26,25 +26,16 @@ extension AISummaryScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapClose(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapClose(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.AISummary.closeButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
-    }
-
-    /// 點錯誤態的重試按鈕
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.AISummary.retryButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension AISummaryScreen: Screen {
+extension AISummaryScreen: ScreenProtocol {
 
     /// 判定總結 sheet 已就緒的根 identifier (內容容器)
     var rootIdentifier: String {

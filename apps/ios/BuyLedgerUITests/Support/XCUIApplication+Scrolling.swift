@@ -7,7 +7,7 @@
 
 import XCTest
 
-// MARK: - Internal Method
+// MARK: - 捲動互動
 
 /// 把離屏元素捲進可點位置的捲動 helper
 @MainActor
@@ -19,13 +19,16 @@ extension XCUIApplication {
     ///   - identifiers: 要確認存在的 accessibility identifier
     ///   - container: 可捲動的容器
     /// - Note: 只會向下捲動；未能捲到可點位置時由後續讀取捕捉
-    func loadMissingElements(with identifiers: [String], within container: XCUIElement) {
+    func loadMissingElements(
+        with identifiers: [String],
+        within container: XCUIElement
+    ) {
         for identifier in identifiers {
             let element = descendants(matching: .any)[identifier].firstMatch
             guard element.snapshotFrame == nil else {
                 continue
             }
-            _ = scrollToHittable(element, within: container)
+            _ = waitUntilHittableByScrolling(element, within: container) // 後續讀取會捕捉未捲到的目標
         }
     }
 
@@ -36,13 +39,51 @@ extension XCUIApplication {
     ///   - container: 可捲動的容器
     ///   - maxSwipes: 最多捲動次數
     /// - Returns: 目標元素是否在捲動後可點
-    @discardableResult
-    func scrollToHittable(
+    func waitUntilHittableByScrolling(
         _ element: XCUIElement,
         within container: XCUIElement,
         maxSwipes: Int = 10
     ) -> Bool {
         scrollUntilHittable(element, within: container, maxSwipes: maxSwipes) { $0.swipeUp() }
+    }
+
+    /// 在捲動容器內水平捲動直到目標可點
+    ///
+    /// - Parameters:
+    ///   - element: 要捲到可點位置的目標元素
+    ///   - container: 可捲動的容器
+    ///   - maxSwipes: 最多捲動次數
+    /// - Returns: 目標元素是否在捲動後可點
+    func waitUntilHittableByScrollingHorizontally(
+        _ element: XCUIElement,
+        within container: XCUIElement,
+        maxSwipes: Int = 10
+    ) -> Bool {
+        scrollUntilHittable(element, within: container, maxSwipes: maxSwipes) { $0.swipeLeft() }
+    }
+
+    /// 在捲動容器內垂直捲動直到目標可點
+    ///
+    /// - Parameters:
+    ///   - element: 要捲到可點位置的目標元素
+    ///   - container: 可捲動的容器
+    ///   - maxSwipes: 最多捲動次數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 目標未能捲到可點位置時丟出測試錯誤
+    func scrollToHittable(
+        _ element: XCUIElement,
+        within container: XCUIElement,
+        maxSwipes: Int = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        guard waitUntilHittableByScrolling(element, within: container, maxSwipes: maxSwipes) else {
+            let message = container.exists
+                ? "捲動後目標仍不可點：\(element.identifier)"
+                : "找不到捲動容器，無法露出 \(element.identifier)"
+            try stopWithDiagnostics(message, file: file, line: line)
+        }
     }
 
     /// 在捲動容器內水平捲動直到目標可點，供狀態 chip 列與照片縮圖列使用
@@ -51,14 +92,26 @@ extension XCUIApplication {
     ///   - element: 要捲到可點位置的目標元素
     ///   - container: 可捲動的容器
     ///   - maxSwipes: 最多捲動次數
-    /// - Returns: 目標元素是否在捲動後可點
-    @discardableResult
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 目標未能捲到可點位置時丟出測試錯誤
     func scrollToHittableHorizontally(
         _ element: XCUIElement,
         within container: XCUIElement,
-        maxSwipes: Int = 10
-    ) -> Bool {
-        scrollUntilHittable(element, within: container, maxSwipes: maxSwipes) { $0.swipeLeft() }
+        maxSwipes: Int = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        guard waitUntilHittableByScrollingHorizontally(
+            element,
+            within: container,
+            maxSwipes: maxSwipes
+        ) else {
+            let message = container.exists
+                ? "捲動後目標仍不可點：\(element.identifier)"
+                : "找不到捲動容器，無法露出 \(element.identifier)"
+            try stopWithDiagnostics(message, file: file, line: line)
+        }
     }
 
     /// 取得捲動容器內與 App 視窗相交的內容位置簽章，供判斷捲動是否已到盡頭
@@ -72,17 +125,11 @@ extension XCUIApplication {
             return nil
         }
         let containerFrame = snapshot.frame
-        guard !containerFrame.isNull,
-              !containerFrame.isInfinite,
-              !containerFrame.isEmpty,
-              containerFrame.minX.isFinite,
-              containerFrame.minY.isFinite,
-              containerFrame.maxX.isFinite,
-              containerFrame.maxY.isFinite else {
+        guard containerFrame.isUsableFrame else {
             return nil
         }
         let visibleFrame = containerFrame.intersection(appFrame)
-        guard !visibleFrame.isNull, !visibleFrame.isEmpty else {
+        guard visibleFrame.isUsableFrame else {
             return nil
         }
         var pending = Array(snapshot.children.reversed())
@@ -90,13 +137,7 @@ extension XCUIApplication {
         while let child = pending.popLast() {
             pending.append(contentsOf: child.children.reversed())
             let frame = child.frame
-            guard !frame.isNull,
-                  !frame.isInfinite,
-                  !frame.isEmpty,
-                  frame.minX.isFinite,
-                  frame.minY.isFinite,
-                  frame.maxX.isFinite,
-                  frame.maxY.isFinite,
+            guard frame.isUsableFrame,
                   visibleFrame.intersects(frame) else {
                 continue
             }
@@ -114,8 +155,7 @@ extension XCUIApplication {
     ///   - startY: 拖曳起點的正規化 Y 座標
     ///   - endY: 拖曳終點的正規化 Y 座標
     /// - Returns: 目標元素是否在拖曳後可點
-    @discardableResult
-    func scrollToHittableGently(
+    func waitUntilHittableByGentleDrag(
         _ element: XCUIElement,
         within container: XCUIElement,
         maxDrags: Int = 12,
@@ -131,7 +171,7 @@ extension XCUIApplication {
         ) { $0.isHittableOnScreen }
     }
 
-    /// 以小幅、無慣性的拖曳把目標捲到垂直方向完整落在容器可見範圍內且可點
+    /// 以小幅、無慣性的拖曳把目標捲到完整可見且可點的位置
     ///
     /// - Parameters:
     ///   - element: 要捲到完整可見位置的目標元素
@@ -142,8 +182,7 @@ extension XCUIApplication {
     /// - Returns: 目標元素是否在拖曳後完整可見且可點
     /// - Note: 只露出底緣的元素仍可能 hittable，因此停止條件另要求垂直區間完整包含於容器
     /// - Note: 只處理自下方捲入的目標，目標位於容器上方時向上拖曳無法回捲
-    @discardableResult
-    func scrollToFullyVisibleGently(
+    func waitUntilFullyVisibleByGentleDrag(
         _ element: XCUIElement,
         within container: XCUIElement,
         maxDrags: Int = 12,
@@ -167,7 +206,7 @@ extension XCUIApplication {
     }
 }
 
-// MARK: - Private Method
+// MARK: - 捲動目標判定
 
 @MainActor
 private extension XCUIApplication {

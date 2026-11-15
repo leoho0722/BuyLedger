@@ -109,7 +109,7 @@ extension XCUIApplication {
     /// - Parameter timeout: 等待呈現的秒數
     /// - Returns: 是否在逾時前呈現
     func waitForNumericKeyboardPresentation(timeout: TimeInterval) -> Bool {
-        pollUntil(timeout: timeout) {
+        Polling.wait(timeout: timeout) {
             numericKeyboardPresentation != .absent
         }
     }
@@ -119,7 +119,7 @@ extension XCUIApplication {
     /// - Parameter timeout: 等待收起的秒數
     /// - Returns: 是否在逾時前全部收起
     func waitForNumericKeyboardDismissal(timeout: TimeInterval) -> Bool {
-        pollUntil(timeout: timeout) {
+        Polling.wait(timeout: timeout) {
             numericKeyboardPresentation == .absent
         }
     }
@@ -129,7 +129,7 @@ extension XCUIApplication {
     /// - Parameter timeout: 等待的秒數
     /// - Returns: 是否在逾時前換成完整鍵盤
     func waitForFullKeyboard(timeout: TimeInterval) -> Bool {
-        pollUntil(timeout: timeout) {
+        Polling.wait(timeout: timeout) {
             numericKeyboardPresentation == .fullKeyboard
         }
     }
@@ -141,29 +141,69 @@ extension XCUIApplication {
     /// - Note: 呈現方式會在輸入前後轉換，單次讀取可能正在轉換中
     func waitForStableFullKeyboard(timeout: TimeInterval) -> Bool {
         var streak = 0
-        return pollUntil(timeout: timeout) {
+        return Polling.wait(timeout: timeout) {
             streak = numericKeyboardPresentation == .fullKeyboard ? streak + 1 : 0
             return streak >= 3
         }
     }
 }
 
-/// 以短間隔輪詢條件到成立或逾時
-///
-/// - Parameters:
-///   - timeout: 等待條件成立的秒數
-///   - condition: 要輪詢的條件
-/// - Returns: 條件是否在逾時前成立
+// MARK: - 注音鍵盤輸入
+
+/// 查詢或點擊無法由 App 設定 identifier 的系統鍵盤項目
 @MainActor
-func pollUntil(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
-    let deadline = Date.now.addingTimeInterval(timeout)
-    while !condition() {
-        guard Date.now < deadline else {
-            return false
+extension XCUIApplication {
+
+    /// 等待系統鍵盤出現指定標籤的按鍵
+    ///
+    /// - Parameters:
+    ///   - label: 系統鍵盤顯示的按鍵標籤
+    ///   - timeout: 等待按鍵出現的秒數
+    /// - Returns: 按鍵是否在逾時前出現
+    func waitForKeyboardKey(_ label: String, timeout: TimeInterval) -> Bool {
+        let key = keyboards.keys[label].firstMatch
+        return Polling.wait(timeout: timeout) {
+            key.exists
         }
-        _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.2)
     }
-    return true
+
+    /// 點擊系統鍵盤上指定標籤的按鍵
+    ///
+    /// - Parameters:
+    ///   - label: 系統鍵盤顯示的按鍵標籤
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 按鍵不存在或逾時仍不可點時丟出 `UITestError.stopped`
+    func tapKeyboardKey(
+        _ label: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let key = keyboards.keys[label].firstMatch
+        guard key.waitUntilHittable(timeout: 10) else {
+            try stopWithDiagnostics("系統鍵盤按鍵「\(label)」不存在或不可點", file: file, line: line)
+        }
+        key.tap()
+    }
+
+    /// 點擊系統鍵盤上符合文字的候選字
+    ///
+    /// - Parameters:
+    ///   - text: 候選字顯示的文字
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 候選字不存在或逾時仍不可點時丟出 `UITestError.stopped`
+    func tapKeyboardCandidate(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let candidate = cells[text].firstMatch
+        guard candidate.waitUntilHittable(timeout: 10) else {
+            try stopWithDiagnostics("系統鍵盤候選字「\(text)」不存在或不可點", file: file, line: line)
+        }
+        candidate.tap()
+    }
 }
 
 // MARK: - 浮動面板與 Popover 判定
@@ -173,7 +213,6 @@ private extension XCUIApplication {
 
     /// 浮動數字面板的最大高度
     ///
-    /// - Returns: 浮動數字面板的高度分類門檻
     /// - Note: 浮動面板遠低於完整鍵盤
     /// - Note: 完整鍵盤約 279 高，依 iPad Air 5 失敗附件實測
     static var floatingPadMaximumHeight: CGFloat {

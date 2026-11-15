@@ -61,7 +61,7 @@
 
 - **單元與 UI 測試的本機執行預設跑模擬器**：iPhone 17 (iOS 26.5，涵蓋最低版本) 與 iPad Air 11-inch (M4) (iPadOS 27.0)，以 `mobilebuildmcp simulator list` 查到的識別碼固定同一台，走 `mobilebuildmcp simulator test`；單元測試 (含守門與 snapshot) 跑 iPhone 17，UI 測試兩台各跑一次。
   - 跑前執行 `mobilebuildmcp simulator-management set-appearance --simulator-id <模擬器識別碼> --mode light`：snapshot 基準是 iOS 26.5 模擬器淺色模式錄製的。
-  - 跑 UI 測試前確認模擬器不在硬體鍵盤狀態，iPad 先單獨跑 `KeyboardDismissTests` 通過才算前提成立 (處理方式見 `.claude/rules/ios-ui-tests.md`)；失敗時先修環境，不改產品端鍵盤工具列。
+  - 跑 UI 測試前確認模擬器不在硬體鍵盤狀態，iPad 先單獨跑 `OrderEditKeyboardDismissUITests` 通過才算前提成立 (處理方式見 `.claude/rules/ios-ui-tests.md`)；失敗時先修環境，不改產品端鍵盤工具列。
   - 守門測試執行時會讀原始碼，執行期間不可改檔。
 - **需要實機時 (硬體相依或使用者指定) 改跑 iPhone 12 (iOS 26.x) 與 iPad Air 5 (iPadOS 27.x)**：以 UDID 固定同一台，走 `mobilebuildmcp device test`。Automatic signing 的 device build 要帶 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`。
   - 實機前置：開啟 UI 自動化、未接硬體鍵盤、解鎖。
@@ -205,6 +205,9 @@
 
 - **UI 測試以 `-BLUITest` 加一組 `-BLUITest<名稱>` 啟動參數指定資料與情境**，不用 kit 的 `-uiTesting` 加 `launchEnvironment["UITEST_SCENARIO"]`：參數由 `LaunchOptions` 組出、App 端 `BLUITestConfiguration` 解析，沒有 `-BLUITest` 時整套測試掛鉤都不生效。
   - 新增情境時在 `LaunchOptions` 與 `BLUITestConfiguration` 各加對應欄位，不改走環境變數；UIKit 本身認得的系統參數 (如 `-UIPreferredContentSizeCategoryName`) 只加在 `LaunchOptions`。
+- **UI 測試型別繼承 `BLUITestCase`，啟動一律經 `launch(_:)`**，取代 kit 的 `launchApp()`：`BLUITestCase` 設定 `continueAfterFailure = false`，讓失敗在第一個失敗點停止。`LaunchPerformanceTests` 不經此路徑，見 `.claude/rules/ios-ui-tests.md`。
+- **`wait*` 回傳 `Bool`，不加 `@discardableResult`**：kit `coding-style.md` 的「對齊系統 API」例外只限鏡像系統 API 的方法，套用到自訂的 `wait*` 是本專案的解讀，比照 `waitForExistence(timeout:)`；丟棄結果時編譯器會警告，呼叫端要處理結果。
+- **UI 旅程測試允許多組 When／Then**：kit 原文「一個測試只允許一組 When／Then」，本專案只對跨步驟連續的旅程例外 (後一組 When 承接前一組留下的狀態，拆開會失去連續性)；每組 When 配自己的 Then，預期值仍寫字面值。前提型多組改寫成 Given，可拆型拆成各自的測試。
 
 ### 既有架構 (新程式碼沿用現行寫法)
 

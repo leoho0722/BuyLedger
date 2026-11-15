@@ -158,7 +158,7 @@ apps/ios/
 ├── BuyLedgerTests/               # 單元測試，鏡像正式程式碼目錄
 │   ├── Features/<Feature>/、Core/、Shared/、App/Testing/ # 對應正式程式碼同名目錄的測試
 │   ├── AccessibilityIDs/         # BLAccessibilityID 測試
-│   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門分 AccessibilityIdentifier、ActionGrouping、DependencyConvention、DesignSystemSourceScan、LayerBoundary、LocalizationCatalog、ProjectionWriteBoundary、ServiceOwnership，共用掃描器在 Scanning/
+│   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門分 AccessibilityIdentifier、ActionGrouping、DependencyConvention、DesignSystemSourceScan、LayerBoundary、LocalizationCatalog、ProjectionWriteBoundary、ServiceOwnership、UITestConvention，共用掃描器在 Scanning/
 │   ├── SnapshotTests/            # snapshot 測試；baseline 在 __Snapshots__/<測試檔名>/
 │   ├── Mocks/                    # Database、HTTPClient、Store 的 Mock 與 MockURLProtocol
 │   ├── Fixtures/                 # 測試用固定資料
@@ -285,7 +285,7 @@ mobilebuildmcp simulator test \
   --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests
 ```
 
-UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析，常用旗標為 `-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。UI 測試模式會關閉 UIView 動畫，驗證呈現競態的測試以 `-BLUITestKeepViewAnimations` 保留。硬規則 (一律用 identifier 定位、測試前必 seed、找不到元素不得 skip 掩蓋) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
+UI 測試以啟動參數宣告前置條件：測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析，常用旗標為 `-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`、`-BLUITestReadDelaySeconds <秒數>` (只在延遲的載入失敗情境帶入，預設 8 秒)。整套 harness 以 `#if DEBUG` 圈住、不進 Release。UI 測試模式會關閉 UIView 動畫，驗證呈現競態的測試以 `-BLUITestKeepViewAnimations` 保留。硬規則 (一律用 identifier 定位、測試前必 seed、找不到元素不得 skip 掩蓋) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
 
 > 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`mobilebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`。
 

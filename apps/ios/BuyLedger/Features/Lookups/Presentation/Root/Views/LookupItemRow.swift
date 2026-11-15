@@ -12,6 +12,9 @@ struct LookupItemRow: View {
 
     // MARK: - Properties
 
+    /// App 語言的 `locale`，用來解析分類名稱與串接清單
+    @Environment(\.locale) private var locale
+
     /// 付款方式分類；`nil` 表示此主檔沒有分類
     let classification: PaymentMethodFlags?
 
@@ -37,8 +40,11 @@ private extension LookupItemRow {
     /// 顯示名稱與已啟用的付款方式分類
     ///
     /// - Parameter classification: 付款方式分類旗標
-    /// - Returns: 合併成單一無障礙元素的付款方式列
+    /// - Returns: 合併成單一無障礙元素的付款方式列，已啟用的分類名稱放在其 `accessibilityValue`
+    @ViewBuilder
     func classifiedRow(_ classification: PaymentMethodFlags) -> some View {
+        let classificationNames = enabledClassificationNames(classification)
+
         HStack(spacing: BLSpacing.small) {
             Text(name)
 
@@ -57,9 +63,11 @@ private extension LookupItemRow {
             }
         }
         .accessibilityElement(children: .combine)
+        // 分類名稱放在 `accessibilityValue`，UI 測試從 `element.value` 讀取
+        .accessibilityValue(classificationNames, isEnabled: !classificationNames.isEmpty)
     }
 
-    /// 組出付款方式分類的膠囊徽章
+    /// 組出付款方式分類的膠囊徽章，無障礙隱藏，分類名稱由列的 `accessibilityValue` 帶出
     ///
     /// - Parameter title: 徽章文字
     /// - Returns: 分類徽章
@@ -70,11 +78,39 @@ private extension LookupItemRow {
             .font(BLTypographyStyle.caption.font.weight(.semibold))
             .foregroundStyle(.blAccent)
             .background(Capsule().fill(.blAccent.opacity(0.12)))
+            .accessibilityHidden(true)
     }
 
     /// 只顯示名稱的主檔項目列
     var plainRow: some View {
         Text(name)
+    }
+}
+
+// MARK: - Private Method
+
+private extension LookupItemRow {
+
+    /// 依 App 語言解析已啟用的付款方式分類名稱，以清單格式串接
+    ///
+    /// - Parameter classification: 付款方式分類旗標
+    /// - Returns: 串接後的分類名稱；沒有任何分類啟用時為空字串
+    func enabledClassificationNames(_ classification: PaymentMethodFlags) -> String {
+        var titles: [LocalizedStringResource] = []
+        if classification.isCardless {
+            titles.append("orders.detail.label.cardless")
+        }
+        if classification.isBankTransfer {
+            titles.append("orders.edit.label.bankTransfer")
+        }
+        if classification.isCashOnDelivery {
+            titles.append("orders.list.label.cashDelivery")
+        }
+        guard !titles.isEmpty else {
+            return ""
+        }
+        let names = titles.map { AppLanguage.resolve($0, locale: locale) }
+        return names.formatted(.list(type: .and).locale(locale))
     }
 }
 

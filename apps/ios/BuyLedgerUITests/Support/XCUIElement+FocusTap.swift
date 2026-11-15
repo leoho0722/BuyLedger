@@ -20,30 +20,28 @@ extension XCUIElement {
     ///   - timeout: 各階段等待框線或鍵盤就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 欄位已取得焦點且鍵盤框線連續三次相同時為真
-    @discardableResult
+    /// - Throws: 欄位無法點擊或鍵盤狀態未穩定時丟出測試錯誤
     func tapLeftToFocus(
         in app: XCUIApplication,
         dx: CGFloat = 0.04,
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
+    ) throws(UITestError) {
         let target = firstMatch
         guard target.waitUntilStableAndHittable(
             timeout: timeout,
             sampleInterval: 0.2,
             requiredSamples: 3
         ) else {
-            app.failWithDiagnostics("點欄位左側前，欄位框線未穩定或仍不可點", file: file, line: line)
-            return false
+            try app.stopWithDiagnostics("點欄位左側前，欄位框線未穩定或仍不可點", file: file, line: line)
         }
         target.coordinate(withNormalizedOffset: CGVector(dx: dx, dy: 0.5)).tap()
 
         let focusPredicate = NSPredicate(format: "hasKeyboardFocus == true")
         var previousFrame: CGRect?
         var matchingFrames = 0
-        let hasSettledKeyboard = pollUntil(timeout: timeout) {
+        let hasSettledKeyboard = Polling.wait(timeout: timeout) {
             let snapshot = try? target.snapshot() // 失敗可忽略，因為欄位所在的列可能暫時被回收
             if let snapshot,
                focusPredicate.evaluate(with: snapshot),
@@ -57,9 +55,11 @@ extension XCUIElement {
             return false
         }
         guard hasSettledKeyboard else {
-            app.failWithDiagnostics("點欄位左側後，未取得鍵盤焦點或鍵盤與數字 Popover 框線未穩定", file: file, line: line)
-            return false
+            try app.stopWithDiagnostics(
+                "點欄位左側後，未取得鍵盤焦點或鍵盤與數字 Popover 框線未穩定",
+                file: file,
+                line: line
+            )
         }
-        return true
     }
 }

@@ -19,10 +19,18 @@ extension BLUITestCase {
 
     /// 將裝置轉回直向後依啟動選項啟動 App
     ///
-    /// - Parameter options: App 啟動選項
+    /// - Parameters:
+    ///   - options: App 啟動選項
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 已啟動的受測 App
+    /// - Throws: App 未能進入前景時丟出測試錯誤
     @discardableResult
-    func launch(_ options: LaunchOptions = .default) -> XCUIApplication {
+    func launch(
+        _ options: LaunchOptions = .default,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> XCUIApplication {
         // 座標型互動與版面斷言都以直向為準，避免前序測試把模擬器留在橫向
         XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
@@ -30,7 +38,7 @@ extension BLUITestCase {
         app.launch()
 
         if !app.wait(for: .runningForeground, timeout: 15) {
-            failWithDiagnostics(in: app, "App 未能於逾時前進入前景")
+            try app.stopWithDiagnostics("App 未能於逾時前進入前景", file: file, line: line)
         }
 
         return app

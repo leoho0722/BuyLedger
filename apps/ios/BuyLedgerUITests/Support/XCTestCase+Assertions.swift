@@ -5,27 +5,12 @@
 //  Created by Leo Ho on 2026/7/24.
 //
 
-import CoreGraphics
 import XCTest
 
-// MARK: - Nested Types
-
-private extension XCTestCase {
-
-    /// 需要前置值時的測試失敗種類
-    enum UIAssertionError: Error {
-
-        /// 前置值不存在
-        case missingValue
-
-        /// 前置條件不成立
-        case conditionFailed
-    }
-}
-
-// MARK: - Internal Method
+// MARK: - 語意斷言
 
 /// 跨畫面共用的語意斷言
+@MainActor
 extension XCTestCase {
 
     /// 取出測試前置值；缺少時附上 UI 診斷並讓測試失敗
@@ -39,17 +24,16 @@ extension XCTestCase {
     /// - Returns: 已解包的前置值
     /// - Throws: 前置值不存在時丟出測試錯誤
     func requireValue<Value>(
-        _ value: Value?,
+        _ value: @autoclosure () throws(UITestError) -> Value?,
         in app: XCUIApplication,
         _ message: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws -> Value {
-        if let value {
+    ) throws(UITestError) -> Value {
+        if let value = try value() {
             return value
         }
-        app.failWithDiagnostics(message, file: file, line: line)
-        throw UIAssertionError.missingValue
+        try app.stopWithDiagnostics(message, file: file, line: line)
     }
 
     /// 將純值檢查結果套用到活體測試；失敗時附上 UI 診斷並讓測試失敗
@@ -65,7 +49,7 @@ extension XCTestCase {
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws {
+    ) throws(UITestError) {
         guard case .failed(let reason) = outcome else {
             return
         }
@@ -88,17 +72,16 @@ extension XCTestCase {
     ///   - line: 失敗時回報的行號
     /// - Throws: 前置條件不成立時丟出測試錯誤
     func requireCondition(
-        _ condition: @autoclosure () -> Bool,
+        _ condition: @autoclosure () throws(UITestError) -> Bool,
         in app: XCUIApplication,
         _ message: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) throws {
-        if condition() {
+    ) throws(UITestError) {
+        if try condition() {
             return
         }
-        app.failWithDiagnostics(message, file: file, line: line)
-        throw UIAssertionError.conditionFailed
+        try app.stopWithDiagnostics(message, file: file, line: line)
     }
 
     /// 確認空狀態容器存在
@@ -109,53 +92,18 @@ extension XCTestCase {
     ///   - timeout: 等待容器出現的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 必要的 UI 操作或前置條件失敗時丟出測試錯誤
     func assertEmptyState(
         _ identifier: String,
         in app: XCUIApplication,
         timeout: TimeInterval = 10,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         let container = app.descendants(matching: .any)[identifier]
         if !container.waitForExistence(timeout: timeout) {
-            failWithDiagnostics(
-                in: app,
+            try app.stopWithDiagnostics(
                 "空狀態容器「\(identifier)」逾時仍未出現",
-                file: file,
-                line: line
-            )
-        }
-    }
-
-    /// 確認元素命中區至少 44x44 point
-    ///
-    /// - Parameters:
-    ///   - element: 要檢查命中區的元素
-    ///   - minimum: 命中區的最小寬高
-    ///   - app: 受測 App
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func assertMinimumHitTarget(
-        _ element: XCUIElement,
-        minimum: CGFloat = 44,
-        in app: XCUIApplication,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        if !element.exists {
-            failWithDiagnostics(
-                in: app,
-                "待驗命中區的元素不存在",
-                file: file,
-                line: line
-            )
-            return
-        }
-        let frame = element.frame
-        if frame.width < minimum || frame.height < minimum {
-            failWithDiagnostics(
-                in: app,
-                "命中區 \(frame.width)x\(frame.height) 小於最小值 \(minimum)x\(minimum) point",
                 file: file,
                 line: line
             )

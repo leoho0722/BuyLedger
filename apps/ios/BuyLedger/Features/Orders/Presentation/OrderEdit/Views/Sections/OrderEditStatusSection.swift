@@ -52,7 +52,7 @@ private extension OrderEditStatusSection {
         }
     }
 
-    /// 幣別的選擇器入口，顯示目前幣別的名稱
+    /// 幣別的選擇器入口，顯示目前幣別的名稱，無障礙值為 ISO 幣別代碼
     var currencyPickerRow: some View {
         OrderEditSelectionRow(
             title: "orders.edit.label.currency",
@@ -68,6 +68,8 @@ private extension OrderEditStatusSection {
                 )
             )
         }
+        // 幣別代碼放在 `accessibilityValue`，UI 測試從 `element.value` 讀取
+        .accessibilityValue(store.draft.currency.rawValue)
     }
 
     /// 付款方式的選擇器入口，未選取時顯示提示文字

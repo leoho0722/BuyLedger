@@ -21,6 +21,11 @@ struct OrderFilterSheetScreen {
 @MainActor
 extension OrderFilterSheetScreen {
 
+    /// 篩選 sheet 的類別搜尋欄
+    var filterSearchField: XCUIElement {
+        app.textFields[BLAccessibilityID.Orders.filterSearchField].firstMatch
+    }
+
     /// 篩選 sheet 的根元素，以 identifier 定位
     var filterSheet: XCUIElement {
         app.descendants(matching: .any)[BLAccessibilityID.Orders.filterSheet]
@@ -33,7 +38,7 @@ extension OrderFilterSheetScreen {
 
     /// 類別搜尋欄目前的輸入值，空欄時回傳空字串
     var filterSearchFieldValue: String {
-        let field = app.textFields[BLAccessibilityID.Orders.filterSearchField].firstMatch
+        let field = filterSearchField
         return hasFilterSearchText ? (field.value as? String ?? "") : ""
     }
 }
@@ -43,12 +48,30 @@ extension OrderFilterSheetScreen {
 @MainActor
 extension OrderFilterSheetScreen {
 
+    /// 等待清除篩選按鈕存在後讀取其可用狀態
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 清除篩選按鈕是否可用
+    /// - Throws: 按鈕在 5 秒內仍不存在時丟出 UITestError.stopped
+    func isFilterClearEnabled(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> Bool {
+        let button = filterClearButton
+        guard button.waitForExistence(timeout: 5) else {
+            try app.stopWithDiagnostics("找不到篩選 sheet 的清除篩選按鈕", file: file, line: line)
+        }
+        return button.isEnabled
+    }
+
     /// 判斷指定類別格是否處於選中狀態 (`isSelected` 對應 `.isSelected` trait)
     ///
     /// - Parameter name: 類別名稱
     /// - Returns: 格子是否存在且選中
     func isFilterCategorySelected(_ name: String) -> Bool {
-        orders.filterCategoryCell(name).isSelected
+        categoryGrid.filterCategoryCell(name).isSelected
     }
 
     /// 點篩選 sheet 內的類別格，必要時先捲到可點位置
@@ -58,31 +81,52 @@ extension OrderFilterSheetScreen {
     ///   - maxDrags: 輕拖次數上限
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func tapFilterCategory(
         _ name: String,
         maxDrags: Int = 12,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
-        let cell = orders.filterCategoryCell(name)
-        ensureFilterSheetExpanded(for: cell, file: file, line: line)
-        if !orders.revealFilterCategory(name) {
-            app.failWithDiagnostics("篩選 sheet 內找不到類別「\(name)」", file: file, line: line)
-        }
-        orders.scrollToTappable(cell, within: filterSheet, maxDrags: maxDrags)
-        cell.tapAfterWaiting(in: app, file: file, line: line)
+    ) throws(UITestError) {
+        let cell = categoryGrid.filterCategoryCell(name)
+        try ensureFilterSheetExpanded(for: cell, file: file, line: line)
+        try categoryGrid.revealFilterCategory(
+            name,
+            within: filterSheet,
+            file: file,
+            line: line
+        )
+        try categoryGrid.scrollToTappable(
+            cell,
+            within: filterSheet,
+            maxDrags: maxDrags,
+            file: file,
+            line: line
+        )
+        try cell.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 讀取組標題目前的展開值，為「已展開」或「已收合」；讀取前先露出標題，露不出時讓測試失敗
     ///
-    /// - Parameter kindID: 組別種類的識別值
+    /// - Parameters:
+    ///   - kindID: 組別種類的識別值
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: accessibility value；取不到時為 `nil`
-    func filterGroupValue(_ kindID: String) -> String? {
-        let header = orders.filterGroupHeader(kindID)
-        ensureFilterSheetExpanded(for: header)
-        if !orders.revealElement(header, within: filterSheet) {
-            app.failWithDiagnostics("篩選 sheet 內找不到組標題「\(kindID)」")
-        }
+    /// - Throws: 組標題未能露出時丟出測試錯誤
+    func filterGroupValue(
+        _ kindID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> String? {
+        let header = categoryGrid.filterGroupHeader(kindID)
+        try ensureFilterSheetExpanded(for: header, file: file, line: line)
+        try categoryGrid.revealElement(
+            header,
+            within: filterSheet,
+            file: file,
+            line: line
+        )
         return header.value as? String
     }
 
@@ -92,18 +136,27 @@ extension OrderFilterSheetScreen {
     ///   - kindID: 組別種類的識別值
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func tapFilterGroupHeader(
         _ kindID: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
-        let header = orders.filterGroupHeader(kindID)
-        ensureFilterSheetExpanded(for: header, file: file, line: line)
-        if !orders.revealElement(header, within: filterSheet) {
-            app.failWithDiagnostics("篩選 sheet 內找不到組標題「\(kindID)」", file: file, line: line)
-        }
-        orders.scrollToTappable(header, within: filterSheet)
-        header.tapAfterWaiting(in: app, file: file, line: line)
+    ) throws(UITestError) {
+        let header = categoryGrid.filterGroupHeader(kindID)
+        try ensureFilterSheetExpanded(for: header, file: file, line: line)
+        try categoryGrid.revealElement(
+            header,
+            within: filterSheet,
+            file: file,
+            line: line
+        )
+        try categoryGrid.scrollToTappable(
+            header,
+            within: filterSheet,
+            file: file,
+            line: line
+        )
+        try header.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 選取日期 Menu 的指定期間
@@ -113,17 +166,18 @@ extension OrderFilterSheetScreen {
     ///   - label: identifier 缺失時回退使用的可見標籤，預設依 `periodID` 映射
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func selectFilterDatePeriod(
         _ periodID: String,
         label: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         let menu = app.descendants(matching: .any)[BLAccessibilityID.Orders.filterDateMenuButton]
-        menu.tapAfterWaiting(in: app, file: file, line: line)
+        try menu.tapAfterWaiting(in: app, file: file, line: line)
         let item = BLAccessibilityID.Orders.filterDatePeriod(periodID)
         let fallbackLabel = label ?? datePeriodLabel(for: periodID)
-        app.tapMenuItem(
+        try app.tapMenuItem(
             item,
             label: fallbackLabel,
             file: file,
@@ -138,17 +192,18 @@ extension OrderFilterSheetScreen {
     ///   - label: identifier 缺失時回退使用的可見標籤，預設為 `name`
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func selectFilterPaymentMethod(
         _ name: String,
         label: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         let menuID = BLAccessibilityID.Orders.filterPaymentMethodMenuButton
-        app.descendants(matching: .any)[menuID].tapAfterWaiting(in: app, file: file, line: line)
+        try app.descendants(matching: .any)[menuID].tapAfterWaiting(in: app, file: file, line: line)
         let item = BLAccessibilityID.Orders.filterPaymentMethodOption(name)
         let fallbackLabel = label ?? name
-        app.tapMenuItem(
+        try app.tapMenuItem(
             item,
             label: fallbackLabel,
             file: file,
@@ -162,12 +217,17 @@ extension OrderFilterSheetScreen {
     ///   - text: 搜尋文字
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func typeFilterSearch(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
-        let field = app.textFields[BLAccessibilityID.Orders.filterSearchField].firstMatch
-        ensureFilterSheetExpanded(for: field, file: file, line: line)
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func typeFilterSearch(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let field = filterSearchField
+        try ensureFilterSheetExpanded(for: field, file: file, line: line)
         let clearID = BLAccessibilityID.Orders.filterSearchClearButton
         let clearButton = app.buttons[clearID].firstMatch
-        orders.typeSearchText(
+        try app.typeSearchText(
             text,
             into: field,
             clearButton: clearButton,
@@ -181,10 +241,14 @@ extension OrderFilterSheetScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapFilterClearSearch(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapFilterClearSearch(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let buttonID = BLAccessibilityID.Orders.filterSearchClearButton
         let button = app.buttons[buttonID].firstMatch
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點篩選 sheet 的「清除篩選」
@@ -192,9 +256,10 @@ extension OrderFilterSheetScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapFilterClear(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.Orders.filterClearButton].firstMatch
-        button.tapAfterWaiting(in: app, file: file, line: line)
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapFilterClear(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
+        let button = filterClearButton
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點篩選 sheet 的「套用」
@@ -202,9 +267,10 @@ extension OrderFilterSheetScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapFilterApply(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapFilterApply(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.Orders.filterApplyButton].firstMatch
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點篩選 sheet 的「取消」，有未套用變更時會呈現捨棄確認
@@ -212,35 +278,47 @@ extension OrderFilterSheetScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapFilterCancel(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapFilterCancel(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.Orders.filterCancelButton].firstMatch
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 下滑篩選 sheet 嘗試關閉，無未套用變更時應關閉；全高時第一下可能只收回到半高，若尚未關閉則補第二次下滑
     ///
-    /// - Returns: sheet 是否在逾時前關閉
-    func dismissFilterSheetBySwipe() -> Bool {
-        if app.dismissSheetBySwipe(filterSheet, timeout: 2) {
-            return true
-        }
-        guard filterSheet.exists else {
-            return true
-        }
-        return app.dismissSheetBySwipe(filterSheet, timeout: 5)
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func dismissFilterSheetBySwipe(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try app.dismissSheetBySwipe(
+            filterSheet,
+            timeout: 2,
+            file: file,
+            line: line
+        )
     }
 
     /// 下滑篩選 sheet 嘗試關閉，有未套用變更時應被擋下
     ///
-    /// - Returns: sheet 是否仍留在畫面上
-    func filterSheetBlocksSwipeDismiss() -> Bool {
-        app.expectSheetBlocksSwipeDismiss(filterSheet)
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func filterSheetBlocksSwipeDismiss(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try app.expectSheetBlocksSwipeDismiss(filterSheet, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension OrderFilterSheetScreen: Screen {
+extension OrderFilterSheetScreen: ScreenProtocol {
 
     /// 判定篩選 sheet 已呈現的根 identifier
     var rootIdentifier: String {
@@ -253,9 +331,14 @@ extension OrderFilterSheetScreen: Screen {
 @MainActor
 private extension OrderFilterSheetScreen {
 
-    /// 承載兩個 sheet 共用的類別格查詢、捲動與搜尋輸入 helper 的訂單清單 Page Object
-    var orders: OrdersScreen {
-        OrdersScreen(app: app)
+    /// 篩選 sheet 的清除篩選按鈕，供點擊與可用狀態查詢共用
+    var filterClearButton: XCUIElement {
+        app.buttons[BLAccessibilityID.Orders.filterClearButton].firstMatch
+    }
+
+    /// 此畫面的類別格查詢與捲動互動
+    var categoryGrid: CategoryGridInteraction {
+        CategoryGridInteraction(app: app)
     }
 
     /// 系統表單控點 (Grabber) 按鈕，存在於支援多種呈現高度的 sheet 上緣
@@ -279,18 +362,19 @@ private extension OrderFilterSheetScreen {
     ///   - target: 要在畫面上點擊或操作的目標元素
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 取不到必要框線或 sheet 無法展開時丟出測試錯誤
     func ensureFilterSheetExpanded(
         for target: XCUIElement,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         if target.isHittableOnScreen {
             return
         }
-        _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1)
+        _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1) // 後續以框線判定是否需要展開
         guard let sheetFrame = filterSheet.snapshotFrame,
               let windowFrame = app.windows.firstMatch.snapshotFrame else {
-            return
+            try app.stopWithDiagnostics("取不到篩選 sheet 或視窗框線，無法判定展開高度", file: file, line: line)
         }
         if sheetFrame.height >= windowFrame.height * 0.75 {
             return
@@ -313,20 +397,22 @@ private extension OrderFilterSheetScreen {
                 start.press(forDuration: 0.1, thenDragTo: destination)
             }
 
-            let deadline = Date.now.addingTimeInterval(2)
-            while Date.now < deadline {
-                if let current = filterSheet.snapshotFrame,
-                   current.height >= initialHeight * 1.2 {
-                    _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1)
-                    return
+            let hasExpanded = Polling.wait(timeout: 2, interval: 0.1) {
+                guard let current = filterSheet.snapshotFrame else {
+                    return false
                 }
-                _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+                return current.height >= initialHeight * 1.2
+            }
+            if hasExpanded {
+                // 後續捲動會再確認可點
+                _ = filterSheet.waitUntilStableAndHittable(timeout: 2, sampleInterval: 0.1)
+                return
             }
         }
 
         let sheetDesc = filterSheet.snapshotFrame.map { "\($0)" } ?? "nil"
         let windowDesc = app.windows.firstMatch.snapshotFrame.map { "\($0)" } ?? "nil"
-        app.failWithDiagnostics(
+        try app.stopWithDiagnostics(
             "篩選 sheet 拖曳兩次後仍未展開 (sheet 框線: \(sheetDesc), 視窗框線: \(windowDesc))",
             file: file,
             line: line
