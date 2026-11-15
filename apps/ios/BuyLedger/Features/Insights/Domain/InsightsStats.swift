@@ -46,14 +46,14 @@ struct InsightsStats: Equatable {
         calendar: Calendar
     ) {
         let attributedOrders = LedgerOrder.revenueAttributionOrders(from: orders)
-        let trendBuckets = InsightsStats.makeTrendBuckets(
+        let trendBuckets = InsightsTrend.makeTrendBuckets(
             attributedOrders: attributedOrders,
             range: range,
             calendar: calendar,
             now: referenceDate
         )
         let totalProfit = trendBuckets.map(\.profit).reduce(Decimal.zero, +)
-        let priorPeriodProfit = InsightsStats.previousPeriodProfit(
+        let priorPeriodProfit = InsightsTrend.previousPeriodProfit(
             attributedOrders: attributedOrders,
             range: range,
             calendar: calendar,
@@ -66,7 +66,7 @@ struct InsightsStats: Equatable {
 
         self.trendBuckets = trendBuckets
         self.totalProfit = totalProfit
-        self.trendRatio = InsightsStats.comparisonRatio(
+        self.trendRatio = InsightsTrend.comparisonRatio(
             current: totalProfit,
             previous: priorPeriodProfit
         )
@@ -98,13 +98,13 @@ struct InsightsStats: Equatable {
 
 extension InsightsStats {
 
-    /// 依合併前收益計算各類別獲利與相對第一名的比例
+    /// 依合併前收益 (不計合併後產生的新訂單) 計算各類別獲利與相對第一名的比例
     ///
     /// - Parameter orders: 全部訂單
     /// - Returns: 各類別獲利排行，比例以第一名獲利為分母並夾在 0 到 1 之間
     static func categoryBreakdown(orders: [LedgerOrder]) -> [InsightsCategory] {
         var profitByName: [String: Decimal] = [:]
-        for order in orders.filter(\.contributesToCategoryBreakdown) {
+        for order in orders.filter(\.isCountedInCategoryBreakdown) {
             let profit = order.summary.profit
             for category in order.categories {
                 let name = category.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -137,7 +137,7 @@ extension InsightsStats {
         campaigns: [Campaign],
         orders: [LedgerOrder]
     ) -> [CampaignProfitRank] {
-        // 單次掃描訂單，批次建立各團投影
+        // 一次掃描全部訂單即可彙總各團，不必每團各掃一遍
         let summaries = CampaignSummary.batch(campaignNames: campaigns.map(\.name), orders: orders)
         let ranked = campaigns
             .map { campaign in

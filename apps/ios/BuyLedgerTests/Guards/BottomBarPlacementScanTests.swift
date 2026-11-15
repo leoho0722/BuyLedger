@@ -47,7 +47,7 @@ private extension BottomBarPlacementScanTests {
         of expression: NSRegularExpression,
         under root: URL
     ) throws -> (fileCount: Int, matchCount: Int) {
-        let files = try SwiftSourceFiles.swiftFiles(under: root, shouldIncludeGenerated: true)
+        let files = try SwiftSourceFiles.swiftFiles(under: root)
         var matchCount = 0
         for file in files {
             let source = try String(contentsOf: file, encoding: .utf8)

@@ -7,21 +7,48 @@
 
 import Foundation
 
-// MARK: - Computed Properties
+/// 訂單中的商品項目
+struct LedgerOrderItem: Equatable, Identifiable, Sendable {
 
-extension LedgerOrderItem {
+    // MARK: - Properties
 
-    /// 商品在原始幣別中的小計
-    var subtotal: Decimal {
-        unitPrice * Decimal(quantity)
+    /// 商品項目的穩定識別值
+    let id: UUID
+
+    /// 商品名稱
+    var name: String
+
+    /// 商品數量
+    var quantity: Int
+
+    /// 商品單價
+    var unitPrice: Decimal
+
+    // MARK: - Init
+
+    /// 建立一筆訂單項目；不指定識別值時自動產生新的
+    ///
+    /// - Parameters:
+    ///   - id: 商品項目的穩定識別值
+    ///   - name: 商品名稱
+    ///   - quantity: 商品數量
+    ///   - unitPrice: 商品單價
+    init(
+        id: UUID = UUID(),
+        name: String,
+        quantity: Int,
+        unitPrice: Decimal
+    ) {
+        self.id = id
+        self.name = name
+        self.quantity = quantity
+        self.unitPrice = unitPrice
     }
 }
 
-// MARK: - Codable
+// MARK: - Nested Types
 
-extension LedgerOrderItem: Codable {
-
-    // MARK: - Nested Types
+extension LedgerOrderItem {
 
     /// `Codable` 使用的鍵；刻意排除 `id`
     private enum CodingKeys: String, CodingKey {
@@ -35,8 +62,21 @@ extension LedgerOrderItem: Codable {
         /// 商品單價
         case unitPrice
     }
+}
 
-    // MARK: - Init
+// MARK: - Computed Properties
+
+extension LedgerOrderItem {
+
+    /// 商品在原始幣別中的小計
+    var subtotal: Decimal {
+        unitPrice * Decimal(quantity)
+    }
+}
+
+// MARK: - Codable
+
+extension LedgerOrderItem: Codable {
 
     /// 從解碼器還原訂單項目
     ///

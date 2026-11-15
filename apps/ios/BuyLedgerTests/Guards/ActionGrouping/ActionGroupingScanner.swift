@@ -91,7 +91,7 @@ extension ActionGroupingScanner {
     /// 一筆暫時性 action allowlist 條目
     struct AllowlistEntry: Sendable {
 
-        /// 相對於 App source root 的檔案路徑
+        /// 相對於 App 正式原始碼根目錄的檔案路徑
         let relativePath: String
 
         /// 送出內容必須完全相符的開頭
@@ -122,7 +122,7 @@ extension ActionGroupingScanner {
     /// 掃描命中的違規位置
     struct Violation: Sendable {
 
-        /// 相對於 App source root 的檔案路徑
+        /// 相對於 App 正式原始碼根目錄的檔案路徑
         let file: String
 
         /// 命中的程式碼或 allowlist 說明
@@ -134,7 +134,7 @@ extension ActionGroupingScanner {
 
 extension ActionGroupingScanner {
 
-    /// 所有 Feature production source 的根目錄
+    /// 所有功能層正式原始碼的根目錄
     static var featuresRoot: URL {
         productionRoot.appending(path: "Features")
     }
@@ -154,8 +154,7 @@ extension ActionGroupingScanner {
         for directory in migratedComponentDirectories {
             files.append(
                 contentsOf: try SwiftSourceFiles.swiftFiles(
-                    under: productionRoot.appending(path: directory),
-                    shouldIncludeGenerated: true
+                    under: productionRoot.appending(path: directory)
                 )
             )
         }
@@ -184,7 +183,7 @@ extension ActionGroupingScanner {
     ///
     /// - Parameters:
     ///   - source: 要掃描的原始碼
-    ///   - relativePath: 相對於 App source root 的路徑
+    ///   - relativePath: 相對於 App 正式原始碼根目錄的路徑
     ///   - allowlist: 暫時性 action 豁免清單
     /// - Returns: 掃描結果，不含未使用 allowlist 的追加違規
     static func scanStoreSendContents(
@@ -221,7 +220,7 @@ extension ActionGroupingScanner {
 
     /// 找出 Features 內把子 Feature 的 view action 包在父 action 內的寫法
     ///
-    /// - Parameter files: 要掃描的 production Swift 檔案
+    /// - Parameter files: 要掃描的正式 Swift 原始檔
     /// - Returns: 子 Feature view action 違規清單
     /// - Throws: 原始檔讀取失敗時丟出錯誤
     static func reducerChildViewViolations(in files: [URL]) throws -> [Violation] {
@@ -242,7 +241,7 @@ extension ActionGroupingScanner {
     ///
     /// - Parameters:
     ///   - source: 要掃描的原始碼
-    ///   - relativePath: 相對於 App source root 的路徑
+    ///   - relativePath: 相對於 App 正式原始碼根目錄的路徑
     /// - Returns: 子 Feature view action 違規清單
     static func reducerChildViewViolations(in source: String, relativePath: String) -> [Violation] {
         let stripped = stripCommentsAndStrings(from: source)

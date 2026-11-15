@@ -1,7 +1,0 @@
-types:
-  - name: CurrencyCode
-    kind: wrapper
-    doc: 交易幣別的 ISO 4217 三位代碼
-    traits: [hashable, identity]
-    serialization: custom
-    base: string

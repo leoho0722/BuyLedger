@@ -4,7 +4,7 @@ paths:
   - "apps/ios/BuyLedger/Features/{Orders,Campaigns,Lookups,Customers,Dashboard,Insights,More}/**"
   - "apps/ios/BuyLedger/Features/App/Presentation/Root/Root{Feature,NavigationOperations}.swift"
   - "apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunch{Feature,Operations}.swift"
-  - "apps/ios/BuyLedgerTests/**/*{Persistence,Migration,Database,Residue}*.swift"
+  - "apps/ios/BuyLedgerTests/**/*{Persistence,Migration,Database,Residue,Shape}*.swift"
   - "apps/ios/BuyLedgerTests/**/{Order,Campaign,Lookup}Service*.swift"
 ---
 
@@ -70,19 +70,11 @@ paths:
     - `asOf`／`calendar` 吃 reducer 注入的 `date.now`／`calendar`。
     - 自動結單的更新與存檔只由 `CampaignLoadFeature` 負責；Orders 的開團來自 Root 投影，選項建構只評估、不寫回。
 - **營收歸屬一律呼叫 `LedgerOrder.revenueAttributionOrders(from:)`** (總覽本月損益、分析走勢與成本結構、客戶累計消費)，不各寫 predicate。
-    - 類別與開團彙總用另一口徑 `contributesToCategoryBreakdown`，兩者刻意並存、不可互換。
+    - 類別彙總用另一口徑 `isCountedInCategoryBreakdown`，開團彙總 (`CampaignSummary`) 只排除合併結果；這些口徑刻意並存、不可互換。
     - 被現存合併結果列為來源的訂單不計入營收；合併結果刪除後來源恢復計入。不在來源訂單上寫永久標記。
     - 合併結果被取消時，來源維持排除且該筆營收不計；這與刪除後恢復計入是刻意不同的規則。
 - **客戶列的資格取自全部訂單** (成員、initials、tier、最近訂單日期)，金額與筆數取自營收歸屬子集，讓訂單全部取消的客人仍在名單且顯示零元。
 - **成長率的百分比與方向同源**：`DashboardStats.ratio` 與 `InsightsStats.trendRatio` 都以本期減上期的差額除以 `abs(previous)` 計算 (上期為 0 時為 `nil`)，百分比文字與 `BLTrend(delta:)` 的方向都由這個比值的正負決定。
-
-## 生成型別 (`Core/Domain/Generated/`)
-
-- **`<Type>.generated.swift` 不手改** (磁碟上唯讀)：改 `shared/data-model/schema/` 後在 `shared/data-model/generator` 跑 `bun run generate`；IDE 提示唯讀無法存檔即代表正在手改生成檔。
-- **手寫邏輯放同名 extension 檔** (如 `LedgerOrder.swift` 只含 `extension LedgerOrder`)；沒有手寫邏輯的型別 (`Money`、`LedgerCustomer`、`PaymentMethodInfo`) 沒有手寫檔。
-- **`Sendable` 由 emitter 對所有生成型別無條件加上**，不是 schema trait，不寫進 schema。
-- **`serialization: custom` 的型別 (`CurrencyCode`、`LedgerOrderItem`) 生成宣告不含 `Codable`**：自訂 `Codable` 留在手寫 extension，保住既有編碼形狀 (如 `LedgerOrderItem` 不寫出 `id`)。
-- **新增或刪除 Domain 型別後 iOS 與 iPadOS 各 build 一次**，確認 synchronized group 拾取 `Generated/` 下的新檔。
 
 ## Schema 與遷移
 
@@ -97,6 +89,13 @@ paths:
 - **加索引不需凍結 shadow，但證據只涵蓋「單一 `String` 欄位的單欄 `#Index`、不拉新版本」** (`SchemaMigrationTests.init_同版本schema加單欄索引_直接開啟並保留資料()`)：複合索引、非 `String` 欄位、伴隨拉新版本的索引調整要另補落地 store 測試。
     - 「store 開得起來」不能證明指紋沒變：SwiftData 會為未登記的改動自動推導輕量遷移。
     - `OrderRecord` 現有的 `Date` 欄位索引超出上述證據，由 `SchemaMigrationTests` 的兩條落地 store 遷移測試守住。
+- **`LedgerCustomer` (含 `CustomerTier`)、`OrderStatus`、`LedgerOrderItem` 內嵌於 `OrderRecord` 與各版 shadow，shadow 沒有替它們凍結**：改內嵌 struct 的鍵或 stored property，會同時改變所有保留版本讀取既有資料列的方式。
+    - 要刻意變更時，先在每個保留版本的 shadow 內凍結一份舊形狀並改引用它，再以落地 store 遷移測試判定：凍結副本能否保住指紋未實測，不憑推測；並 invoke `/swiftdata-schema-migration`。
+    - `LedgerOrderItem` 的自訂 `Codable` 刻意不寫出 `id`，不改回合成 `Codable`：合成版會多寫 `id` 鍵，改變既有資料列的編碼形狀。
+- **`CampaignStatus`、`PaymentReceiptStatus` 以 raw value 字串存進記錄**：移除或改名 raw value 後，既有資料列的字串轉不回該 enum，`toDomain()` 會丟出 `fetchFailed`，需要遷移。
+- **內建幣別常數 (`CurrencyCode.twd` 等) 的代碼以字串存進訂單、幣別清單與預設幣別設定**：三者都以不會失敗的 `CurrencyCode(rawValue:)` 讀回，改代碼不會拋錯，而是讀回的幣別不再等於該常數，匯率與報價以 `.twd` 判斷基準幣別的分支會走錯，結果靜默算錯。
+- **落盤 enum (`OrderStatus`、`CustomerTier`、`CampaignStatus`、`PaymentReceiptStatus`) 新增 case 只更新 `PersistedValueShapeTests` 的字面值**：`OrderStatus`、`CustomerTier` 內嵌於 `OrderRecord`，改名或移除 raw value 比照內嵌 struct 的刻意變更處理。
+- **新的內嵌值型別要在同一個 change 加進 `PersistedValueShapeTests`**：該測試鎖住內嵌 struct 的編碼鍵與 stored property 列表、落盤 enum 的 raw value 與內建幣別代碼；形狀改變時失敗訊息指回本檔。
 - **移除舊版本會抬高 floor，單向不可逆**：停在低於新 floor 的 store 會失去遷移路徑 (啟動時保留原始檔案並顯示阻斷式復原畫面)。
     - 只在確定沒有 store 停在被移除版本時才可移除；上架後這個前提幾乎不成立，要保留完整版本鏈。
     - 「已在 target 就安全」是單一裝置的結論，建立在 CloudKit `.disabled` 上；啟用同步前要重新評估。

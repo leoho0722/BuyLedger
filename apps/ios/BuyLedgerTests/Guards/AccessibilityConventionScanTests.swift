@@ -58,7 +58,7 @@ struct AccessibilityConventionScanTests {
         let root = Self.productionRoot
 
         // When
-        let files = try SwiftSourceFiles.swiftFiles(under: root, shouldIncludeGenerated: true)
+        let files = try SwiftSourceFiles.swiftFiles(under: root)
 
         // Then
         #expect(
@@ -78,7 +78,7 @@ private extension AccessibilityConventionScanTests {
         /// 相對於掃描根目錄的檔案路徑
         let file: String
 
-        /// 命中所在的行號 (1-based)
+        /// 命中所在的行號，從 1 開始
         let line: Int
     }
 
@@ -88,7 +88,7 @@ private extension AccessibilityConventionScanTests {
         /// 該單元涵蓋的原始檔行內容
         let lines: [String]
 
-        /// 該單元第一行對應原始檔的行號 (1-based)
+        /// 該單元第一行對應原始檔的行號，從 1 開始
         let startLineNumber: Int
     }
 }
@@ -116,7 +116,7 @@ private extension AccessibilityConventionScanTests {
         let boundary = try NSRegularExpression(pattern: viewUnitBoundaryPattern)
         var violations: [Violation] = []
 
-        for file in try SwiftSourceFiles.swiftFiles(under: root, shouldIncludeGenerated: true) {
+        for file in try SwiftSourceFiles.swiftFiles(under: root) {
             let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
 
             for unit in viewUnits(in: lines, boundary: boundary) {
@@ -254,7 +254,7 @@ private extension AccessibilityConventionScanTests {
     static func findUnguardedAnimationDeclarations(under root: URL) throws -> [Violation] {
         var violations: [Violation] = []
 
-        for file in try SwiftSourceFiles.swiftFiles(under: root, shouldIncludeGenerated: true) {
+        for file in try SwiftSourceFiles.swiftFiles(under: root) {
             let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
 
             for (index, line) in lines.enumerated()

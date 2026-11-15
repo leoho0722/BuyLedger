@@ -36,18 +36,15 @@ struct ActionGroupingScanTests {
         )
     }
 
-    /// 驗證 Features 內的 reducer 不送出也不攔截子 Feature 的 view action，
-    /// 子 Feature 的 view action 只由自己的 reducer 處理
+    /// 驗證 Features 內的 reducer 不送出也不攔截子 Feature 的 view action
     ///
     /// - Throws: 列舉或讀取 Features 目錄的原始碼失敗時丟出
+    /// - Note: 子 Feature 的 view action 只由自己的 reducer 處理
     /// - Note: 掃描範圍是 Features 目錄內所有正式 Swift 檔
     @Test
     func reducerChildViewViolations_Features原始碼_不包裝子層ViewAction() throws {
         // Given
-        let files = try SwiftSourceFiles.swiftFiles(
-            under: ActionGroupingScanner.featuresRoot,
-            shouldIncludeGenerated: true
-        )
+        let files = try SwiftSourceFiles.swiftFiles(under: ActionGroupingScanner.featuresRoot)
 
         // When
         let violations = try ActionGroupingScanner.reducerChildViewViolations(in: files)

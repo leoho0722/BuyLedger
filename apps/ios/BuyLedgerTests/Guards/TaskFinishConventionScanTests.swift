@@ -8,7 +8,7 @@
 import Foundation
 import Testing
 
-/// 掃描 Feature 畫面的 `.task`，要求等待 `.finish()` 時寫明豁免理由
+/// Feature 畫面 `.task` 內 `.finish()` 的原始碼守門測試，要求等待時寫明豁免理由
 struct TaskFinishConventionScanTests {
 
     /// 驗證 `.task` 內沒有豁免標記的 `.finish()` 會被判定為違規
@@ -309,8 +309,8 @@ private extension TaskFinishConventionScanTests {
                 continue
             }
 
-            for finishRange in finishRanges where
-                finishRange.location > openingBrace && finishRange.location < closingBrace {
+            for finishRange in finishRanges
+                where finishRange.location > openingBrace && finishRange.location < closingBrace {
                 guard scannedFinishLocations.insert(finishRange.location).inserted else {
                     continue
                 }
@@ -391,20 +391,20 @@ private extension TaskFinishConventionScanTests {
         var index = skipWhitespace(in: code, startingAt: taskEnd)
         if index < code.length, code.character(at: index) == 40 {
             var parenthesesDepth = 0
-            var foundClosingParenthesis = false
-            while index < code.length, !foundClosingParenthesis {
+            var isClosingParenthesisFound = false
+            while index < code.length, !isClosingParenthesisFound {
                 let character = code.character(at: index)
                 if character == 40 {
                     parenthesesDepth += 1
                 } else if character == 41 {
                     parenthesesDepth -= 1
                     if parenthesesDepth == 0 {
-                        foundClosingParenthesis = true
+                        isClosingParenthesisFound = true
                     }
                 }
                 index += 1
             }
-            guard foundClosingParenthesis else {
+            guard isClosingParenthesisFound else {
                 return nil
             }
             index = skipWhitespace(in: code, startingAt: index)
@@ -468,10 +468,7 @@ private extension TaskFinishConventionScanTests {
         let featureRoot = iosRoot
             .appending(path: "BuyLedger")
             .appending(path: "Features")
-        let files = try SwiftSourceFiles.swiftFiles(
-            under: featureRoot,
-            shouldIncludeGenerated: true
-        )
+        let files = try SwiftSourceFiles.swiftFiles(under: featureRoot)
         var violations: [Violation] = []
 
         for file in files {

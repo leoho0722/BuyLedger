@@ -7,12 +7,91 @@
 
 import Foundation
 
-// MARK: - Properties
+/// 一筆代購訂單，記錄客戶、商品項目、各項成本與收款狀態；訂單的讀寫與總覽、分析、客戶的彙總都以它為單位
+struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
 
-extension LedgerOrder {
+    // MARK: - Properties
 
     /// 單筆訂單可附加的照片張數上限
     static let maxPhotoCount = 5
+
+    /// 訂單編號
+    let id: String
+
+    /// 客戶資料
+    let customer: LedgerCustomer
+
+    /// 訂單目前狀態
+    let status: OrderStatus
+
+    /// 商品幣別
+    let currency: CurrencyCode
+
+    /// 訂單日期
+    let date: Date
+
+    /// 商品項目
+    let items: [LedgerOrderItem]
+
+    /// 商品成本 (TWD)
+    let itemCost: Decimal
+
+    /// 國內運費成本 (TWD)
+    let domesticShipping: Decimal
+
+    /// 國際運費成本 (TWD)
+    let internationalShipping: Decimal
+
+    /// 商品來源國的國內運費成本 (TWD)
+    let foreignDomesticShipping: Decimal
+
+    /// 刷卡手續費比例
+    let cardFeeRate: Decimal
+
+    /// 平台手續費比例
+    let platformFeeRate: Decimal
+
+    /// 金流手續費比例
+    let paymentFeeRate: Decimal
+
+    /// 向客戶收取的金額 (TWD)
+    let chargedAmount: Decimal
+
+    /// 無卡付款的折抵金額 (TWD)
+    let cardlessDeductionAmount: Decimal
+
+    /// 無卡付款的補款金額 (TWD)
+    let cardlessSupplementAmount: Decimal
+
+    /// 訂單來源
+    let orderSource: String
+
+    /// 商品類別
+    let categories: [String]
+
+    /// 付款方式
+    let paymentMethod: String
+
+    /// 訂單備註；沒有備註時為空字串
+    let notes: String
+
+    /// 對帳狀態；不需對帳時為空字串
+    let reconciliationStatus: String
+
+    /// 所屬開團名稱；空陣列表示散單
+    let campaignNames: [String]
+
+    /// 收款狀態
+    let paymentReceiptStatus: PaymentReceiptStatus
+
+    /// 是否為貨到付款
+    let isCashOnDelivery: Bool
+
+    /// 訂單照片；沒有照片時為空陣列
+    let photos: [Data]
+
+    /// 合併前的訂單編號；非合併訂單為空陣列
+    let mergedSourceIDs: [String]
 }
 
 // MARK: - Computed Properties
@@ -30,7 +109,7 @@ extension LedgerOrder {
     }
 
     /// 是否計入「類別收益」彙總
-    var contributesToCategoryBreakdown: Bool {
+    var isCountedInCategoryBreakdown: Bool {
         !isMergeResult && (OrderStatus.realizedStatuses.contains(status) || status == .merged)
     }
 
@@ -57,7 +136,19 @@ extension LedgerOrder {
 
 extension LedgerOrder {
 
+    /// 篩出總覽本月損益、分析走勢與成本結構、客戶累計消費共用的營收歸屬訂單
+    ///
+    /// - Parameter orders: 要篩選的訂單
+    /// - Returns: 排除合併來源後的已實現訂單
+    static func revenueAttributionOrders(from orders: [LedgerOrder]) -> [LedgerOrder] {
+        let mergedSourceIDs = Set(orders.flatMap(\.mergedSourceIDs))
+        return orders.filter {
+            OrderStatus.realizedStatuses.contains($0.status) && !mergedSourceIDs.contains($0.id)
+        }
+    }
+
     /// 依付款方式主檔旗標正規化訂單上會影響損益的欄位
+    ///
     /// - Parameter flags: 付款方式分類旗標
     /// - Returns: 套用旗標後的訂單
     func applyingPaymentMethodFlags(_ flags: PaymentMethodFlags) -> LedgerOrder {
@@ -103,6 +194,7 @@ extension LedgerOrder {
     }
 
     /// 只替換訂單引用的付款方式名稱，保留其餘欄位
+    ///
     /// - Parameter name: 新付款方式名稱
     /// - Returns: 改名後的訂單
     func renamingPaymentMethod(to name: String) -> LedgerOrder {
@@ -137,6 +229,7 @@ extension LedgerOrder {
     }
 
     /// 只替換訂單引用的訂單來源，保留其餘欄位
+    ///
     /// - Parameter name: 新訂單來源名稱
     /// - Returns: 改名後的訂單
     func renamingOrderSource(to name: String) -> LedgerOrder {
@@ -171,6 +264,7 @@ extension LedgerOrder {
     }
 
     /// 替換訂單中的指定類別
+    ///
     /// - Parameters:
     ///   - oldName: 舊類別名稱
     ///   - newName: 新類別名稱
@@ -207,6 +301,7 @@ extension LedgerOrder {
     }
 
     /// 只替換訂單引用的對帳狀態，保留其餘欄位
+    ///
     /// - Parameter name: 新對帳狀態名稱
     /// - Returns: 改名後的訂單
     func renamingReconciliationStatus(to name: String) -> LedgerOrder {
@@ -241,6 +336,7 @@ extension LedgerOrder {
     }
 
     /// 替換訂單中的指定開團名稱
+    ///
     /// - Parameters:
     ///   - oldName: 舊開團名稱
     ///   - newName: 新開團名稱
@@ -277,6 +373,7 @@ extension LedgerOrder {
     }
 
     /// 移除訂單中的指定開團名稱
+    ///
     /// - Parameter name: 要移除的開團名稱
     /// - Returns: 移除後的訂單
     func removingCampaign(_ name: String) -> LedgerOrder {
@@ -308,15 +405,5 @@ extension LedgerOrder {
             photos: photos,
             mergedSourceIDs: mergedSourceIDs
         )
-    }
-
-    /// 總覽本月損益、分析走勢與成本結構、客戶累計消費共用的營收歸屬口徑
-    /// - Parameter orders: 要篩選的訂單
-    /// - Returns: 排除合併來源後的已實現訂單
-    static func revenueAttributionOrders(from orders: [LedgerOrder]) -> [LedgerOrder] {
-        let mergedSourceIDs = Set(orders.flatMap(\.mergedSourceIDs))
-        return orders.filter {
-            OrderStatus.realizedStatuses.contains($0.status) && !mergedSourceIDs.contains($0.id)
-        }
     }
 }

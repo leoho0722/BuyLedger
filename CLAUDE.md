@@ -46,14 +46,6 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **`<!-- @trace -->` 區塊不可信、不可手改**：它是歸檔工具自動產生並重寫的歷史紀錄，所列路徑未經驗證；判斷程式碼現況一律搜尋程式碼本身。
 - **跨領域政策型規格**的 Purpose 說明涵蓋範圍，並指名至少一份不涵蓋的相鄰規格。目錄名已界定範圍的功能型規格可保留工具樣板，這是已記錄的留白，不是待補缺陷。
 
-## 跨平台 Data Model (codegen)
-
-`shared/data-model/schema/` 是資料形狀的唯一來源，`datamodel-gen` 據此產生各平台型別 (目前只接 Swift，輸出至 `apps/ios`)。
-
-- **不可手改生成檔** (`*.generated.swift` 等，檔頭有警語)：增刪欄位、改型別、調 trait 一律改 schema，再於 `shared/data-model/generator` 執行 `bun run generate`。
-- **不可單平台私加欄位**：任一平台需要的形狀變更都回到 schema、讓所有平台一致產生；平台專屬行為 (顯示、計算、自訂序列化) 放手寫 extension。
-- **提交前於 `shared/data-model/generator` 跑 `bun run check` 須 exit 0**，生成檔與 schema 一起 commit。
-
 ## 文件查證準則
 
 - 動任何框架或第三方套件前先用 **Context7** 查最新官方文件，不憑記憶或舊範例；平台專屬的額外對照規則 (如 Xcode 27 MCP 內建的 Apple Documentation Search) 見各平台 `CLAUDE.md`。

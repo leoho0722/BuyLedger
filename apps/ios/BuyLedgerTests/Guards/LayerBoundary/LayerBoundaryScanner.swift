@@ -8,7 +8,9 @@
 import Foundation
 
 /// 掃描功能、核心與共用模組之間的分層邊界
-enum LayerBoundaryScanner {}
+enum LayerBoundaryScanner {
+
+}
 
 // MARK: - Nested Types
 
@@ -50,6 +52,11 @@ extension LayerBoundaryScanner {
     /// 設計系統的分層守門目錄
     static var designSystemRoot: URL {
         productionRoot.appending(path: "Shared/DesignSystem")
+    }
+
+    /// 領域層的分層守門目錄
+    static var coreDomainRoot: URL {
+        productionRoot.appending(path: "Core/Domain")
     }
 }
 
@@ -142,7 +149,7 @@ extension LayerBoundaryScanner {
         }
     }
 
-    /// 掃描領域目錄，包含生成檔中的頂層宣告名稱
+    /// 掃描領域目錄下全部 Swift 檔案的頂層宣告名稱
     ///
     /// - Returns: 領域層頂層宣告名稱
     /// - Throws: 目錄、原始檔讀取或正規表示式建立失敗時丟出錯誤
@@ -151,10 +158,7 @@ extension LayerBoundaryScanner {
         let patterns = try LayerBoundaryPatterns.declarationPatterns
         let exclusionPattern = try LayerBoundaryPatterns.accessModifierExclusionPattern
 
-        for file in try SwiftSourceFiles.swiftFiles(
-            under: coreDomainRoot,
-            shouldIncludeGenerated: true
-        ) {
+        for file in try SwiftSourceFiles.swiftFiles(under: coreDomainRoot) {
             let content = try String(contentsOf: file, encoding: .utf8)
             let rawLines = content.components(separatedBy: "\n")
             var stripMode = SwiftSourceStripping.StripMode.normal
@@ -257,11 +261,6 @@ private extension LayerBoundaryScanner {
     /// App 正式原始碼的掃描根目錄
     static var productionRoot: URL {
         iosRoot.appending(path: "BuyLedger")
-    }
-
-    /// 包含手寫與生成領域型別的掃描根目錄
-    static var coreDomainRoot: URL {
-        productionRoot.appending(path: "Core/Domain")
     }
 
     /// 取得樣式在文字中的第一個命中內容
