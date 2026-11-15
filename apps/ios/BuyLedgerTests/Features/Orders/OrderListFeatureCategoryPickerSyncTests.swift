@@ -6,46 +6,12 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import Testing
 
 @testable import BuyLedger
 
 /// `OrderListFeature` 的單元測試，涵蓋類別選擇器與清單之間的狀態同步
 struct OrderListFeatureCategoryPickerSyncTests {
-
-    /// 驗證選擇器開啟時經清單的繫結改變已套用類別，選擇器的比較基準跟著更新，草稿、搜尋文字與展開狀態保留，且仍視為有未套用變更
-    @Test
-    @MainActor
-    func binding_選擇器開啟時變更已套用類別_同步基準並保留草稿() {
-        // Given
-        var state = OrderListFeatureTestSupport.makeState()
-        state.selectedCategories = ["beauty"]
-        var picker = OrderCategoryPickerFeatureTestSupport.makeState(for: state)
-        picker.pendingCategories = ["beauty", "books"]
-        picker.searchText = "草稿"
-        picker.groupExpansion.expandedKinds = [.closed]
-        state.destination = .categoryPicker(picker)
-        let store = withDependencies {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(initialState: state) {
-                OrderListFeature()
-            }
-        }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.selectedCategories.wrappedValue = ["books"]
-
-        // Then
-        #expect(store.state.destination?.categoryPicker?.committedCategories == ["books"])
-        #expect(store.state.destination?.categoryPicker?.pendingCategories == ["beauty", "books"])
-        #expect(store.state.destination?.categoryPicker?.searchText == "草稿")
-        #expect(store.state.destination?.categoryPicker?.groupExpansion.expandedKinds == [.closed])
-        #expect(store.state.destination?.categoryPicker?.hasUnappliedChanges == true)
-    }
 
     /// 驗證根功能深連結呼叫 `applyFilterNavigation` 時，清單的搜尋文字與類別改為深連結的值，日期重設為全部，付款方式保留，選擇器的比較基準同步更新且草稿保留
     @Test

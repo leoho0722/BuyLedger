@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// 商品類別主檔管理頁的 Page Object
+/// 主檔管理頁的 Page Object，依種類操作不同主檔
 struct LookupManagementScreen {
 
     // MARK: - Properties
@@ -19,6 +19,16 @@ struct LookupManagementScreen {
 // MARK: - Nested Types
 
 extension LookupManagementScreen {
+
+    /// 主檔管理頁所操作的項目種類
+    enum Kind {
+
+        /// 商品類別
+        case categories
+
+        /// 付款方式
+        case paymentMethods
+    }
 
     /// 刪除主檔項目的觸發方式
     enum DeletionTrigger {
@@ -73,10 +83,11 @@ extension LookupManagementScreen {
 
     /// 名稱表單的文字值
     ///
+    /// - Parameter timeout: 等待欄位出現的秒數
     /// - Returns: 名稱欄的文字值；元素不存在或值不是字串時為 `nil`
-    var nameFieldValue: String? {
+    func nameFieldValue(timeout: TimeInterval = 10) -> String? {
         let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        guard field.waitForExistence(timeout: 10) else {
+        guard field.waitForExistence(timeout: timeout) else {
             return nil
         }
         return field.value as? String
@@ -84,7 +95,7 @@ extension LookupManagementScreen {
 
     /// 目前呈現中的名稱表單數量，用來確認表單沒有疊出第二層
     ///
-    /// - Note: `app.sheets` 只對應動作表，不含 SwiftUI sheet，故以名稱表單根識別碼計數
+    /// - Note: `app.sheets` 不含 SwiftUI sheet，故以名稱表單根識別碼計數
     var presentedSheetCount: Int {
         app.descendants(matching: .any)
             .matching(identifier: BLAccessibilityID.LookupManagement.nameEditorRoot)
@@ -103,21 +114,46 @@ extension LookupManagementScreen {
 @MainActor
 extension LookupManagementScreen {
 
-    /// 從更多頁開啟付款方式管理
+    /// 從更多分頁開啟指定種類的主檔管理頁
     ///
     /// - Parameters:
+    ///   - kind: 主檔項目種類
+    ///   - app: 受測 App
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func openPaymentMethodManagement(file: StaticString = #filePath, line: UInt = #line) {
-        guard RootNavigationScreen(app: app).goToMore(file: file, line: line) else {
-            app.failWithDiagnostics("切到更多分頁後畫面未就緒", file: file, line: line)
-            return
+    /// - Returns: 已進入前景的主檔管理頁
+    /// - Throws: 分頁、入口或主檔前景未就緒時丟出測試錯誤
+    @discardableResult
+    static func open(
+        _ kind: Kind,
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> LookupManagementScreen {
+        let root = RootNavigationScreen(app: app)
+        try root.goToMore(file: file, line: line)
+        let row: BLAccessibilityID.More.Row
+        switch kind {
+        case .categories:
+            row = .categories
+
+        case .paymentMethods:
+            row = .paymentMethods
         }
-        let row = app.descendants(matching: .any)[BLAccessibilityID.More.row(.paymentMethods)]
-        row.tapAfterWaiting(in: app, file: file, line: line)
-        if !waitUntilReady() {
-            app.failWithDiagnostics("付款方式管理頁面未出現", file: file, line: line)
-        }
+        let entry = app.descendants(matching: .any)[BLAccessibilityID.More.row(row)]
+        try entry.tapAfterWaiting(in: app, file: file, line: line)
+        try root.requireForeground(
+            identifiers: [
+                BLAccessibilityID.LookupManagement.root,
+                BLAccessibilityID.LookupManagement.addButton,
+                BLAccessibilityID.LookupManagement.loadFailureMessage,
+            ],
+            identifierPrefixes: [BLAccessibilityID.LookupManagement.row("")],
+            message: "主檔管理頁前景內容未就緒",
+            file: file,
+            line: line
+        )
+        return LookupManagementScreen(app: app)
     }
 
     /// 開啟既有付款方式的編輯表單，不改動名稱
@@ -126,23 +162,28 @@ extension LookupManagementScreen {
     ///   - name: 目前的付款方式名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Returns: 已就緒的付款方式編輯表單
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    @discardableResult
     func beginEditPaymentMethod(
         named name: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) -> PaymentMethodEditorScreen {
         let row = itemRow(named: name)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics("付款方式「\(name)」列未出現或無法操作", file: file, line: line)
-            return
+            try app.stopWithDiagnostics(
+                "付款方式「\(name)」列未出現或無法操作",
+                file: file,
+                line: line
+            )
         }
         row.swipeLeft()
         let editButton = app.buttons[BLAccessibilityID.LookupManagement.editButton(name)]
-        editButton.tapAfterWaiting(in: app, file: file, line: line)
+        try editButton.tapAfterWaiting(in: app, file: file, line: line)
         let editor = PaymentMethodEditorScreen(app: app)
-        if !editor.waitUntilReady() {
-            app.failWithDiagnostics("付款方式編輯表單未出現", file: file, line: line)
-        }
+        try editor.requireReady(file: file, line: line)
+        return editor
     }
 
     /// 以 return 收起單行名稱欄的鍵盤並確認焦點解除
@@ -151,55 +192,13 @@ extension LookupManagementScreen {
     ///   - field: 主檔或付款方式的單行名稱欄位
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 欄位是否已失焦且鍵盤已收起
+    /// - Throws: 欄位不存在或 Return 後焦點未解除時丟出測試錯誤
     func dismissKeyboard(
         for field: XCUIElement,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        guard field.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics("找不到要解除焦點的名稱欄位", file: file, line: line)
-            return false
-        }
-        let predicate = NSPredicate(format: "hasKeyboardFocus == true")
-        if predicate.evaluate(with: field) {
-            field.typeText(XCUIKeyboardKey.return.rawValue)
-        }
-        let hasDismissed = pollUntil(timeout: 10) {
-            !predicate.evaluate(with: field)
-                && !app.keyboards.firstMatch.exists
-                && !app.isNumericPopoverPresented
-        }
-        guard hasDismissed else {
-            app.failWithDiagnostics("名稱欄的鍵盤或焦點仍未解除", file: file, line: line)
-            return false
-        }
-        return true
-    }
-
-    /// 從更多頁開啟商品類別管理
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func openCategoryManagement(file: StaticString = #filePath, line: UInt = #line) {
-        let root = RootNavigationScreen(app: app)
-        guard root.goToMore(file: file, line: line) else {
-            app.failWithDiagnostics("切到更多分頁後畫面未就緒", file: file, line: line)
-            return
-        }
-
-        let categoriesRow = app.descendants(matching: .any)[BLAccessibilityID.More.row(.categories)]
-        categoriesRow.tapAfterWaiting(
-            in: app,
-            elementName: "商品類別主檔入口",
-            file: file,
-            line: line
-        )
-
-        if !waitUntilReady() {
-            app.failWithDiagnostics("商品類別管理頁面未出現", file: file, line: line)
-        }
+    ) throws(UITestError) {
+        try field.dismissKeyboardByReturn(in: app, file: file, line: line)
     }
 
     /// 新增指定名稱的主檔項目
@@ -208,14 +207,19 @@ extension LookupManagementScreen {
     ///   - name: 要新增的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func addItem(named name: String, file: StaticString = #filePath, line: UInt = #line) {
-        addButton.tapAfterWaiting(
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func addItem(
+        named name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try addButton.tapAfterWaiting(
             in: app,
             elementName: "主檔新增按鈕",
             file: file,
             line: line
         )
-        enterName(name, file: file, line: line)
+        try enterName(name, file: file, line: line)
     }
 
     /// 將主檔項目改成指定名稱
@@ -225,26 +229,30 @@ extension LookupManagementScreen {
     ///   - newName: 要套用的新名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func renameItem(
         from oldName: String,
         to newName: String,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) {
+    ) throws(UITestError) {
         let row = itemRow(named: oldName)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics("商品類別「\(oldName)」列未出現或無法操作", file: file, line: line)
-            return
+            try app.stopWithDiagnostics(
+                "主檔「\(oldName)」列未出現或無法操作",
+                file: file,
+                line: line
+            )
         }
         row.swipeLeft()
         let renameButton = app.buttons[BLAccessibilityID.LookupManagement.renameButton(oldName)]
-        renameButton.tapAfterWaiting(
+        try renameButton.tapAfterWaiting(
             in: app,
             elementName: "主檔重新命名按鈕",
             file: file,
             line: line
         )
-        enterName(newName, file: file, line: line)
+        try enterName(newName, file: file, line: line)
     }
 
     /// 刪除指定名稱的主檔項目並等待提示關閉
@@ -253,14 +261,16 @@ extension LookupManagementScreen {
     ///   - name: 要刪除的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func deleteItem(named name: String, file: StaticString = #filePath, line: UInt = #line) {
-        guard requestDeletion(named: name, file: file, line: line) else {
-            return
-        }
-
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func deleteItem(
+        named name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try requestDeletion(named: name, file: file, line: line)
         let alert = app.alerts.firstMatch
-        if !alert.waitForDisappearance(timeout: 5) {
-            app.failWithDiagnostics("確認刪除後 alert 未收回", file: file, line: line)
+        guard alert.waitForDisappearance(timeout: 5) else {
+            try app.stopWithDiagnostics("確認刪除後 alert 未收回", file: file, line: line)
         }
     }
 
@@ -271,23 +281,20 @@ extension LookupManagementScreen {
     ///   - trigger: 刪除的觸發方式，預設為滑動刪除
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 是否已送出刪除請求
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func requestDeletion(
         named name: String,
         via trigger: DeletionTrigger = .swipe,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        guard beginDeletion(
+    ) throws(UITestError) {
+        try beginDeletion(
             named: name,
             via: trigger,
             file: file,
             line: line
-        ) else {
-            return false
-        }
-        app.tapAlertButton(label: "刪除", file: file, line: line)
-        return true
+        )
+        try app.tapAlertButton(label: "刪除", file: file, line: line)
     }
 
     /// 以指定方式刪除主檔列，等待確認對話框出現但不回應
@@ -297,23 +304,26 @@ extension LookupManagementScreen {
     ///   - trigger: 刪除的觸發方式，預設為滑動刪除
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 確認對話框是否已出現
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func beginDeletion(
         named name: String,
         via trigger: DeletionTrigger = .swipe,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
+    ) throws(UITestError) {
         let row = itemRow(named: name)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics("商品類別「\(name)」列未出現或無法操作", file: file, line: line)
-            return false
+            try app.stopWithDiagnostics(
+                "主檔「\(name)」列未出現或無法操作",
+                file: file,
+                line: line
+            )
         }
         switch trigger {
         case .swipe:
             row.swipeLeft()
             let deleteButton = app.buttons[BLAccessibilityID.LookupManagement.deleteButton(name)]
-            deleteButton.tapAfterWaiting(
+            try deleteButton.tapAfterWaiting(
                 in: app,
                 elementName: "主檔刪除按鈕",
                 file: file,
@@ -322,23 +332,22 @@ extension LookupManagementScreen {
 
         case .contextMenu:
             row.press(forDuration: 1.0)
-            guard app.tapMenuItem(
+            try app.tapMenuItem(
                 BLAccessibilityID.LookupManagement.deleteButton(name),
                 file: file,
                 line: line
-            ) else {
-                return false
-            }
+            )
         }
-        return waitForDeletionConfirmation(file: file, line: line)
+        guard waitForDeleteConfirmation() else {
+            try app.stopWithDiagnostics("刪除確認 alert 未出現", file: file, line: line)
+        }
     }
 
     /// 判定名稱欄是否取得鍵盤焦點
     ///
     /// - Returns: 名稱欄是否為鍵盤焦點
     func isNameFieldFocused() -> Bool {
-        let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        return field.exists && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+        nameField.hasKeyboardFocus
     }
 
     /// 清空名稱欄後輸入新文字，之後鍵盤焦點保留在名稱欄
@@ -347,9 +356,14 @@ extension LookupManagementScreen {
     ///   - text: 要輸入的名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func replaceName(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func replaceName(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        field.clearAndType(
+        try field.clearAndType(
             text,
             in: app,
             file: file,
@@ -357,12 +371,21 @@ extension LookupManagementScreen {
         )
     }
 
-    /// 續打名稱欄文字，呼叫端需先確認焦點，續打時不點擊
+    /// 依 App 的聚焦行為接續輸入，不清空既有內容
     ///
-    /// - Parameter text: 要續打的文字
-    func appendName(_ text: String) {
+    /// - Parameters:
+    ///   - text: 要續打的文字
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Note: 欄位已聚焦時不再點擊；未聚焦時由共用輸入 helper 取得焦點
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func appendName(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        field.typeText(text)
+        try field.appendText(text, in: app, file: file, line: line)
     }
 
     /// 點名稱表單的取消按鈕
@@ -370,9 +393,10 @@ extension LookupManagementScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapNameCancel(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapNameCancel(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.LookupManagement.nameCancelButton]
-        button.tapAfterWaiting(
+        try button.tapAfterWaiting(
             in: app,
             elementName: "主檔名稱表單取消按鈕",
             file: file,
@@ -385,8 +409,9 @@ extension LookupManagementScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func beginAddItem(file: StaticString = #filePath, line: UInt = #line) {
-        addButton.tapAfterWaiting(
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func beginAddItem(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
+        try addButton.tapAfterWaiting(
             in: app,
             elementName: "主檔新增按鈕",
             file: file,
@@ -400,15 +425,23 @@ extension LookupManagementScreen {
     ///   - name: 目前的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func beginRename(from name: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func beginRename(
+        from name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let row = itemRow(named: name)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics("商品類別「\(name)」列未出現或無法操作", file: file, line: line)
-            return
+            try app.stopWithDiagnostics(
+                "主檔「\(name)」列未出現或無法操作",
+                file: file,
+                line: line
+            )
         }
         row.swipeLeft()
         let renameButton = app.buttons[BLAccessibilityID.LookupManagement.renameButton(name)]
-        renameButton.tapAfterWaiting(
+        try renameButton.tapAfterWaiting(
             in: app,
             elementName: "主檔重新命名按鈕",
             file: file,
@@ -424,27 +457,42 @@ extension LookupManagementScreen {
         app.descendants(matching: .any)[BLAccessibilityID.LookupManagement.row(name)]
     }
 
-    /// 等待清單列數符合預期，到逾時為止
+    /// 等待清單列數符合預期
     ///
     /// - Parameters:
     ///   - count: 預期的列數
     ///   - timeout: 等待列數符合的秒數
     /// - Returns: 列數是否在逾時前符合預期
     func waitForRowCount(_ count: Int, timeout: TimeInterval = 10) -> Bool {
-        let deadline = Date.now.addingTimeInterval(timeout)
-        while rowCount != count {
-            guard Date.now < deadline else {
-                return false
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+        Polling.wait(timeout: timeout) {
+            rowCount == count
         }
-        return true
+    }
+
+    /// 讀取指定付款方式列的分類 accessibility value
+    ///
+    /// - Parameter name: 付款方式名稱
+    /// - Returns: 分類值；列不存在或值不是字串時為 `nil`
+    func paymentMethodClassification(named name: String) -> String? {
+        let row = itemRow(named: name)
+        guard row.exists else {
+            return nil
+        }
+        return row.value as? String
+    }
+
+    /// 等待刪除確認 alert 出現
+    ///
+    /// - Parameter timeout: 等待 alert 出現的秒數
+    /// - Returns: alert 是否在逾時前出現
+    func waitForDeleteConfirmation(timeout: TimeInterval = 10) -> Bool {
+        app.alerts.firstMatch.waitForExistence(timeout: timeout)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension LookupManagementScreen: Screen {
+extension LookupManagementScreen: ScreenProtocol {
 
     /// 判定主檔管理頁已就緒的根 identifier
     var rootIdentifier: String {
@@ -463,9 +511,10 @@ private extension LookupManagementScreen {
     ///   - name: 要送出的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func enterName(_ name: String, file: StaticString, line: UInt) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func enterName(_ name: String, file: StaticString, line: UInt) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        field.clearAndType(
+        try field.clearAndType(
             name,
             in: app,
             file: file,
@@ -473,26 +522,11 @@ private extension LookupManagementScreen {
         )
 
         let submitButton = app.buttons[BLAccessibilityID.LookupManagement.nameSubmitButton]
-        submitButton.tapAfterWaiting(
+        try submitButton.tapAfterWaiting(
             in: app,
             elementName: "主檔名稱表單送出按鈕",
             file: file,
             line: line
         )
-    }
-
-    /// 等待刪除確認對話框出現
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    /// - Returns: 確認對話框是否在逾時前出現
-    func waitForDeletionConfirmation(file: StaticString, line: UInt) -> Bool {
-        let alert = app.alerts.firstMatch
-        guard alert.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics("刪除確認 alert 未出現", file: file, line: line)
-            return false
-        }
-        return true
     }
 }

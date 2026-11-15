@@ -2679,3 +2679,521 @@ code:
   - apps/ios/BuyLedger.xcodeproj/project.pbxproj
   - apps/ios/BuyLedgerUITests/Screens/PaymentMethodEditorScreen.swift
 -->
+
+---
+### Requirement: Feature reducer tests run through TestStore
+
+A unit test that drives a TCA feature reducer SHALL drive it through `TestStore`, so that every state change and every received action is checked. A test of a binding SHALL send the binding action that the view actually sends: a top-level field or a writable computed property sends its own key path, and a nested field sends the whole enclosing value. Creating a `Store` SHALL be limited to snapshot tests, whose views accept only a `Store`. A source scan SHALL fail when a `Store` is created outside the snapshot test directory in a form the scan recognises (`Store(`, `Store<…>(`, `StoreOf<…>(`), SHALL report the original file and line of each finding, and SHALL fail when it reads no source files; other construction forms are reviewed by hand.
+
+#### Scenario: A nested binding sends the whole draft
+
+- **GIVEN** the order editor test that changes the customer name
+- **WHEN** the test drives the binding the editor view uses for the customer name
+- **THEN** it sends the binding action for the whole draft with the changed name, and asserts the resulting state
+
+#### Scenario: A Store outside snapshot tests is rejected by the scan
+
+- **WHEN** a unit test outside the snapshot test directory contains `_ = Store(initialState: SettingsFeature.State()) { SettingsFeature() }`
+- **THEN** the source scan fails and names that file and the line of the statement as it appears in the source file
+
+#### Scenario: Snapshot tests keep their Store
+
+- **WHEN** a snapshot test creates a `Store` for the view it renders
+- **THEN** the source scan does not report it
+
+#### Scenario: An empty scan does not pass
+
+- **WHEN** the unit test directory resolves to no readable source files
+- **THEN** the scan fails instead of passing with zero findings
+
+
+<!-- @trace
+source: test-suite-convention-alignment
+updated: 2026-11-15
+code:
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupAddFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/ReadableWidthUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderListLoadFailureTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditRotationUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupRenameFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditAddOptionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureCategoryPickerSyncTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderPercentConversionTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+PlatformScope.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/SearchInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularClearFiltersUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/QuoteInputFocusUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeaturePhotosTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignDetailScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDateRowTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Support/MoreDestinationIdentifiers.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderCategoryPickerFeatureSearchTests.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScenarios.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/InsightsOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/DashboardOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnWidthUITests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupItemRow.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailMoreMenuUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationUITests.swift
+  - apps/ios/BuyLedgerTests/Guards/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/MoreNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnScopeTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/QuoteScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AppLockLoadFailureUITests.swift
+  - apps/ios/BuyLedgerTests/App/Testing/BLUITestConfigurationInvalidValuesTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SheetInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/BLUITestConfigurationUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Support/CampaignSeedFixture.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+MenuInteraction.swift
+  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
+  - apps/ios/BuyLedgerUITests/Support/CGRect+Validity.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Insights/InsightsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/EditorTextInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDirtyUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderCreateTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Assertions.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/NavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/SettingsLanguageUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/AISummaryTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Customers/CustomersScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/OptionPickerCurrencyUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersLoadStateUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/RootNavigationCustomerOrdersUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+Waiting.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnScopeUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/OrdersSeedFixture.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerUITests/Screens/ScreenProtocol.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersAssertions.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLaunchLoadingTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SearchInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/CurrencyPickerTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/AISummaryScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+CampaignFlow.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/MergeFlowUITests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderFilterEmptyStatesTests.swift
+  - apps/ios/BuyLedgerUITests/Support/UITestError.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignFlowTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderCategoryPickerScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/RootNavigationCampaignLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDirtyTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrderEditDraftRotationUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/PhotoViewerScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularSearchBarTests.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLaunchLoadingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/AISummaryUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OrdersSearchInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/PhotoViewerUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnScopeUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditDateRowUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignEditFeatureBindingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/LoadFailureReloadLoopTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/RootNavigationMoreUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDateRowUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/BLUITestConfigurationUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignEditScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderEditScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Shared/PaymentMethodEditorScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureDestinationTests.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScanner.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditDateRowTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderMergeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/PhotoViewerPagingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrdersSelectionUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditAddOptionUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureQueriesTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/KeyboardDismissTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Polling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/HarnessSelfCheckTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OrderEditInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+AlertInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrdersOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnWidthTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/RootNavigationToolLoadUITests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrientationLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBackInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditKeyboardDismissUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/CampaignEditInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/OrderEditRenamedCategoryUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergePrefillTests.swift
+  - apps/ios/BuyLedgerTests/App/Testing/BLUITestConfigurationTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotCampaignDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/MergeFlowInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/BoundsCheck.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersLoadStateTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignCrudTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Scrolling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditCreateUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLaunchLoadingUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Screen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/ToolLoadTabSwitchTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Orientation.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+CombinedText.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Dashboard/DashboardScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/Sections/OrderEditStatusSection.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+HorizontalBounds.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+FocusTap.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBarTitle.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrdersPaymentMethodMenuUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestConfiguration.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationOrientationUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/LookupManagementScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderFilterSheetScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/RootNavigationRegularColumnsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularAccessibilitySizeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+StableVisibleFrame.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OptionPickerInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Reveal.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/SettingsScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/PaymentMethodEditFormFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Guards/StoreConstructionSamples.swift
+  - apps/ios/BuyLedgerUITests/Support/CategoryGridInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/FxInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrdersAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationLaunchUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/ToolsInputFocusUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeatureBindingTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Shared/OptionPickerScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/FxScreen.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+LoadStateSampling.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignEditFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/SettingsInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailMenuTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularSearchBarUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrdersUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationReadableWidthUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderDetailScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/CampaignsAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularAccessibilitySizeUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListLoadFailureLoopTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/DashboardAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLaunchLoadingUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeatureMergeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/AppLockScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/LookupManagementInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersLayoutAssertions.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScanTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/MergeFlowScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignsProgressAccessibilityUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrdersScreen.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+More.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignProgressAccessibilityTests.swift
+  - apps/ios/BuyLedger/App/Testing/Overrides/DependencyValues+BLUITestOverrides.swift
+-->
+
+---
+### Requirement: UI test conventions that must hold everywhere are scan guarded
+
+The UI test target's file naming and helper result conventions SHALL be enforced by source scans in the unit test target rather than by a one-time search. A scan SHALL fail when a file under the UI test directory for test types is named other than `<Name>UITests.swift` or `<Name>TestSupport.swift`, except the files the scan lists by name with the reason for each. A scan SHALL fail when any function in the UI test target is marked `@discardableResult` and returns `Bool`, matching the whole declaration up to its opening brace because signatures span several lines. A scan SHALL fail when code under the support and page object directories or in a folder's test support file, other than the two diagnostics files, calls the non-throwing diagnostics recorder, `XCTFail` or an `XCTAssert` function. Each scan SHALL report the file and line of every finding and SHALL fail when it reads no source files, and SHALL NOT match its own patterns.
+
+#### Scenario: A test file with the old suffix is rejected
+
+- **WHEN** a file named `OrderFilterSheetTests.swift` is added under the UI test directory for test types
+- **THEN** the naming scan fails and names that file
+
+#### Scenario: The listed exceptions keep their names
+
+- **WHEN** the scan reads the launch performance test file and the pure value self-check file that the scan lists by name
+- **THEN** it does not report them
+
+#### Scenario: A discardable Bool helper is rejected
+
+- **WHEN** a support helper declares `@discardableResult` followed by a function whose parameters span several lines and that returns `Bool`
+- **THEN** the helper result scan fails and names the file and line of the declaration
+
+#### Scenario: A page object that records a failure without throwing is rejected
+
+- **WHEN** a page object method calls the non-throwing diagnostics recorder instead of the throwing stop function
+- **THEN** the diagnostics scan fails and names the file and line of the call
+
+<!-- @trace
+source: test-suite-convention-alignment
+updated: 2026-11-15
+code:
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupAddFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/ReadableWidthUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderListLoadFailureTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditRotationUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/LookupRenameFormFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditAddOptionTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureCategoryPickerSyncTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderPercentConversionTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AdaptiveNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+PlatformScope.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationContinuityUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/SearchInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularClearFiltersUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/QuoteInputFocusUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeaturePhotosTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignDetailScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDateRowTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Support/MoreDestinationIdentifiers.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderCategoryPickerFeatureSearchTests.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScenarios.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/InsightsOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/DashboardOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnWidthUITests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupItemRow.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailMoreMenuUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationUITests.swift
+  - apps/ios/BuyLedgerTests/Guards/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/MoreNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnScopeTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/QuoteScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/AppLockLoadFailureUITests.swift
+  - apps/ios/BuyLedgerTests/App/Testing/BLUITestConfigurationInvalidValuesTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetLargeUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SheetInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/BLUITestConfigurationUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Support/CampaignSeedFixture.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+MenuInteraction.swift
+  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
+  - apps/ios/BuyLedgerUITests/Support/CGRect+Validity.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Insights/InsightsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/EditorTextInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDirtyUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+TextInput.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderCreateTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Assertions.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/NavigationScenarioUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/SettingsLanguageUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/AISummaryTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Customers/CustomersScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/OptionPickerCurrencyUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersLoadStateUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/RootNavigationCustomerOrdersUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+Waiting.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnScopeUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/OrdersSeedFixture.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerUITests/Screens/ScreenProtocol.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersAssertions.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLaunchLoadingTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+SearchInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/CurrencyPickerTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/AISummaryScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+CampaignFlow.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/MergeFlowUITests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrderFilterEmptyStatesTests.swift
+  - apps/ios/BuyLedgerUITests/Support/UITestError.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignFlowTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderCategoryPickerScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/RootNavigationCampaignLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDirtyTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrderEditDraftRotationUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/PhotoViewerScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularSearchBarTests.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLaunchLoadingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/AISummaryUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignsScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OrdersSearchInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/PhotoViewerUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularColumnScopeUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditDateRowUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignEditFeatureBindingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/LoadFailureReloadLoopTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationLoadFailureUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/RootNavigationMoreUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditDateRowUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/BLUITestConfigurationUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Campaigns/CampaignEditScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderEditScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Shared/PaymentMethodEditorScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersNavigationSmokeTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderListFeatureDestinationTests.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScanner.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditDateRowTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderMergeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/PhotoViewerPagingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrdersSelectionUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditAddOptionUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderFilterFeatureQueriesTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/KeyboardDismissTests.swift
+  - apps/ios/BuyLedgerUITests/Support/Polling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/HarnessSelfCheckTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OrderEditInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+AlertInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrdersOrientationUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularColumnWidthTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/RootNavigationToolLoadUITests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/OrientationLayoutTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBackInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditKeyboardDismissUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/CampaignEditInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/OrderEditRenamedCategoryUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureMergePrefillTests.swift
+  - apps/ios/BuyLedgerTests/App/Testing/BLUITestConfigurationTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotCampaignDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/MergeFlowInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/BoundsCheck.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersLoadStateTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignCrudTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/SettingsGoalInputTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Scrolling.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Edit/OrderEditCreateUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLaunchLoadingUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Screen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/ToolLoadTabSwitchTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Presentation/Root/Views/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+Orientation.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+CombinedText.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotOrdersTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Dashboard/DashboardScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/OrderEdit/Views/Sections/OrderEditStatusSection.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+HorizontalBounds.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/RootNavigationScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIElement+FocusTap.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+NavigationBarTitle.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrdersPaymentMethodMenuUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedger/App/Testing/Configuration/BLUITestConfiguration.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationOrientationUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/LookupManagementScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderFilterSheetScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/RootNavigationRegularColumnsUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrderRegularAccessibilitySizeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+StableVisibleFrame.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/OptionPickerInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrderFilterSheetUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Reveal.swift
+  - apps/ios/BuyLedgerUITests/Screens/More/SettingsScreen.swift
+  - apps/ios/BuyLedgerTests/Features/Lookups/PaymentMethodEditFormFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Guards/StoreConstructionSamples.swift
+  - apps/ios/BuyLedgerUITests/Support/CategoryGridInteraction.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/FxInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/OrdersAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/RootNavigationLaunchUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/ToolsInputFocusUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeatureBindingTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Shared/OptionPickerScreen.swift
+  - apps/ios/BuyLedgerUITests/Screens/Tools/FxScreen.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+LoadStateSampling.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Campaigns/CampaignEditFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/SettingsInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Detail/OrderDetailMenuTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularSearchBarUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutSmokeTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Filters/OrdersUITestSupport.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/RootNavigationReadableWidthUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrderDetailScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/CampaignsAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/Regular/OrdersRegularAccessibilitySizeUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListLoadFailureLoopTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Navigation/DashboardAdaptiveLayoutUITests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLaunchLoadingUITests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrderEditFeatureMergeTests.swift
+  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/App/AppLockScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Forms/LookupManagementInputFocusUITests.swift
+  - apps/ios/BuyLedgerUITests/Support/XCUIApplication+Diagnostics.swift
+  - apps/ios/BuyLedgerUITests/Support/XCTestCase+OrdersLayoutAssertions.swift
+  - apps/ios/BuyLedgerTests/Guards/UITestConvention/UITestConventionScanTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/MergeFlowScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignsProgressAccessibilityUITests.swift
+  - apps/ios/BuyLedgerUITests/Screens/Orders/OrdersScreen.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+More.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignProgressAccessibilityTests.swift
+  - apps/ios/BuyLedger/App/Testing/Overrides/DependencyValues+BLUITestOverrides.swift
+-->

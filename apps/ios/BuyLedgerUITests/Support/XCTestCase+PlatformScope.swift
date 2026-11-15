@@ -7,106 +7,107 @@
 
 import XCTest
 
-// MARK: - Nested Types
+// MARK: - 版面判定型別
 
-private extension XCTestCase {
+extension XCTestCase {
 
-    /// Orders 前景內容的欄位呈現類別
-    enum OrdersLayoutMode: Equatable {
+    /// 清單與詳情欄的前景呈現類別
+    enum ListDetailLayout: Equatable {
 
         /// 清單與詳情同時可見且水平分離
-        case sideBySide
+        case regular
 
         /// 只有一個可辨識的前景內容區域
-        case collapsed
-    }
-
-    /// 清單與詳情欄的呈現類別，More 與開團共用
-    enum ListDetailLayoutMode: Equatable {
-
-        /// 清單與詳情同時可見且水平分離
-        case sideBySide
-
-        /// 清單與詳情只有其中一個可見
-        case collapsed
+        case compact
     }
 }
 
-// MARK: - Internal Method
+// MARK: - 版面適用範圍
 
 @MainActor
 extension XCTestCase {
 
-    /// 判斷 Orders 功能是否實際呈現清單與詳情並排
+    /// 判定 Orders 前景清單與詳情的欄位呈現
     ///
-    /// - Parameter app: 受測 App
-    /// - Returns: Orders 清單與詳情前景是否並排且不重疊
-    func isRegularLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = ordersLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識 Orders 前景欄位：\(ordersLayoutDiagnostics(in: app))")
-            return false
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: Orders 前景欄位的呈現類別
+    /// - Throws: 必要錨點缺失或版面無法判定時丟出測試錯誤
+    func ordersLayout(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> ListDetailLayout {
+        guard let layout = listDetailLayout(
+            in: app,
+            list: { foregroundOrdersListFrame(in: $0) },
+            detail: { foregroundOrdersDetailFrame(in: $0) },
+            detailRootExists: {
+                $0.descendants(matching: .any)[
+                    BLAccessibilityID.Orders.detailRoot
+                ].firstMatch.exists
+            }
+        ) else {
+            try app.stopWithDiagnostics(
+                "無法辨識 Orders 前景欄位：\(ordersLayoutDiagnostics(in: app))",
+                file: file,
+                line: line
+            )
         }
-        return mode == .sideBySide
+        return layout
     }
 
-    /// 判斷 Orders 功能是否以 collapsed 導覽呈現
+    /// 判定 More 前景入口清單與目前工具的欄位呈現
     ///
-    /// - Parameter app: 受測 App
-    /// - Returns: Orders 清單與詳情是否沒有同時並排
-    func isCompactLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = ordersLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識 Orders 前景欄位：\(ordersLayoutDiagnostics(in: app))")
-            return false
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: More 前景欄位的呈現類別
+    /// - Throws: 必要錨點缺失或版面無法判定時丟出測試錯誤
+    func moreLayout(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> ListDetailLayout {
+        guard let layout = listDetailLayout(
+            in: app,
+            list: { foregroundMoreListFrame(in: $0) },
+            detail: { foregroundMoreDetailFrame(in: $0) },
+            detailRootExists: { moreDetailRoots(in: $0).contains { $0.element.exists } }
+        ) else {
+            try app.stopWithDiagnostics(
+                "無法辨識 More 前景欄位：\(moreLayoutDiagnostics(in: app))",
+                file: file,
+                line: line
+            )
         }
-        return mode == .collapsed
+        return layout
     }
 
-    /// 判斷 More 功能是否實際呈現入口清單與目前工具並排
+    /// 判定開團前景清單與詳情的欄位呈現
     ///
-    /// - Parameter app: 受測 App
-    /// - Returns: More 入口清單與目前工具是否並排且不重疊
-    func isMoreRegularLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = moreLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識 More 前景欄位：\(moreLayoutDiagnostics(in: app))")
-            return false
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 開團前景欄位的呈現類別
+    /// - Throws: 必要錨點缺失或版面無法判定時丟出測試錯誤
+    func campaignLayout(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> ListDetailLayout {
+        guard let layout = listDetailLayout(
+            in: app,
+            list: { foregroundCampaignListFrame(in: $0) },
+            detail: { foregroundCampaignDetailFrame(in: $0) }
+        ) else {
+            try app.stopWithDiagnostics("無法辨識開團前景欄位", file: file, line: line)
         }
-        return mode == .sideBySide
-    }
-
-    /// 判斷 More 功能是否以收合導覽呈現 (入口清單與目前工具擇一可見)
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: More 入口清單與目前工具是否沒有同時並排
-    func isMoreCompactLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = moreLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識 More 前景欄位：\(moreLayoutDiagnostics(in: app))")
-            return false
-        }
-        return mode == .collapsed
-    }
-
-    /// 判斷開團功能是否實際呈現清單與詳情並排
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 開團清單與詳情是否並排且不重疊
-    func isCampaignRegularLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = campaignLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識開團前景欄位")
-            return false
-        }
-        return mode == .sideBySide
-    }
-
-    /// 判斷開團功能是否以收合導覽呈現 (清單與詳情擇一可見)
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 開團清單與詳情是否沒有同時並排
-    func isCampaignCompactLayout(_ app: XCUIApplication) -> Bool {
-        guard let mode = campaignLayoutMode(in: app) else {
-            app.failWithDiagnostics("無法辨識開團前景欄位")
-            return false
-        }
-        return mode == .collapsed
+        return layout
     }
 
     /// 取得位於視窗前景的 Orders 詳情錨點框線
@@ -136,60 +137,63 @@ extension XCTestCase {
     }
 }
 
-// MARK: - Private Method
+// MARK: - 前景版面量測
 
 @MainActor
 private extension XCTestCase {
 
-    /// 等待 Orders 的真實前景錨點穩定後判定欄位呈現
+    /// 以同一組前景錨點等待版面穩定
     ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - timeout: 等待前景版面穩定的秒數
-    /// - Returns: 可辨識的 Orders 欄位呈現；必要錨點缺失或重疊時回傳 `nil`
-    func ordersLayoutMode(
+    ///   - list: 取得前景清單框線的方法
+    ///   - detail: 取得前景詳情框線的方法
+    ///   - detailRootExists: 判斷詳情根是否存在
+    /// - Returns: 穩定的版面類別；必要錨點缺失或重疊時為 `nil`
+    func listDetailLayout(
         in app: XCUIApplication,
-        timeout: TimeInterval = 10
-    ) -> OrdersLayoutMode? {
-        let deadline = Date.now.addingTimeInterval(timeout)
-        var previousMode: OrdersLayoutMode?
+        timeout: TimeInterval = 10,
+        list: (XCUIApplication) -> CGRect?,
+        detail: (XCUIApplication) -> CGRect?,
+        detailRootExists: (XCUIApplication) -> Bool = { _ in false }
+    ) -> ListDetailLayout? {
+        var previousMode: ListDetailLayout?
         var previousListFrame: CGRect?
         var previousDetailFrame: CGRect?
+        var stableMode: ListDetailLayout?
+        let isStable = Polling.wait(timeout: timeout, interval: 0.1) {
+            let listFrame = list(app)
+            let detailFrame = detail(app)
+            let currentMode: ListDetailLayout?
 
-        while true {
-            let listFrame = foregroundOrdersListFrame(in: app)
-            let detailFrame = foregroundOrdersDetailFrame(in: app)
-            let currentMode: OrdersLayoutMode?
-
-            if let listFrame, let detailFrame {
+            if detailRootExists(app), detailFrame == nil {
+                currentMode = nil
+            } else if let listFrame, let detailFrame {
                 if listFrame.maxX <= detailFrame.minX || detailFrame.maxX <= listFrame.minX {
-                    currentMode = .sideBySide
-                } else if listFrame == previousListFrame, detailFrame == previousDetailFrame {
-                    return nil
+                    currentMode = .regular
                 } else {
                     currentMode = nil
                 }
             } else if listFrame != nil || detailFrame != nil {
-                currentMode = .collapsed
+                currentMode = .compact
             } else {
                 currentMode = nil
             }
 
-            if let currentMode,
-               currentMode == previousMode,
-               listFrame == previousListFrame,
-               detailFrame == previousDetailFrame {
-                return currentMode
-            }
+            let hasStableFrames = currentMode == previousMode
+                && listFrame == previousListFrame
+                && detailFrame == previousDetailFrame
             previousMode = currentMode
             previousListFrame = listFrame
             previousDetailFrame = detailFrame
-
-            guard Date.now < deadline else {
-                return nil
+            if hasStableFrames, let currentMode {
+                stableMode = currentMode
+                return true
             }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+            return false
         }
+        return isStable ? stableMode : nil
     }
 
     /// 取得位於視窗前景的 Orders 清單列或清單空狀態框線
@@ -227,13 +231,7 @@ private extension XCTestCase {
         }
 
         let clippedFrame = elementFrame.intersection(windowFrame)
-        guard !clippedFrame.isNull,
-              !clippedFrame.isInfinite,
-              !clippedFrame.isEmpty,
-              clippedFrame.minX.isFinite,
-              clippedFrame.minY.isFinite,
-              clippedFrame.maxX.isFinite,
-              clippedFrame.maxY.isFinite else {
+        guard clippedFrame.isUsableFrame else {
             return nil
         }
         return clippedFrame
@@ -287,91 +285,13 @@ private extension XCTestCase {
         app.descendants(matching: .any)[containerIdentifier].firstMatch.staticTexts.firstMatch
     }
 
-    /// 等待 More 的前景錨點穩定後判定入口清單與目前工具的呈現
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 可辨識的 More 欄位呈現；必要錨點缺失或重疊時回傳 `nil`
-    func moreLayoutMode(in app: XCUIApplication) -> ListDetailLayoutMode? {
-        listDetailLayoutMode(in: app) {
-            foregroundMoreListFrame(in: $0)
-        } detail: {
-            foregroundMoreDetailFrame(in: $0)
-        } detailRootExists: {
-            moreDetailRoots(in: $0).contains {
-                $0.element.exists
-            }
-        }
-    }
-
-    /// 等待清單與詳情的前景錨點穩定後判定欄位呈現
-    ///
-    /// - Parameters:
-    ///   - app: 受測 App
-    ///   - timeout: 等待前景版面穩定的秒數
-    ///   - list: 取得前景清單框線的方法，回傳 `nil` 表示清單不可見
-    ///   - detail: 取得前景詳情框線的方法，回傳 `nil` 表示詳情錨點不可見
-    ///   - detailRootExists: 判斷詳情根是否存在；存在但沒有錨點時不分類為收合
-    /// - Returns: 可辨識的欄位呈現；必要錨點缺失或重疊時回傳 `nil`
-    func listDetailLayoutMode(
-        in app: XCUIApplication,
-        timeout: TimeInterval = 10,
-        list: (XCUIApplication) -> CGRect?,
-        detail: (XCUIApplication) -> CGRect?,
-        detailRootExists: (XCUIApplication) -> Bool = { _ in false }
-    ) -> ListDetailLayoutMode? {
-        let deadline = Date.now.addingTimeInterval(timeout)
-        var previousMode: ListDetailLayoutMode?
-        var previousListFrame: CGRect?
-        var previousDetailFrame: CGRect?
-
-        while true {
-            let listFrame = list(app)
-            let detailFrame = detail(app)
-            let currentMode: ListDetailLayoutMode?
-
-            if detailRootExists(app), detailFrame == nil {
-                currentMode = nil
-            } else if let listFrame, let detailFrame {
-                if listFrame.maxX <= detailFrame.minX || detailFrame.maxX <= listFrame.minX {
-                    currentMode = .sideBySide
-                } else {
-                    currentMode = nil
-                }
-            } else if listFrame != nil || detailFrame != nil {
-                currentMode = .collapsed
-            } else {
-                currentMode = nil
-            }
-
-            if let currentMode,
-               currentMode == previousMode,
-               listFrame == previousListFrame,
-               detailFrame == previousDetailFrame {
-                return currentMode
-            }
-            previousMode = currentMode
-            previousListFrame = listFrame
-            previousDetailFrame = detailFrame
-
-            guard Date.now < deadline else {
-                return nil
-            }
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
-        }
-    }
-
     /// 取得位於視窗前景且可互動的 More 入口列框線
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 入口列的可見框線；沒有可互動的入口列時為 `nil`
     /// - Note: 以可見的入口列為錨點，清單容器的可互動狀態不作判定依據
     func foregroundMoreListFrame(in app: XCUIApplication) -> CGRect? {
-        let anchors = [
-            BLAccessibilityID.More.row(.fx),
-            BLAccessibilityID.More.row(.customers),
-            BLAccessibilityID.More.row(.settings),
-        ]
-        for identifier in anchors {
+        for identifier in MoreDestinationIdentifiers.listAnchors {
             let row = app.descendants(matching: .any)[identifier].firstMatch
             if row.isHittableOnScreen, let frame = visibleFrame(of: row, in: app) {
                 return frame
@@ -442,14 +362,7 @@ private extension XCTestCase {
     /// - Parameter app: 受測 App
     /// - Returns: 依工具順序排列的根識別碼與元素
     func moreDetailRoots(in app: XCUIApplication) -> [(identifier: String, element: XCUIElement)] {
-        let identifiers = [
-            BLAccessibilityID.Fx.root,
-            BLAccessibilityID.Quote.root,
-            BLAccessibilityID.Settings.root,
-            BLAccessibilityID.Customers.listRoot,
-            BLAccessibilityID.LookupManagement.root,
-        ]
-        return identifiers.map {
+        return MoreDestinationIdentifiers.detailRoots.map {
             (
                 identifier: $0,
                 element: app.descendants(matching: .any).matching(identifier: $0).firstMatch
@@ -473,18 +386,6 @@ private extension XCTestCase {
             """
         }
         return rootDetails.joined(separator: "; ")
-    }
-
-    /// 等待開團的前景錨點穩定後判定清單與詳情的呈現
-    ///
-    /// - Parameter app: 受測 App
-    /// - Returns: 可辨識的開團欄位呈現；必要錨點缺失或重疊時回傳 `nil`
-    func campaignLayoutMode(in app: XCUIApplication) -> ListDetailLayoutMode? {
-        listDetailLayoutMode(in: app) {
-            foregroundCampaignListFrame(in: $0)
-        } detail: {
-            foregroundCampaignDetailFrame(in: $0)
-        }
     }
 
     /// 取得位於視窗前景且可互動的開團列框線，沒有可互動列時以列表空狀態為錨點

@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `OrderPercentConversion` 的單元測試，綁定測試以 `Store` 搭配 `@Bindable` 走與畫面相同的寫回路徑
+/// `OrderPercentConversion` 的單元測試，綁定測試以 `TestStore` 送出畫面費率欄寫回草稿的 binding action
 struct OrderPercentConversionTests {
 
     // MARK: - Properties
@@ -79,69 +79,74 @@ struct OrderPercentConversionTests {
         #expect(percentage == expectedPercentage)
     }
 
-    /// 驗證三種費率欄透過畫面綁定輸入規格範例時，草稿寫入捨入後的費率、讀回的百分比符合規格，且草稿標為已修改
+    /// 驗證三種費率欄輸入規格範例時，換算後的費率經整份草稿的 binding action 寫入，
+    /// 草稿寫入捨入後的費率、讀回的百分比符合規格，且草稿標為已修改
     ///
     /// - Parameters:
     ///   - example: 規格範例與獨立的期望字面值
     ///   - field: 要驗證的費率欄位
     /// - Throws: 範例字面值無法建立 `Decimal` 時丟出測試失敗
+    /// - Note: 畫面把 `$store.draft.<費率欄>` 交給 `percentageBinding(for:)`，巢狀欄位送出的是整個 `draft`；
+    ///   測試以記錄寫入的 `Binding` 取得換算結果，再送出相同的 action
     @Test(arguments: Self.examples, RateField.allCases)
     @MainActor
-    func percentageBinding_經畫面綁定輸入範例_精確寫回並顯示捨入值(
+    func percentageBinding_輸入範例百分比_送出捨入後的費率並顯示捨入值(
         example: ConversionExample,
         field: RateField
-    ) throws {
+    ) async throws {
         // Given
         let entered = try #require(example.entered)
         let expectedRate = try #require(example.stored)
         let expectedPercentage = try #require(example.displayed)
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
-        let rate = $bindable.draft[dynamicMember: field.keyPath]
+        let writtenDraft = LockIsolated(initial.draft)
+        let rate = Binding {
+            writtenDraft.value[keyPath: field.keyPath]
+        } set: { newValue in
+            writtenDraft.withValue {
+                $0[keyPath: field.keyPath] = newValue
+            }
+        }
         let percentage = OrderPercentConversion.percentageBinding(for: rate)
 
         // When
         percentage.wrappedValue = entered
+        await store.send(\.binding.draft, writtenDraft.value) {
+            $0.draft[keyPath: field.keyPath] = expectedRate
+        }
 
         // Then
-        #expect(store.draft[keyPath: field.keyPath] == expectedRate)
         #expect(percentage.wrappedValue == expectedPercentage)
         #expect(store.state.isDirty)
     }
 
-    /// 驗證三種費率欄讀出顯示的百分比再原樣寫回時，不寫入費率欄，草稿內容不變且不標為已修改
+    /// 驗證三種費率欄讀出顯示的百分比再原樣寫回時，不寫入費率欄，草稿內容不變
     ///
     /// - Parameter field: 要驗證的費率欄位
     /// - Throws: 費率字面值無法建立 `Decimal` 時丟出測試失敗
+    /// - Note: 沒有寫入就不會送出 binding action，草稿維持開啟時的內容而不標為已修改
     @Test(arguments: RateField.allCases)
-    @MainActor
-    func percentageBinding_讀取後寫回目前顯示值_草稿不變且未修改(field: RateField) throws {
+    func percentageBinding_讀取後寫回目前顯示值_不寫入費率欄(field: RateField) throws {
         // Given
-        var draft = OrderDraft(original: nil, currentDate: TestDependencies.fixedNow)
-        draft[keyPath: field.keyPath] = try #require(Decimal(string: "0.0456"))
-        let initial = OrderEditFeature.State(
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            prefill: .init(draft: draft, mergeSourceIDs: [], keptPhotos: [])
-        )
-        let store = Store(initialState: initial) {
-            OrderEditFeature()
-        }
-        @Bindable var bindable = store
-        let rate = $bindable.draft[dynamicMember: field.keyPath]
+        var preparedDraft = OrderDraft(original: nil, currentDate: TestDependencies.fixedNow)
+        preparedDraft[keyPath: field.keyPath] = try #require(Decimal(string: "0.0456"))
+        let draft = preparedDraft
+        let currentDraft = LockIsolated(draft)
         let writes = LockIsolated(0)
-        let observedRate = Binding {
-            rate.wrappedValue
+        let rate = Binding {
+            currentDraft.value[keyPath: field.keyPath]
         } set: { newValue in
             writes.withValue {
                 $0 += 1
             }
-            rate.wrappedValue = newValue
+            currentDraft.withValue {
+                $0[keyPath: field.keyPath] = newValue
+            }
         }
-        let percentage = OrderPercentConversion.percentageBinding(for: observedRate)
+        let percentage = OrderPercentConversion.percentageBinding(for: rate)
 
         // When
         percentage.wrappedValue = percentage.wrappedValue
@@ -149,8 +154,7 @@ struct OrderPercentConversionTests {
         // Then
         #expect(percentage.wrappedValue == Decimal(string: "4.56"))
         #expect(writes.value == 0)
-        #expect(store.draft == initial.draft)
-        #expect(store.state.isDirty == false)
+        #expect(currentDraft.value == draft)
     }
 
     /// 驗證負數百分比的中點 (如 -4.565) 向遠離零的方向捨入成 -0.0457，範圍夾限仍由存檔流程處理

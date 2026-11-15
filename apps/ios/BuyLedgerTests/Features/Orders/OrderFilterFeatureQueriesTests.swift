@@ -6,12 +6,12 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// `OrderFilterFeature` 的單元測試，涵蓋未套用變更判定、類別與付款方式查詢，以及畫面綁定
+/// `OrderFilterFeature` 的單元測試，涵蓋未套用變更判定、類別與付款方式查詢，以及畫面送出的搜尋與暫存選擇
 struct OrderFilterFeatureQueriesTests {
 
     /// 驗證暫存三欄任一與已套用值不同時才有未套用變更，類別為空字串也算不同
@@ -129,23 +129,25 @@ struct OrderFilterFeatureQueriesTests {
         #expect(state.filterSheetCategoryGroups.flatMap(\.visibleCategories) == ["books"])
     }
 
-    /// 驗證搜尋框經繫結輸入文字時，只更新搜尋文字，暫存條件與未套用變更都不變
+    /// 驗證輸入篩選搜尋文字時，畫面送出 `filterSheetSearchText` 自己的 binding action，
+    /// 只更新搜尋文字，暫存條件與未套用變更都不變
+    ///
+    /// - Note: 畫面綁定 `$store.filterSheetSearchText`
     @Test
     @MainActor
-    func binding_輸入篩選搜尋文字_更新子層搜尋() {
+    func binding_輸入篩選搜尋文字_更新子層搜尋() async {
         // Given
-        let store = withDependencies {
+        let store = TestStore(initialState: OrderFilterFeatureTestSupport.makeState()) {
+            OrderFilterFeature()
+        } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(initialState: OrderFilterFeatureTestSupport.makeState()) {
-                OrderFilterFeature()
-            }
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.filterSheetSearchText.wrappedValue = "boo"
+        await store.send(\.binding.filterSheetSearchText, "boo") {
+            $0.filterSheetSearchText = "boo"
+        }
 
         // Then
         #expect(store.state.filterSheetSearchText == "boo")
@@ -156,24 +158,26 @@ struct OrderFilterFeatureQueriesTests {
         #expect(store.state.hasUnappliedFilterChanges == false)
     }
 
-    /// 驗證日期選單經繫結選取本月時，只更新暫存日期，類別、付款方式與已套用條件都不變
+    /// 驗證日期選單選取本月時，畫面送出暫存日期的 view action，只更新暫存日期，
+    /// 類別、付款方式與已套用條件都不變
+    ///
+    /// - Note: 畫面綁定 `$store.pendingFilterSelection.datePeriod`，以
+    ///   `.sending(\.view.filterPendingDatePeriodSelected)` 轉成 view action，不是 binding action
     @Test
     @MainActor
-    func binding_日期選單選取本月_只改暫存日期() {
+    func filterPendingDatePeriodSelected_日期選單選取本月_只改暫存日期() async {
         // Given
-        let store = withDependencies {
+        let store = TestStore(initialState: OrderFilterFeatureTestSupport.makeState()) {
+            OrderFilterFeature()
+        } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(initialState: OrderFilterFeatureTestSupport.makeState()) {
-                OrderFilterFeature()
-            }
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.pendingFilterSelection.datePeriod
-            .sending(\.view.filterPendingDatePeriodSelected).wrappedValue = .thisMonth
+        await store.send(.view(.filterPendingDatePeriodSelected(.thisMonth))) {
+            $0.pendingFilterSelection.datePeriod = .thisMonth
+        }
 
         // Then
         #expect(store.state.pendingFilterSelection.datePeriod == .thisMonth)
@@ -185,29 +189,31 @@ struct OrderFilterFeatureQueriesTests {
         )
     }
 
-    /// 驗證付款方式選單經繫結選取信用卡時，只更新暫存付款方式，日期與類別保留，已套用的條件不變
+    /// 驗證付款方式選單選取信用卡時，畫面送出暫存付款方式的 view action，
+    /// 只更新暫存付款方式，日期與類別保留，已套用的條件不變
+    ///
+    /// - Note: 畫面綁定 `$store.pendingFilterSelection.paymentMethod`，以
+    ///   `.sending(\.view.filterPendingPaymentMethodSelected)` 轉成 view action，不是 binding action
     @Test
     @MainActor
-    func binding_付款選單選取信用卡_只改暫存付款方式() {
+    func filterPendingPaymentMethodSelected_付款選單選取信用卡_只改暫存付款方式() async {
         // Given
         let selection = OrderFilterSelection(datePeriod: .thisMonth, categories: ["美妝"])
-        let store = withDependencies {
+        let store = TestStore(
+            initialState: OrderFilterFeatureTestSupport.makeState(
+                committedFilterSelection: selection
+            )
+        ) {
+            OrderFilterFeature()
+        } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-        } operation: {
-            Store(
-                initialState: OrderFilterFeatureTestSupport.makeState(
-                    committedFilterSelection: selection
-                )
-            ) {
-                OrderFilterFeature()
-            }
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.pendingFilterSelection.paymentMethod
-            .sending(\.view.filterPendingPaymentMethodSelected).wrappedValue = "信用卡"
+        await store.send(.view(.filterPendingPaymentMethodSelected("信用卡"))) {
+            $0.pendingFilterSelection.paymentMethod = "信用卡"
+        }
 
         // Then
         #expect(store.state.pendingFilterSelection.datePeriod == .thisMonth)

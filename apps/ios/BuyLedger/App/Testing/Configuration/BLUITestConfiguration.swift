@@ -54,6 +54,9 @@ struct BLUITestConfiguration: Equatable, Sendable {
     /// 要模擬的載入失敗情境 (`-BLUITestLoadFailure`)，預設 `.none`
     let loadFailure: BLUITestLoadFailure
 
+    /// 讀取失敗前等待的時長 (`-BLUITestReadDelaySeconds`)；`nil` 代表不延遲
+    let readDelay: Duration?
+
     /// 是否讓四種主檔的新增、刪除與改名寫入失敗
     let shouldFailLookupWrites: Bool
 
@@ -97,6 +100,7 @@ struct BLUITestConfiguration: Equatable, Sendable {
         calendarAccess = Self.option(for: "-BLUITestCalendarAccess", in: arguments) ?? .granted
         loadFailure = Self.option(for: "-BLUITestLoadFailure", in: arguments)
             ?? BLUITestLoadFailure.none
+        readDelay = Self.readDelay(for: loadFailure, in: arguments)
         shouldFailLookupWrites = arguments.contains("-BLUITestLookupWriteFailure")
         shouldFailCampaignWrites = arguments.contains("-BLUITestCampaignWriteFailure")
         defaultCurrencyCode = Self.currencyCode(in: arguments)
@@ -162,6 +166,13 @@ private extension BLUITestConfiguration {
         return value
     }
 
+    /// 印出統一前綴的警告，方便從測試 log 撈出參數問題
+    ///
+    /// - Parameter message: 警告內容 (不含前綴)
+    static func warn(_ message: String) {
+        print("[BuyLedger][UITest] \(message)")
+    }
+
     /// 判斷字串是否為旗標：以 `-` 開頭且不是數值 (負數要當成合法的值放行)
     ///
     /// - Parameter value: 待判斷的字串
@@ -171,13 +182,6 @@ private extension BLUITestConfiguration {
             return false
         }
         return Double(value) == nil
-    }
-
-    /// 印出統一前綴的警告，方便從測試 log 撈出參數問題
-    ///
-    /// - Parameter message: 警告內容 (不含前綴)
-    static func warn(_ message: String) {
-        print("[BuyLedger][UITest] \(message)")
     }
 
     /// 解析 `-BLUITestNow`，失敗時退回 ``defaultReferenceDate``
@@ -214,6 +218,42 @@ private extension BLUITestConfiguration {
         fullDate.formatOptions = [.withFullDate]
         fullDate.timeZone = .gmt
         return fullDate.date(from: raw)
+    }
+
+    /// 解析延遲讀取的正整數秒數，無效或沒有延遲情境時印出警告並忽略
+    ///
+    /// - Parameters:
+    ///   - loadFailure: 要模擬的載入失敗情境
+    ///   - arguments: App 啟動參數
+    /// - Returns: 指定的等待時長；缺值、無效或沒有延遲情境時回 `nil`
+    static func readDelay(
+        for loadFailure: BLUITestLoadFailure,
+        in arguments: [String]
+    ) -> Duration? {
+        let flag = "-BLUITestReadDelaySeconds"
+        guard loadFailure == .ordersDelayed || loadFailure == .exchangeRatesDelayed else {
+            if arguments.contains(flag) {
+                warn("\(flag) 沒有可套用的延遲情境，忽略此旗標")
+            }
+            return nil
+        }
+        if let flagIndex = arguments.lastIndex(of: flag) {
+            let valueIndex = arguments.index(after: flagIndex)
+            guard valueIndex < arguments.endIndex,
+                  !isFlagLike(arguments[valueIndex]) else {
+                warn("\(flag) 後面沒有接秒數，不套用讀取延遲")
+                return nil
+            }
+        }
+        guard let raw = value(for: flag, in: arguments) else {
+            warn("\(flag) 未提供秒數，不套用讀取延遲")
+            return nil
+        }
+        guard let seconds = Int(raw), seconds > 0 else {
+            warn("\(flag) 的值「\(raw)」不是正整數秒數，不套用讀取延遲")
+            return nil
+        }
+        return .seconds(seconds)
     }
 
     /// 解析 `-BLUITestDefaultCurrency`；非三碼英文字母一律視為無效

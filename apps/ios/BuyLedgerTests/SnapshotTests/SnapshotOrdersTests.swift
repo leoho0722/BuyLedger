@@ -194,8 +194,8 @@ struct SnapshotOrdersTests {
 
     /// 驗證寬版清單欄進入多選並勾選第一筆時，清單顯示選取列，畫面符合基準圖
     ///
-    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
-    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 只拍清單欄，三欄組合由 `OrdersRegularColumnScopeUITests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrdersRegularColumnScopeUITests` 守
     /// - Note: 水平與垂直尺寸分類都設為 `.regular` 模擬 iPad 版面，不需要 iPad 模擬器
     /// - Note: 使用離屏快照，避免 key window 尺寸造成不穩定
     @Test
@@ -234,8 +234,8 @@ struct SnapshotOrdersTests {
 
     /// 驗證寬版清單欄在最大輔助字級時，篩選膠囊不重疊，畫面符合基準圖
     ///
-    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
-    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 只拍清單欄，三欄組合由 `OrdersRegularColumnScopeUITests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrdersRegularColumnScopeUITests` 守
     /// - Note: 水平與垂直尺寸分類都設為 `.regular` 模擬 iPad 版面，不需要 iPad 模擬器
     /// - Note: 使用離屏快照，避免 key window 尺寸造成不穩定
     @Test

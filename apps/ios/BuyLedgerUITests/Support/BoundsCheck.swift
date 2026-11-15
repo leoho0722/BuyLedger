@@ -5,7 +5,7 @@
 //  Created by Leo Ho on 2026/10/30.
 //
 
-import XCTest
+import CoreGraphics
 
 /// 框線檢查：框線須完整落在容器內，且不與任何保留區相交
 enum BoundsCheck {}
@@ -57,11 +57,6 @@ private extension BoundsCheck {
     /// - Parameter rect: 待判斷的框線
     /// - Returns: 位置與尺寸皆為有限值且寬高大於零時為 `true`
     static func isValid(_ rect: CGRect) -> Bool {
-        rect.minX.isFinite
-            && rect.minY.isFinite
-            && rect.width.isFinite
-            && rect.height.isFinite
-            && rect.width > 0
-            && rect.height > 0
+        rect.isUsableFrame
     }
 }

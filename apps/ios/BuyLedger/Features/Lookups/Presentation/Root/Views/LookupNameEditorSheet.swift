@@ -173,10 +173,10 @@ private extension LookupNameEditorSheet {
         Form {
             Section {
                 BLTextField(namePlaceholder, text: $draftName, focus: $isNameFieldKeyboardFocused)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .textContentType(nil)
-                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .textContentType(nil)
+                    .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
             } footer: {
                 if let message {
                     Text(message)
@@ -218,12 +218,14 @@ private extension LookupNameEditorSheet {
         Button("orders.list.label.discardChanges", role: .destructive) {
             discardChanges()
         }
+        .accessibilityIdentifier(BLAccessibilityID.LookupManagement.discardAlertDiscardButton)
     }
 
     /// 繼續編輯的按鈕
     var continueEditingButton: some View {
         Button("orders.list.label.keepEditing", role: .cancel) {
         }
+        .accessibilityIdentifier(BLAccessibilityID.LookupManagement.discardAlertKeepEditingButton)
     }
 
     /// 未儲存內容將被清除的說明文字

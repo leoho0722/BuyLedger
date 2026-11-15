@@ -7,12 +7,12 @@
 
 import XCTest
 
-// MARK: - Nested Types
+// MARK: - 載入狀態取樣參數
 
 extension XCTestCase {
 
     /// 載入狀態穩定取樣的時間參數
-    enum LoadStateSampling {
+    private enum LoadStateSampling {
 
         /// 等待目標元素第一次出現的秒數
         static let firstAppearanceTimeout: TimeInterval = 10
@@ -25,7 +25,7 @@ extension XCTestCase {
     }
 }
 
-// MARK: - Load State Sampling
+// MARK: - 載入狀態穩定判定
 
 @MainActor
 extension XCTestCase {
@@ -42,9 +42,8 @@ extension XCTestCase {
     ///   - firstAppearanceTimeout: 等待第一次出現的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 第一次出現後的取樣是否全部符合
+    /// - Throws: 目標未出現或取樣期間狀態不符時丟出測試錯誤
     /// - Note: 只等第一次出現無法抓到「失敗與載入中反覆互換」，取樣期間每次都以立即查詢確認，不等待
-    @discardableResult
     func assertLoadStateStaysStable(
         in app: XCUIApplication,
         waitingFor firstIdentifier: String,
@@ -55,54 +54,46 @@ extension XCTestCase {
         firstAppearanceTimeout: TimeInterval = LoadStateSampling.firstAppearanceTimeout,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
+    ) throws(UITestError) {
         let firstElement = app.descendants(matching: .any)[firstIdentifier]
         guard firstElement.waitForExistence(timeout: firstAppearanceTimeout) else {
-            failWithDiagnostics(
-                in: app,
+            try app.stopWithDiagnostics(
                 "\(context)：逾時，\(firstIdentifier) 在 \(firstAppearanceTimeout) 秒內未出現",
                 file: file,
                 line: line
             )
-            return false
         }
 
         let requiredIdentifiers = [firstIdentifier] + presentIdentifiers
         for sampleIndex in 1...LoadStateSampling.sampleCount {
-            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: LoadStateSampling.interval)
+            // 確保每次狀態取樣彼此分隔，避免只驗到瞬間畫面
+            Polling.pause(for: LoadStateSampling.interval)
 
             if let missing = requiredIdentifiers.first(where: {
                 !app.descendants(matching: .any)[$0].exists
             }) {
-                failWithDiagnostics(
-                    in: app,
+                try app.stopWithDiagnostics(
                     "\(context)：斷言失敗，第 \(sampleIndex) 次取樣時 \(missing) 不存在",
                     file: file,
                     line: line
                 )
-                return false
             }
             if let unexpected = absentIdentifiers.first(where: {
                 app.descendants(matching: .any)[$0].exists
             }) {
-                failWithDiagnostics(
-                    in: app,
+                try app.stopWithDiagnostics(
                     "\(context)：斷言失敗，第 \(sampleIndex) 次取樣時 \(unexpected) 出現",
                     file: file,
                     line: line
                 )
-                return false
             }
             if let unexpectedIndex = absentElements.firstIndex(where: \.exists) {
-                failWithDiagnostics(
-                    in: app,
+                try app.stopWithDiagnostics(
                     "\(context)：斷言失敗，第 \(sampleIndex) 次取樣時 absentElements[\(unexpectedIndex)] 出現",
                     file: file,
                     line: line
                 )
-                return false
             }
         }
-        return true
     }
 }

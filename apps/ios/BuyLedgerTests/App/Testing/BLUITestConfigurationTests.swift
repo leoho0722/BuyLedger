@@ -84,6 +84,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.language == nil)
         #expect(configuration.calendarAccess == .granted)
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
+        #expect(configuration.readDelay == nil)
         #expect(configuration.shouldFailLookupWrites == false)
         #expect(configuration.shouldFailCampaignWrites == false)
         #expect(configuration.defaultCurrencyCode == nil)
@@ -190,6 +191,38 @@ struct BLUITestConfigurationTests {
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
     }
 
+    /// 驗證訂單與匯率的延遲失敗各自採用啟動參數指定的秒數
+    ///
+    /// - Parameter scenario: 延遲情境、秒數字串與字面值指定的預期延遲
+    @Test(arguments: [
+        ReadDelayCase(
+            loadFailure: "ordersDelayed",
+            readDelaySeconds: "8",
+            expectedReadDelay: .seconds(8)
+        ),
+        ReadDelayCase(
+            loadFailure: "exchangeRatesDelayed",
+            readDelaySeconds: "12",
+            expectedReadDelay: .seconds(12)
+        ),
+    ])
+    func init_延遲情境提供正整數秒數_採用指定延遲(scenario: ReadDelayCase) {
+        // Given
+        let arguments = [
+            "-BLUITest",
+            "-BLUITestLoadFailure",
+            scenario.loadFailure,
+            "-BLUITestReadDelaySeconds",
+            scenario.readDelaySeconds,
+        ]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.readDelay == scenario.expectedReadDelay)
+    }
+
     /// 驗證只有日期的參考時間解析為當日 UTC 午夜
     @Test
     func init_參考時間只有日期_解析為午夜() {
@@ -230,6 +263,24 @@ struct BLUITestConfigurationTests {
 
         // Then
         #expect(configuration.shouldFailLookupWrites)
+    }
+}
+
+// MARK: - Nested Types
+
+extension BLUITestConfigurationTests {
+
+    /// 延遲讀取的啟動參數與預期時長
+    struct ReadDelayCase: Sendable {
+
+        /// 傳進 `-BLUITestLoadFailure` 的延遲失敗情境
+        let loadFailure: String
+
+        /// 傳進 `-BLUITestReadDelaySeconds` 的秒數字串
+        let readDelaySeconds: String
+
+        /// 以字面值指定的預期等待時長
+        let expectedReadDelay: Duration
     }
 }
 

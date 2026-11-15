@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import Testing
 
 @testable import BuyLedger
@@ -15,7 +14,9 @@ import Testing
 @MainActor
 struct LookupRenameFormFeatureTests {
 
-    /// 驗證草稿名稱經 `BindingAction` 寫入時，`State` 的草稿更新為新值
+    /// 驗證改名表單輸入名稱時，畫面送出 `draftName` 自己的 binding action，`State` 的草稿更新為新值
+    ///
+    /// - Note: 畫面綁定 `$renameStore.draftName`
     @Test
     func binding_草稿名稱改為新值_寫入草稿() async {
         // Given
@@ -26,7 +27,7 @@ struct LookupRenameFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.draftName, "美妝"))) {
+        await store.send(\.binding.draftName, "美妝") {
             $0.draftName = "美妝"
         }
 
@@ -34,7 +35,9 @@ struct LookupRenameFormFeatureTests {
         #expect(store.state.draftName == "美妝")
     }
 
-    /// 驗證名稱欄位取得焦點的綁定寫入後，`State` 記錄為聚焦
+    /// 驗證名稱欄位取得焦點時，畫面送出 `isNameFieldFocused` 自己的 binding action，`State` 記錄為聚焦
+    ///
+    /// - Note: 畫面綁定 `$renameStore.isNameFieldFocused`
     @Test
     func binding_名稱欄位取得焦點_寫入聚焦狀態() async {
         // Given
@@ -45,7 +48,7 @@ struct LookupRenameFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isNameFieldFocused, true))) {
+        await store.send(\.binding.isNameFieldFocused, true) {
             $0.isNameFieldFocused = true
         }
 
@@ -53,7 +56,10 @@ struct LookupRenameFormFeatureTests {
         #expect(store.state.isNameFieldFocused == true)
     }
 
-    /// 驗證捨棄確認彈窗的綁定寫入後，`State` 記錄為顯示中
+    /// 驗證顯示捨棄確認彈窗時，畫面送出 `isDiscardConfirmationPresented` 自己的 binding action，
+    /// `State` 記錄為顯示中
+    ///
+    /// - Note: 畫面綁定 `$renameStore.isDiscardConfirmationPresented`
     @Test
     func binding_顯示捨棄確認_寫入確認狀態() async {
         // Given
@@ -64,30 +70,12 @@ struct LookupRenameFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDiscardConfirmationPresented, true))) {
+        await store.send(\.binding.isDiscardConfirmationPresented, true) {
             $0.isDiscardConfirmationPresented = true
         }
 
         // Then
         #expect(store.state.isDiscardConfirmationPresented == true)
-    }
-
-    /// 驗證經畫面的 `@Bindable` 綁定修改草稿時，Store 的草稿同步更新
-    @Test
-    func binding_經畫面綁定路徑修改草稿_更新草稿() {
-        // Given
-        let store = Store(
-            initialState: LookupRenameFormFeature.State(originalName: "服飾")
-        ) {
-            LookupRenameFormFeature()
-        }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.draftName.wrappedValue = "美妝"
-
-        // Then
-        #expect(store.draftName == "美妝")
     }
 
     /// 驗證改名表單開啟時，草稿等於原名稱且焦點與捨棄確認皆為關閉
@@ -308,7 +296,7 @@ struct LookupRenameFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDiscardConfirmationPresented, false))) {
+        await store.send(\.binding.isDiscardConfirmationPresented, false) {
             $0.isDiscardConfirmationPresented = false
         }
 

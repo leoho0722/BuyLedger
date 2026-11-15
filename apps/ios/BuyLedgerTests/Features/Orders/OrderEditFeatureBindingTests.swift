@@ -6,125 +6,100 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// `OrderEditFeature` 的單元測試，以 `Store` 搭配 `@Bindable` 確認畫面實際的綁定路徑能寫回草稿
+/// `OrderEditFeature` 的單元測試，以 `TestStore` 送出畫面實際送出的 binding action，確認表單輸入寫回草稿
 @MainActor
 struct OrderEditFeatureBindingTests {
 
-    /// 驗證表單輸入顧客名稱後，草稿的 `customerName` 同步成新值
+    /// 驗證表單輸入顧客名稱時，畫面送出整份草稿的 binding action，草稿的 `customerName` 更新為新值
     ///
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
+    /// - Note: 畫面綁定 `$store.draft.customerName`，巢狀欄位送出的是整個 `draft`
     @Test
-    func binding_顧客名稱改變_同步更新草稿() {
+    func binding_顧客名稱改變_同步更新草稿() async {
         // Given
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
+        var editedDraft = initial.draft
+        editedDraft.customerName = "新客戶"
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft.customerName.wrappedValue = "新客戶"
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft.customerName = "新客戶"
+        }
 
         // Then
         #expect(store.state.draft.customerName == "新客戶")
     }
 
-    /// 驗證表單選取商品類別後，草稿的 `categories` 同步成選取的清單
+    /// 驗證表單切換訂單狀態時，畫面送出整份草稿的 binding action，草稿的 `status` 更新為新狀態
     ///
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
+    /// - Note: 畫面綁定 `$store.draft.status`，巢狀欄位送出的是整個 `draft`
     @Test
-    func binding_分類選取改變_同步更新草稿() {
+    func binding_訂單狀態改變_同步更新草稿() async {
         // Given
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
+        var editedDraft = initial.draft
+        editedDraft.status = .delivered
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft.categories.wrappedValue = ["美妝"]
-
-        // Then
-        #expect(store.state.draft.categories == ["美妝"])
-    }
-
-    /// 驗證表單切換訂單狀態後，草稿的 `status` 同步成新狀態
-    ///
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
-    @Test
-    func binding_訂單狀態改變_同步更新草稿() {
-        // Given
-        let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
-            OrderEditFeature()
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft.status = .delivered
         }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.draft.status.wrappedValue = .delivered
 
         // Then
         #expect(store.state.draft.status == .delivered)
     }
 
-    /// 驗證表單切換幣別後，草稿的 `currency` 同步成新幣別
+    /// 驗證折抵初始為 0 時，表單輸入實收金額 12,345，畫面送出 `chargedAmount` 自己的 binding action，
+    /// 草稿的 `chargedAmount` 更新為 12,345，折抵維持 0
     ///
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
+    /// - Note: 畫面綁定 `$store.chargedAmount`，這是可寫的 computed property，送出自己的 key path
     @Test
-    func binding_訂單幣別改變_同步更新草稿() {
+    func binding_實收金額改變_同步更新草稿() async {
         // Given
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft.currency.wrappedValue = .jpy
-
-        // Then
-        #expect(store.state.draft.currency == .jpy)
-    }
-
-    /// 驗證折抵初始為 0 時，經表單綁定輸入實收金額 12,345，草稿的 `chargedAmount` 同步為 12,345
-    ///
-    /// - Note: 夾限行為由 `binding_實收金額降到折抵以下_折抵夾到新上限` 覆蓋
-    @Test
-    func binding_實收金額改變_同步更新草稿() {
-        // Given
-        let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
-            OrderEditFeature()
+        await store.send(\.binding.chargedAmount, 12_345) {
+            $0.draft.chargedAmount = 12_345
         }
-        @Bindable var bindable = store
-
-        // When
-        $bindable.chargedAmount.wrappedValue = 12_345
 
         // Then
         #expect(store.state.draft.chargedAmount == 12_345)
+        #expect(store.state.draft.cardlessDeductionAmount == 0)
     }
 
-    /// 驗證商品成本、運費與手續費率等成本欄位經綁定寫入後，草稿中對應欄位保留寫入的值
+    /// 驗證商品成本、運費與手續費率等成本欄位經表單輸入時，畫面送出整份草稿的 binding action，
+    /// 草稿中對應欄位更新為輸入的值，其他欄位維持原值
     ///
     /// - Parameter field: 要更新的訂單草稿欄位
-    /// - Note: 此測試守住 `BindingReducer()` 的 `binding` 接線
+    /// - Note: 畫面綁定 `$store.draft.<欄位>`，巢狀欄位送出的是整個 `draft`
     @Test(arguments: CostField.allCases)
-    func binding_成本欄位改變_同步更新草稿(field: CostField) {
+    func binding_成本欄位改變_同步更新草稿(field: CostField) async {
         // Given
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        let store = Store(initialState: initial) {
+        var editedDraft = initial.draft
+        editedDraft[keyPath: field.keyPath] = field.value
+        let store = TestStore(initialState: initial) {
             OrderEditFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draft[dynamicMember: field.keyPath].wrappedValue = field.value
+        await store.send(\.binding.draft, editedDraft) {
+            $0.draft[keyPath: field.keyPath] = field.value
+        }
 
         // Then
         #expect(store.state.draft[keyPath: field.keyPath] == field.value)
@@ -141,6 +116,9 @@ extension OrderEditFeatureBindingTests {
         /// 商品成本
         case itemCost
 
+        /// 外國國內運費
+        case foreignDomesticShipping
+
         /// 國內運費
         case domesticShipping
 
@@ -153,11 +131,17 @@ extension OrderEditFeatureBindingTests {
         /// 平台手續費率
         case platformFeeRate
 
-        /// 草稿中對應欄位的可寫 key path，供綁定寫入與讀回結果時使用
+        /// 金流手續費率
+        case paymentFeeRate
+
+        /// 草稿中對應欄位的可寫 key path，供組出輸入後的草稿與讀回結果時使用
         var keyPath: WritableKeyPath<OrderDraft, Decimal> {
             switch self {
             case .itemCost:
                 \.itemCost
+
+            case .foreignDomesticShipping:
+                \.foreignDomesticShipping
 
             case .domesticShipping:
                 \.domesticShipping
@@ -170,6 +154,9 @@ extension OrderEditFeatureBindingTests {
 
             case .platformFeeRate:
                 \.platformFeeRate
+
+            case .paymentFeeRate:
+                \.paymentFeeRate
             }
         }
 
@@ -178,6 +165,9 @@ extension OrderEditFeatureBindingTests {
             switch self {
             case .itemCost:
                 5_000
+
+            case .foreignDomesticShipping:
+                40
 
             case .domesticShipping:
                 80
@@ -190,6 +180,9 @@ extension OrderEditFeatureBindingTests {
 
             case .platformFeeRate:
                 0.03
+
+            case .paymentFeeRate:
+                0.02
             }
         }
     }

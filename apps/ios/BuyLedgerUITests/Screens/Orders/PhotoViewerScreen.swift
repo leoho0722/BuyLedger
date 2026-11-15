@@ -28,7 +28,7 @@ extension PhotoViewerScreen {
     ///   - timeout: 等待文字出現的秒數
     /// - Returns: 換頁計數是否在逾時前出現
     func hasPageCount(_ text: String, timeout: TimeInterval = 5) -> Bool {
-        app.navigationBars.staticTexts[text].waitForExistence(timeout: timeout)
+        app.waitForNavigationBarTitle(text, timeout: timeout)
     }
 
     /// 對目前照片左滑換到下一張
@@ -36,41 +36,32 @@ extension PhotoViewerScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func swipeToNextPhoto(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 照片逾時仍不可點時丟出 `UITestError.stopped`
+    func swipeToNextPhoto(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let image = app.images[BLAccessibilityID.PhotoViewer.image].firstMatch
-        guard image.waitUntilHittableOrFail(
-            in: app,
-            timeout: 5,
-            file: file,
-            line: line
-        ) else {
-            return
-        }
-        image.swipeLeft()
-    }
-
-    /// 點識別碼含斜線的導覽列 Back 鍵，返回編輯表單
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapBack(file: StaticString = #filePath, line: UInt = #line) {
-        let viewerBar = app.navigationBars
-            .matching(NSPredicate(format: "identifier CONTAINS '/'"))
-            .firstMatch
-        let back = viewerBar.buttons[SystemAccessibilityID.backButton]
-        back.tapAfterWaiting(
+        try image.requireHittable(
             in: app,
             timeout: 5,
             file: file,
             line: line
         )
+        image.swipeLeft()
+    }
+
+    /// 點唯一可互動的系統返回鍵，返回編輯表單
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapBack(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
+        try app.tapUniqueNativeBackButton(file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension PhotoViewerScreen: Screen {
+extension PhotoViewerScreen: ScreenProtocol {
 
     /// 判定檢視器已推進呈現的根 identifier (檢視器容器)
     var rootIdentifier: String {

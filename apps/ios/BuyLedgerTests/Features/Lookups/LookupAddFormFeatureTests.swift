@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
 import Testing
 
 @testable import BuyLedger
@@ -33,7 +32,9 @@ struct LookupAddFormFeatureTests {
         #expect(state.isDiscardConfirmationPresented == false)
     }
 
-    /// 驗證草稿名稱經 `BindingAction` 寫入時，`State` 的草稿更新為新值
+    /// 驗證名稱型表單輸入名稱時，畫面送出 `draftName` 自己的 binding action，`State` 的草稿更新為新值
+    ///
+    /// - Note: 畫面綁定 `$addStore.draftName`
     @Test
     func binding_草稿名稱改為新值_寫入草稿() async {
         // Given
@@ -44,7 +45,7 @@ struct LookupAddFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.draftName, "手工藝品"))) {
+        await store.send(\.binding.draftName, "手工藝品") {
             $0.draftName = "手工藝品"
         }
 
@@ -52,7 +53,9 @@ struct LookupAddFormFeatureTests {
         #expect(store.state.draftName == "手工藝品")
     }
 
-    /// 驗證付款方式型表單的銀行匯款旗標經綁定寫入時，`State` 記錄為開啟
+    /// 驗證付款方式型表單切換銀行匯款旗標時，畫面送出旗標自己的 binding action，`State` 記錄為開啟
+    ///
+    /// - Note: 畫面綁定 `$addStore.isDraftBankTransfer`
     @Test
     func binding_切換銀行匯款旗標_寫入旗標() async {
         // Given
@@ -63,7 +66,7 @@ struct LookupAddFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDraftBankTransfer, true))) {
+        await store.send(\.binding.isDraftBankTransfer, true) {
             $0.isDraftBankTransfer = true
         }
 
@@ -71,22 +74,25 @@ struct LookupAddFormFeatureTests {
         #expect(store.state.isDraftBankTransfer == true)
     }
 
-    /// 驗證經畫面的 `@Bindable` 綁定修改草稿時，Store 的草稿同步更新
+    /// 驗證付款方式型表單輸入名稱時，畫面送出 `draftName` 自己的 binding action，`State` 的草稿更新為新值
+    ///
+    /// - Note: 畫面綁定 `$addStore.draftName`
     @Test
-    func binding_經畫面綁定路徑修改草稿_更新草稿() {
+    func binding_付款方式型草稿名稱改為新值_寫入草稿() async {
         // Given
-        let store = Store(
+        let store = TestStore(
             initialState: LookupAddFormFeature.State(hasClassification: true)
         ) {
             LookupAddFormFeature()
         }
-        @Bindable var bindable = store
 
         // When
-        $bindable.draftName.wrappedValue = "匯款"
+        await store.send(\.binding.draftName, "匯款") {
+            $0.draftName = "匯款"
+        }
 
         // Then
-        #expect(store.draftName == "匯款")
+        #expect(store.state.draftName == "匯款")
     }
 
     /// 驗證名稱型表單只有前後空白時，去除空白後與初始的空白名稱相同，不算已變更
@@ -328,7 +334,7 @@ struct LookupAddFormFeatureTests {
         }
 
         // When
-        await store.send(.binding(.set(\.isDiscardConfirmationPresented, false))) {
+        await store.send(\.binding.isDiscardConfirmationPresented, false) {
             $0.isDiscardConfirmationPresented = false
         }
 

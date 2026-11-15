@@ -67,7 +67,7 @@ struct SnapshotCampaignDetailTests {
 
     /// 驗證編輯既有開團時，備註區段帶入開團備註，畫面符合基準圖
     ///
-    /// - Note: 資訊區段含系統日期選擇器，不做像素比對，改由 `CampaignEditDateRowTests` 守住日期列
+    /// - Note: 資訊區段含系統日期選擇器，不做像素比對，改由 `CampaignEditDateRowUITests` 守住日期列
     /// - Note: 於 key window 渲染，與訂單編輯區段一致
     @Test
     func campaignEditNotesSection_編輯既有開團_符合基準圖() {

@@ -229,6 +229,12 @@ extension BLAccessibilityID {
         /// 單欄名稱表單的取消按鈕
         static let nameCancelButton = "lookupManagement.nameCancelButton"
 
+        /// 單欄名稱表單捨棄確認彈窗的捨棄按鈕
+        static let discardAlertDiscardButton = "lookupManagement.discardAlert.discardButton"
+
+        /// 單欄名稱表單捨棄確認彈窗的繼續編輯按鈕
+        static let discardAlertKeepEditingButton = "lookupManagement.discardAlert.keepEditingButton"
+
         /// 主檔管理頁的載入失敗文字
         static let loadFailureMessage = "lookupManagement.loadFailureMessage"
 

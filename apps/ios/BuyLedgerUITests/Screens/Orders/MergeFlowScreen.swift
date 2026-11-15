@@ -37,9 +37,19 @@ extension MergeFlowScreen {
     ///   - orderID: 訂單編號
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapCandidate(orderID: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Returns: 已就緒的合併確認表單
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    @discardableResult
+    func tapCandidate(
+        orderID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> OrderEditScreen {
         let row = candidateRow(orderID: orderID)
-        row.tapAfterWaiting(in: app, file: file, line: line)
+        try row.tapAfterWaiting(in: app, file: file, line: line)
+        let screen = OrderEditScreen(app: app)
+        try screen.requireReady(file: file, line: line)
+        return screen
     }
 
     /// 點工具列的取消合併
@@ -47,15 +57,16 @@ extension MergeFlowScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapCancel(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapCancel(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.OrderMerge.cancelButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension MergeFlowScreen: Screen {
+extension MergeFlowScreen: ScreenProtocol {
 
     /// 合併候選 sheet 的根元素 identifier，即候選清單捲動容器
     var rootIdentifier: String {

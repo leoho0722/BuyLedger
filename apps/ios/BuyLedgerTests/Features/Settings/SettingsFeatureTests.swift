@@ -58,12 +58,13 @@ struct SettingsFeatureTests {
         #expect(saved.value == binding.expectedSnapshot)
     }
 
-    /// 驗證連續修改月度目標 (依序為 1、12、120) 時，每次改動都同步保存，且保存順序與輸入順序相同
+    /// 驗證連續修改月度目標 (依序為 1、12、120) 時，每次改動都在 reducer 內同步保存，且保存順序與輸入順序相同
     ///
-    /// - Note: 以同步的連續輸入驗證保存順序，延後到非同步效果才寫入時也會失敗
+    /// - Note: 畫面綁定 `$store.monthlyProfitGoalTWD`，頂層欄位送出自己的 key path；
+    ///   保存在接收 delegate 之前就已寫入，延後到非同步效果才寫入時會失敗
     @Test
     @MainActor
-    func binding_連續修改月度目標_依輸入順序儲存() {
+    func binding_連續修改月度目標_依輸入順序儲存() async {
         // Given
         let initialSnapshot = SettingsSnapshot(
             language: .traditionalChinese,
@@ -80,7 +81,7 @@ struct SettingsFeatureTests {
         var thirdSnapshot = initialSnapshot
         thirdSnapshot.monthlyProfitGoalTWD = 120
         let saved = LockIsolated<[SettingsSnapshot]>([])
-        let store = Store(initialState: SettingsFeature.State(snapshot: initialSnapshot)) {
+        let store = TestStore(initialState: SettingsFeature.State(snapshot: initialSnapshot)) {
             SettingsFeature()
         } withDependencies: {
             $0.settingsService.save = { snapshot in
@@ -89,15 +90,24 @@ struct SettingsFeatureTests {
                 }
             }
         }
+        await store.send(\.binding.monthlyProfitGoalTWD, 1) {
+            $0.monthlyProfitGoalTWD = 1
+        }
+        await store.receive(\.delegate.preferencesChanged, firstSnapshot)
+        await store.send(\.binding.monthlyProfitGoalTWD, 12) {
+            $0.monthlyProfitGoalTWD = 12
+        }
+        await store.receive(\.delegate.preferencesChanged, secondSnapshot)
 
         // When
-        store.send(.binding(.set(\.monthlyProfitGoalTWD, 1)))
-        store.send(.binding(.set(\.monthlyProfitGoalTWD, 12)))
-        store.send(.binding(.set(\.monthlyProfitGoalTWD, 120)))
+        await store.send(\.binding.monthlyProfitGoalTWD, 120) {
+            $0.monthlyProfitGoalTWD = 120
+        }
 
         // Then
         #expect(saved.value == [firstSnapshot, secondSnapshot, thirdSnapshot])
-        #expect(store.monthlyProfitGoalTWD == 120)
+        await store.receive(\.delegate.preferencesChanged, thirdSnapshot)
+        #expect(store.state.monthlyProfitGoalTWD == 120)
     }
 
     /// 驗證月度目標欄位的鍵盤焦點改變時，只更新焦點狀態，不寫入設定
@@ -206,7 +216,8 @@ struct SettingsFeatureTests {
         // Given
         var state = SettingsFeature.State()
         state.availableCurrencies = [.twd, .jpy]
-        let failingFetchCodes: CurrencyMetadataService.FetchCodes = { () throws(CurrencyMetadataServiceError) in
+        let failingFetchCodes: CurrencyMetadataService.FetchCodes = {
+            () throws(CurrencyMetadataServiceError) in
             throw .persistence(
                 .storage(
                     .fetchFailed(

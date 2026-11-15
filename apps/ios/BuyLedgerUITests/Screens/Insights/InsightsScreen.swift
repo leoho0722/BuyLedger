@@ -13,6 +13,8 @@ struct InsightsScreen {
     // MARK: - Properties
 
     /// 分段的宣告序位，對齊 `InsightsDateRange`
+    ///
+    /// - Note: 順序須與 App 端 `InsightsDateRange.allCases` 一致
     private static let rangeOrder = ["thirtyDays", "sixMonths", "twelveMonths"]
 
     /// 受測 App
@@ -24,15 +26,35 @@ struct InsightsScreen {
 @MainActor
 extension InsightsScreen {
 
+    /// 切到分析分頁，等待目前的前景內容、空狀態或載入失敗就緒
+    ///
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 已進入前景的分析畫面
+    /// - Throws: 分頁無法切換或目的地未就緒時丟出測試錯誤
+    @discardableResult
+    static func open(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> InsightsScreen {
+        try RootNavigationScreen(app: app).goToInsights(file: file, line: line)
+        return InsightsScreen(app: app)
+    }
+
     /// 載入分析版面所需元素並回傳同一快照要讀取的 identifier
     ///
-    /// - Parameter campaignID: 要納入快照的開團識別值；無開團資料時為 `nil`
+    /// - Parameters:
+    ///   - category: 要納入快照的類別名稱
+    ///   - campaignID: 要納入快照的開團識別值；無開團資料時為 `nil`
     /// - Returns: 版面測試必須出現在快照中的 identifier
-    func prepareLayoutSnapshot(campaignID: String? = nil) -> [String] {
+    func prepareLayoutSnapshot(category: String, campaignID: String? = nil) -> [String] {
         var identifiers = [
             BLAccessibilityID.Insights.rangePicker,
             BLAccessibilityID.Insights.trendChart,
-            BLAccessibilityID.Insights.categoryRankRow(category: "美妝"),
+            BLAccessibilityID.Insights.categoryRankRow(category: category),
             BLAccessibilityID.Insights.costDonut,
             BLAccessibilityID.Insights.heatmap,
         ]
@@ -43,41 +65,13 @@ extension InsightsScreen {
         return identifiers
     }
 
-    /// 將分析期間選擇器捲入可視區後讀取框線
+    /// 等待分析頁顯示載入中
     ///
-    /// - Returns: 選擇器框線；元素尚未出現或無有效框線時為 `nil`
-    func rangePickerFrame() -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.rangePicker)
-    }
-
-    /// 將趨勢卡捲入可視區後讀取框線
-    ///
-    /// - Returns: 趨勢卡框線；元素尚未出現或無有效框線時為 `nil`
-    func trendChartFrame() -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.trendChart)
-    }
-
-    /// 將指定類別排行列捲入可視區後讀取框線
-    ///
-    /// - Parameter category: 類別名稱
-    /// - Returns: 類別列框線；元素尚未出現或無有效框線時為 `nil`
-    func categoryRowFrame(category: String) -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.categoryRankRow(category: category))
-    }
-
-    /// 將成本圓餅圖捲入可視區後讀取框線
-    ///
-    /// - Returns: 圓餅圖框線；元素尚未出現或無有效框線時為 `nil`
-    func costDonutFrame() -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.costDonut)
-    }
-
-    /// 將指定開團排行列捲入可視區後讀取框線
-    ///
-    /// - Parameter campaignID: 開團識別值
-    /// - Returns: 開團列框線；元素尚未出現或無有效框線時為 `nil`
-    func campaignRankFrame(campaignID: String) -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID))
+    /// - Parameter timeout: 等待載入指示器出現的秒數
+    /// - Returns: 載入指示器是否在逾時前出現
+    func waitForLoading(timeout: TimeInterval = 10) -> Bool {
+        app.descendants(matching: .any)[BLAccessibilityID.Insights.loading]
+            .waitForExistence(timeout: timeout)
     }
 
     /// 判斷指定開團排行列是否在目前 accessibility tree 上
@@ -89,49 +83,61 @@ extension InsightsScreen {
         return app.descendants(matching: .any)[identifier].exists
     }
 
-    /// 將熱力圖容器捲入可視區後讀取框線
-    ///
-    /// - Returns: 熱力圖框線；元素尚未出現或無有效框線時為 `nil`
-    func heatmapFrame() -> CGRect? {
-        frame(for: BLAccessibilityID.Insights.heatmap)
-    }
-
     /// 切換趨勢期間
     ///
     /// - Parameters:
     ///   - rangeID: 趨勢期間的 identifier
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func selectRange(_ rangeID: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func selectRange(
+        _ rangeID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let byID = app.segmentedControls.buttons[BLAccessibilityID.Insights.rangeSegment(rangeID)]
         if byID.waitUntilHittable(timeout: 3) {
-            byID.tap()
+            try byID.tapAfterWaiting(in: app, file: file, line: line)
             return
         }
 
         if let index = Self.rangeOrder.firstIndex(of: rangeID) {
-            let byIndex = app.segmentedControls.buttons.element(boundBy: index)
-            byIndex.tapAfterWaiting(in: app, file: file, line: line)
+            let segments = app.segmentedControls.buttons
+            guard segments.count == Self.rangeOrder.count else {
+                let message = """
+                    分析期間分段數 \(segments.count) 與宣告的 \(Self.rangeOrder.count) 個不符，\
+                    無法依位置點選
+                    """
+                try app.stopWithDiagnostics(message, file: file, line: line)
+            }
+            let byIndex = segments.element(boundBy: index)
+            try byIndex.tapAfterWaiting(in: app, file: file, line: line)
+            guard Polling.wait(timeout: 3, until: { byIndex.isSelected }) else {
+                let message = "點選第 \(index + 1) 個分析期間分段後未變成選取態"
+                try app.stopWithDiagnostics(message, file: file, line: line)
+            }
             return
         }
         let rangeIdentifier = BLAccessibilityID.Insights.rangeSegment(rangeID)
         let message = "找不到分析期間分段 identifier \(rangeIdentifier)"
-        app.failWithDiagnostics(message, file: file, line: line)
+        try app.stopWithDiagnostics(message, file: file, line: line)
     }
 
     /// 判定指定分析期間分段是否為選取態
     ///
     /// - Parameter rangeID: 分析期間的 identifier key
-    /// - Returns: 分段是否為選取態
+    /// - Returns: 分段是否為選取態；依位置退回而分段數與宣告不符時為 `false`
     func isRangeSelected(_ rangeID: String) -> Bool {
         let byID = app.segmentedControls.buttons[BLAccessibilityID.Insights.rangeSegment(rangeID)]
         if byID.exists {
             return byID.isSelected
         }
-        guard let index = Self.rangeOrder.firstIndex(of: rangeID) else {
+        let segments = app.segmentedControls.buttons
+        guard let index = Self.rangeOrder.firstIndex(of: rangeID),
+              segments.count == Self.rangeOrder.count else {
             return false
         }
-        return app.segmentedControls.buttons.element(boundBy: index).isSelected
+        return segments.element(boundBy: index).isSelected
     }
 
     /// 讀取趨勢卡總獲利的 accessibility value
@@ -147,42 +153,86 @@ extension InsightsScreen {
 
     /// 讀取指定類別排行列的獲利 accessibility value
     ///
-    /// - Parameter category: 類別名稱
+    /// - Parameters:
+    ///   - category: 類別名稱
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 類別獲利的 accessibility value；元素不存在時為 `nil`
-    func categoryProfit(category: String) -> String? {
+    /// - Throws: 元素無法捲入可視範圍時丟出測試錯誤
+    func categoryProfit(
+        category: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> String? {
         let element = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.categoryRankRow(category: category)
         ]
-        return accessibilityValue(of: element)
+        return try accessibilityValue(of: element, file: file, line: line)
     }
 
-    /// 捲到成本結構 donut，回傳它是否可點
+    /// 將成本結構 donut 捲入可視範圍
     ///
-    /// - Returns: 成本結構 donut 是否在等待或捲動後可點
-    func revealCostDonut() -> Bool {
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: donut 無法捲入可視範圍時丟出測試錯誤
+    func revealCostDonut(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let donut = app.descendants(matching: .other)[BLAccessibilityID.Insights.costDonut]
         guard donut.waitForExistence(timeout: 5) else {
-            return false
+            try app.stopWithDiagnostics("找不到成本結構 donut", file: file, line: line)
         }
-        return app.stableVisibleFrame(of: donut, within: rootElement) != nil
+        guard app.stableVisibleFrame(of: donut, within: rootElement) != nil else {
+            try app.stopWithDiagnostics("成本結構 donut 無法捲入可視範圍", file: file, line: line)
+        }
+    }
+
+    /// 將第一個類別排行列捲入可視範圍
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Throws: 類別排行列無法捲入可視範圍時丟出測試錯誤
+    func revealFirstCategoryRank(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        let prefix = BLAccessibilityID.Insights.categoryRankRow(category: "")
+        let rows = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier BEGINSWITH %@", prefix)
+        )
+        let row = rows.firstMatch
+        guard row.waitForExistence(timeout: 5) else {
+            try app.stopWithDiagnostics("找不到類別排行列", file: file, line: line)
+        }
+        guard app.stableVisibleFrame(of: row, within: rootElement) != nil else {
+            try app.stopWithDiagnostics("類別排行列無法捲入可視範圍", file: file, line: line)
+        }
     }
 
     /// 讀取指定開團排行列的毛利 accessibility value
     ///
-    /// - Parameter campaignID: 開團識別值
+    /// - Parameters:
+    ///   - campaignID: 開團識別值
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 開團毛利的 accessibility value；元素不存在時為 `nil`
-    func campaignProfit(campaignID: String) -> String? {
+    /// - Throws: 元素無法捲入可視範圍時丟出測試錯誤
+    func campaignProfit(
+        campaignID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> String? {
         let element = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
         ]
-        return accessibilityValue(of: element)
+        return try accessibilityValue(of: element, file: file, line: line)
     }
 
     /// 等待指定開團的毛利排行列出現在可及性樹上
     ///
     /// - Parameter campaignID: 開團識別值
     /// - Returns: 是否找到該排行列
-    /// - Note: 排行在惰性容器內，畫面外的列查 `isHittable` 會因 `frame` 無效而報錯，只確認列已出現
+    /// - Note: 惰性容器中的畫面外排行列只確認存在，避免讀取無效框線
     func hasCampaignRank(campaignID: String) -> Bool {
         let row = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
@@ -191,9 +241,9 @@ extension InsightsScreen {
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension InsightsScreen: Screen {
+extension InsightsScreen: ScreenProtocol {
 
     /// 判定分析頁已就緒的根元素 identifier (分析內容捲動容器)
     var rootIdentifier: String {
@@ -206,32 +256,33 @@ extension InsightsScreen: Screen {
 @MainActor
 private extension InsightsScreen {
 
-    /// 將語意識別碼對應元素捲入可視區後讀取穩定框線
+    /// 捲入分析頁可見範圍後讀取 accessibility value，不要求元素可點
     ///
-    /// - Parameter identifier: accessibility identifier
-    /// - Returns: 元素穩定且可見的框線；元素不存在或無效時為 `nil`
-    func frame(for identifier: String) -> CGRect? {
-        let element = app.descendants(matching: .any)[identifier]
-        return app.stableVisibleFrame(of: element, within: rootElement)
-    }
-
-    /// 嘗試將元素捲入分析頁可見範圍，再讀取 accessibility value，不要求元素可點
-    ///
-    /// - Parameter element: 要讀取的元素
+    /// - Parameters:
+    ///   - element: 要讀取的元素
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 元素的 accessibility value；元素不存在時為 `nil`
-    func accessibilityValue(of element: XCUIElement) -> String? {
+    /// - Throws: 元素無法捲入可視範圍時丟出測試錯誤
+    func accessibilityValue(
+        of element: XCUIElement,
+        file: StaticString,
+        line: UInt
+    ) throws(UITestError) -> String? {
         guard element.waitForExistence(timeout: 10) else {
             return nil
         }
-
-        for _ in 0..<8 {
-            let elementFrame = element.frame
-            if !elementFrame.isEmpty && rootElement.frame.intersects(elementFrame) {
-                break
-            }
-            rootElement.swipeUp()
-        }
-
+        try app.reveal(
+            element,
+            within: rootElement,
+            isSwipingUp: true,
+            maxGestures: 8,
+            gestureStyle: .swipe,
+            requiresVisibleFrame: true,
+            requiresHittable: false,
+            file: file,
+            line: line
+        )
         return element.value as? String
     }
 }

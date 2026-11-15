@@ -18,8 +18,8 @@ struct SnapshotOrderFilterEmptyStatesTests {
 
     /// 驗證寬版清單欄在主檔與訂單都沒有付款方式與類別時，不顯示付款方式 Menu 與類別觸發鈕，畫面符合基準圖
     ///
-    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
-    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 只拍清單欄，三欄組合由 `OrdersRegularColumnScopeUITests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrdersRegularColumnScopeUITests` 守
     @Test
     func ordersRegularListContent_寬版清單欄無付款方式與類別_符合基準圖() async {
         await LookupCatalog.withIsolatedStorage {

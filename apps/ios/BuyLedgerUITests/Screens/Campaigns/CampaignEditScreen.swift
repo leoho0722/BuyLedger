@@ -62,85 +62,54 @@ extension CampaignEditScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 名稱欄與鍵盤是否已解除焦點
-    func dismissNameKeyboard(file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        let predicate = NSPredicate(format: "hasKeyboardFocus == true")
-        guard nameField.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics("找不到開團名稱欄位", file: file, line: line)
-            return false
-        }
-        if predicate.evaluate(with: nameField) {
-            nameField.typeText(XCUIKeyboardKey.return.rawValue)
-        }
-        let hasDismissed = pollUntil(timeout: 10) {
-            !predicate.evaluate(with: nameField)
-                && !app.keyboards.firstMatch.exists
-                && !app.isNumericPopoverPresented
-        }
-        guard hasDismissed else {
-            app.failWithDiagnostics("開團名稱欄的鍵盤或焦點仍未解除", file: file, line: line)
-            return false
-        }
-        return true
+    /// - Throws: 找不到名稱欄或 Return 後焦點未解除時丟出測試錯誤
+    func dismissNameKeyboard(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        try nameField.dismissKeyboardByReturn(in: app, file: file, line: line)
     }
 
     /// 捲動露出欄位後從左側取得焦點
     ///
     /// - Parameters:
     ///   - field: 要聚焦的文字欄位
-    ///   - isScrollingDown: 是否向表單下方尋找欄位
+    ///   - isSwipingUp: 是否向上滑動以尋找表單下方欄位
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 欄位是否已取得焦點且鍵盤就緒
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
     func focusFromLeft(
         _ field: XCUIElement,
-        isScrollingDown: Bool,
+        isSwipingUp: Bool,
         file: StaticString = #filePath,
         line: UInt = #line
-    ) -> Bool {
-        guard revealField(field, isScrollingDown: isScrollingDown) else {
-            app.failWithDiagnostics("開團文字欄位未能捲到可點位置", file: file, line: line)
-            return false
+    ) throws(UITestError) {
+        guard revealField(field, isSwipingUp: isSwipingUp) else {
+            try app.stopWithDiagnostics(
+                "開團文字欄位未能捲到可點位置",
+                file: file,
+                line: line
+            )
         }
-        return field.tapLeftToFocus(in: app, file: file, line: line)
+        try field.tapLeftToFocus(in: app, file: file, line: line)
     }
 
-    /// 點多行備註左上方的第一行取得焦點並等待鍵盤穩定
+    /// 捲出多行備註後點左上方的第一行取得焦點並等待鍵盤穩定
     ///
     /// - Parameters:
+    ///   - timeout: 等待欄位與鍵盤就緒的秒數
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Returns: 備註欄位是否已取得焦點且鍵盤就緒
-    func focusNotesFromFirstLine(file: StaticString = #filePath, line: UInt = #line) -> Bool {
-        guard revealField(notesField, isScrollingDown: true),
-              notesField.waitUntilStableAndHittable(
-                timeout: 10,
-                sampleInterval: 0.2,
-                requiredSamples: 3
-              ) else {
-            app.failWithDiagnostics("開團備註第一行未能穩定呈現在可點位置", file: file, line: line)
-            return false
+    /// - Throws: 欄位無法捲到可點位置、不可點或點擊後鍵盤未就緒時丟出測試錯誤
+    func focusNotesFromFirstLine(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
+        guard revealField(notesField, isSwipingUp: true) else {
+            try app.stopWithDiagnostics("開團備註未能捲到可點位置", file: file, line: line)
         }
-        notesField.coordinate(withNormalizedOffset: CGVector(dx: 0.04, dy: 0.1)).tap()
-        let predicate = NSPredicate(format: "hasKeyboardFocus == true")
-        var previousFrame: CGRect?
-        var matchingFrames = 0
-        let isReady = pollUntil(timeout: 10) {
-            guard predicate.evaluate(with: notesField),
-                  let frame = app.presentedKeyboardFrame else {
-                previousFrame = nil
-                matchingFrames = 0
-                return false
-            }
-            matchingFrames = frame == previousFrame ? matchingFrames + 1 : 1
-            previousFrame = frame
-            return matchingFrames >= 3
-        }
-        guard isReady else {
-            app.failWithDiagnostics("點開團備註第一行後焦點或鍵盤未就緒", file: file, line: line)
-            return false
-        }
-        return true
+        try notesField.focusFromFirstLine(in: app, timeout: timeout, file: file, line: line)
     }
 
     /// 判定儲存按鈕目前是否可用
@@ -149,16 +118,19 @@ extension CampaignEditScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 儲存按鈕是否可用
-    func isSaveEnabled(file: StaticString = #filePath, line: UInt = #line) -> Bool {
+    /// - Throws: 找不到儲存按鈕時丟出測試錯誤
+    func isSaveEnabled(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) -> Bool {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
         if !button.waitForExistence(timeout: 10) {
             let saveButtonID = BLAccessibilityID.CampaignEdit.saveButton
-            app.failWithDiagnostics(
+            try app.stopWithDiagnostics(
                 "找不到 identifier 為 \(saveButtonID) 的儲存按鈕",
                 file: file,
                 line: line
             )
-            return false
         }
 
         return button.isEnabled
@@ -170,9 +142,14 @@ extension CampaignEditScreen {
     ///   - name: 要填入的開團名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func typeName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func typeName(
+        _ name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
-        field.clearAndType(
+        try field.clearAndType(
             name,
             in: app,
             file: file,
@@ -191,20 +168,24 @@ extension CampaignEditScreen {
     ///
     /// - Returns: 名稱欄是否為鍵盤焦點
     func isNameFieldFocused() -> Bool {
-        let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
-        return field.exists
-            && NSPredicate(format: "hasKeyboardFocus == true").evaluate(with: field)
+        nameField.hasKeyboardFocus
     }
 
-    /// 點名稱欄取得焦點後續打文字，不清空既有內容
+    /// 依 App 的聚焦行為接續輸入，不清空既有內容
     ///
     /// - Parameters:
     ///   - text: 要續打的文字
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func appendName(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
+    /// - Note: 欄位已聚焦時不再點擊；未聚焦時由共用輸入 helper 取得焦點
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func appendName(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws(UITestError) {
         let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
-        field.appendText(
+        try field.appendText(
             text,
             in: app,
             file: file,
@@ -218,17 +199,21 @@ extension CampaignEditScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Note: 外層開關涵蓋整列，點它的中心會落在標題文字上而不切換
-    func toggleReminder(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func toggleReminder(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let toggle = app.switches[BLAccessibilityID.CampaignEdit.reminderToggle]
-        if !toggle.waitForExistence(timeout: 10) {
-            app.failWithDiagnostics("找不到訂購提醒開關", file: file, line: line)
-            return
+        guard toggle.waitForExistence(timeout: 10) else {
+            try app.stopWithDiagnostics("找不到訂購提醒開關", file: file, line: line)
         }
         let previousValue = toggle.value as? String ?? ""
-        toggle.switches.firstMatch.tapAfterWaiting(in: app, file: file, line: line)
+        try toggle.switches.firstMatch.tapAfterWaiting(in: app, file: file, line: line)
         let changed = NSPredicate(format: "value != %@", previousValue)
-        if !toggle.wait(for: changed, timeout: 5) {
-            app.failWithDiagnostics("點擊後訂購提醒開關的值沒有改變", file: file, line: line)
+        guard toggle.wait(for: changed, timeout: 5) else {
+            try app.stopWithDiagnostics(
+                "點擊後訂購提醒開關的值沒有改變",
+                file: file,
+                line: line
+            )
         }
     }
 
@@ -237,25 +222,16 @@ extension CampaignEditScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapSave(file: StaticString = #filePath, line: UInt = #line) {
+    /// - Throws: 支援的 UI 操作或等待失敗時丟出測試錯誤
+    func tapSave(file: StaticString = #filePath, line: UInt = #line) throws(UITestError) {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
-    }
-
-    /// 點工具列的取消
-    ///
-    /// - Parameters:
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapCancel(file: StaticString = #filePath, line: UInt = #line) {
-        let button = app.buttons[BLAccessibilityID.CampaignEdit.cancelButton]
-        button.tapAfterWaiting(in: app, file: file, line: line)
+        try button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
-// MARK: - Screen
+// MARK: - ScreenProtocol
 
-extension CampaignEditScreen: Screen {
+extension CampaignEditScreen: ScreenProtocol {
 
     /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
     var rootIdentifier: String {
@@ -272,9 +248,9 @@ private extension CampaignEditScreen {
     ///
     /// - Parameters:
     ///   - field: 要露出的文字欄位
-    ///   - isScrollingDown: 是否向表單下方尋找欄位
+    ///   - isSwipingUp: 是否向上滑動以尋找表單下方欄位
     /// - Returns: 欄位是否已穩定且完整呈現在表單內
-    func revealField(_ field: XCUIElement, isScrollingDown: Bool) -> Bool {
+    func revealField(_ field: XCUIElement, isSwipingUp: Bool) -> Bool {
         guard rootElement.waitForExistence(timeout: 10) else {
             return false
         }
@@ -285,7 +261,7 @@ private extension CampaignEditScreen {
             }
             let start = rootElement.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.45))
             let end = rootElement.coordinate(
-                withNormalizedOffset: CGVector(dx: 0.05, dy: isScrollingDown ? 0.25 : 0.65)
+                withNormalizedOffset: CGVector(dx: 0.05, dy: isSwipingUp ? 0.25 : 0.65)
             )
             start.press(
                 forDuration: 0.1,
@@ -305,13 +281,13 @@ private extension CampaignEditScreen {
         return isFieldVisible(field)
     }
 
-    /// 取得連續兩次相同的表單內容位置簽章，避免在版面移動中誤判捲動盡頭
+    /// 取得穩定的位置簽章，避免版面移動時誤判捲動盡頭
     ///
     /// - Returns: 穩定的位置簽章，逾時或表單內容尚未就緒時為 `nil`
     func stableFormPositionSignature() -> String? {
         var previous: String?
         var matchingSamples = 0
-        let isStable = pollUntil(timeout: 3) {
+        let isStable = Polling.wait(timeout: 3) {
             guard let current = app.scrollPositionSignature(in: rootElement) else {
                 previous = nil
                 matchingSamples = 0
@@ -331,7 +307,9 @@ private extension CampaignEditScreen {
     func isFieldVisible(_ field: XCUIElement) -> Bool {
         guard field.waitUntilStableAndHittable(timeout: 1),
               let frame = field.snapshotFrame,
-              let formFrame = rootElement.snapshotFrame else {
+              frame.isUsableFrame,
+              let formFrame = rootElement.snapshotFrame,
+              formFrame.isUsableFrame else {
             return false
         }
         return frame.minY >= formFrame.minY && frame.maxY <= formFrame.maxY

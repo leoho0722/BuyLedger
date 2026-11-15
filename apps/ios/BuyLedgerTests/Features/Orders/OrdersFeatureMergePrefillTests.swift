@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -43,30 +43,33 @@ struct OrdersFeatureMergePrefillTests {
         #expect(store.state.orders == fixture.orders)
     }
 
-    /// 驗證合併確認表單經畫面綁定修改客戶名稱後才判定為已修改，保留的照片不計為變更
+    /// 驗證合併確認表單輸入客戶名稱時，畫面送出整份草稿的 binding action，才判定為已修改，
+    /// 保留的照片不計為變更
     ///
-    /// - Throws: 合併確認的編輯表單未呈現時由 `#require` 丟出測試斷言錯誤
+    /// - Note: 畫面綁定 `$store.draft.customerName`，巢狀欄位送出的是整個 `draft`；
+    ///   未修改時的對照見 `presentation_合併預填草稿未修改_取消直接關閉`
     @Test
-    func presentation_合併確認修改顧客名稱_才判定已修改() throws {
+    func presentation_合併確認修改顧客名稱_才判定已修改() async {
         // Given
         let fixture = Self.makeMergePrefillFixture()
         var initial = fixture.initial
         initial.presentation.destination = .edit(fixture.expected)
-        let store = Store(initialState: initial) {
+        var editedDraft = fixture.expected.draft
+        editedDraft.customerName = "更名客戶"
+        let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(0))
         }
-        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
-        let editStore = try #require(
-            $presentation.scope(state: \.$destination, action: \.destination).edit.wrappedValue
-        )
-        @Bindable var edit = editStore
 
         // When
-        $edit.draft.customerName.wrappedValue = "更名客戶"
+        await store.send(\.presentation.destination.presented.edit.binding.draft, editedDraft) {
+            $0.presentation.destination?.modify(\.edit) {
+                $0.draft.customerName = "更名客戶"
+            }
+        }
 
         // Then
         #expect(store.state.presentation.destination?.edit?.isDirty == true)
