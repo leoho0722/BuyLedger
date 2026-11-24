@@ -13,17 +13,20 @@ paths:
 
 ## 外部 API
 
-- **`EXCHANGE_RATE_API_KEY`、`OLLAMA_API_KEY` 內嵌於產物是已評估並接受的風險**，前提是產物不對外散布、金鑰為開發者自有。
+- **`EXCHANGE_RATE_API_KEY`、`ANTHROPIC_API_KEY` 內嵌於產物是已評估並接受的風險**，前提是產物不對外散布、金鑰為開發者自有。
     - 前提不成立時 (例如開始對外散布)，金鑰必須移出產物、改為執行期提供。
     - 撤換程序見 `apps/ios/README.md` 的「API 金鑰」一節。
     - 未記錄的內嵌不得僅因無人反對就視為已接受，本條即是該項記錄。
-- **金鑰一律放 Authorization header (`Bearer <key>`)，端點網址不帶金鑰**：連結的 `FirebasePerformance` 會自動上傳 `URLSession` 請求網址 (不收 header)。
+- **金鑰一律放請求標頭，端點網址不帶金鑰**：連結的 `FirebasePerformance` 會自動上傳 `URLSession` 請求網址 (不收 header)。
+    - 匯率服務用 `Authorization: Bearer`，AI 摘要由 LKAIKit 依供應商放標頭 (Anthropic 為 `x-api-key`)；新增供應商前確認它的 client 不把金鑰放進網址。
 - **網路層錯誤訊息不內插網址、header 或設定值**，避免金鑰進入使用者可見訊息。
 - **`ExchangeRateEndpoint.fetch` 送出前獨立拒絕含控制字元的金鑰** (避免注入 Authorization header 值)，不以 `URL(string:)` 的失敗 guard 取代；該 guard 仍要保留。
 - **`ExchangeRateEndpoint.serviceError` 是唯一的服務錯誤映射**，`ExchangeRateService.fetchLatest` 與 `CurrencyMetadataService.refreshIfStale` (取 `/codes`) 共用，不在各 Service 內複製；請求組裝與解碼同樣收在 `ExchangeRateEndpoint`。
 - **幣別清單經 `CurrencyMetadataService.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天**：只有非空結果才替換 cache，空結果保留舊 cache 並回報。
     - 寫入 closure 開頭先檢查空清單並拋 `.persistence(.emptyCodeList)`，該次 `write` 不 `save()`，舊 cache 原樣保留。
-- **AI 摘要串流整體上限 30 秒**：逾時保留已收到的內容、`phase` 設 `.finished` 並使用 `truncationMessage`，不走 `errorMessage`。
+- **AI 摘要串流整體上限 30 秒**：逾時時有內容就保留並以 `truncationMessage` 標示截斷 (`phase` 為 `.finished`，不走 `errorMessage`)；串流結束或逾時都沒有內容 (去除空白後為空) 時顯示失敗與重試。
+- **AI 摘要的供應商只在 `AISummaryProvider` 擴充，建立 LKAIKit client 只在 `AISummaryService`**
+    - 畫面與 reducer 只看供應商值與 App 的 `APIError`，不 import LKAIKit，換供應商不影響 Presentation。
 
 ## 行事曆 (EventKit)
 

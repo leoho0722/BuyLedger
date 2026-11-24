@@ -64,7 +64,7 @@ paths:
 - **`AISummaryFeature` 串流測試一律注入同一個 `TestClock`**：測試環境的 `\.continuousClock` 可能是 `ImmediateClock`，逾時計時器會搶在串流前結束。
     - `$0.continuousClock` 與串流替身共用該 clock 的 `sleep(for:)`，以 `advance(by:)` 推進；替身內不用 `ContinuousClock` 或 `Task.sleep`。
     - 測試 target 要明確連結 `Clocks` product，只靠 `ComposableArchitecture` 轉出可能在連結階段失敗。
-    - 以 `AISummaryService.overallStreamDuration` 驅動上限，不新增 `DependencyValues` keyPath 當測試旋鈕。
+    - 以字面值 30 秒推進時鐘到 `AISummaryFeature` 的串流上限，不新增 `DependencyValues` keyPath 當測試旋鈕。
 
 ## 跨測試共用狀態
 

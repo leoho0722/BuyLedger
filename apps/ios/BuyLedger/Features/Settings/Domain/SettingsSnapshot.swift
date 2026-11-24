@@ -12,6 +12,17 @@ struct SettingsSnapshot: Equatable, Sendable {
 
     // MARK: - Properties
 
+    /// 使用者尚未改過任何設定時套用的值
+    static let `default` = SettingsSnapshot(
+        language: .traditionalChinese,
+        defaultCurrency: .twd,
+        monthlyProfitGoalTWD: 80_000,
+        isAISummaryEnabled: false,
+        aiSummaryProvider: .default,
+        aiSummaryModel: AISummaryProvider.default.defaultModel,
+        isBiometricUnlockEnabled: false
+    )
+
     /// App 介面語言偏好
     var language: AppLanguage
 
@@ -24,19 +35,12 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 是否啟用 AI 商品明細總結
     var isAISummaryEnabled: Bool
 
-    /// AI 總結使用的 Ollama 模型名稱
+    /// AI 總結使用的供應商
+    var aiSummaryProvider: AISummaryProvider
+
+    /// AI 總結使用的模型名稱，屬於 `aiSummaryProvider`
     var aiSummaryModel: String
 
     /// 是否啟用 App 鎖定；離開 App 後需驗證解鎖
     var isBiometricUnlockEnabled: Bool
-
-    /// 使用者尚未改過任何設定時套用的值
-    static let `default` = SettingsSnapshot(
-        language: .traditionalChinese,
-        defaultCurrency: .twd,
-        monthlyProfitGoalTWD: 80_000,
-        isAISummaryEnabled: false,
-        aiSummaryModel: AISummaryModelCatalog.defaultModel,
-        isBiometricUnlockEnabled: false
-    )
 }

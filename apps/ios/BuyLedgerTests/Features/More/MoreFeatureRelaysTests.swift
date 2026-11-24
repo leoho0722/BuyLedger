@@ -182,7 +182,8 @@ struct MoreFeatureRelaysTests {
             defaultCurrency: .twd,
             monthlyProfitGoalTWD: 80_000,
             isAISummaryEnabled: false,
-            aiSummaryModel: "gemma4:31b-cloud",
+            aiSummaryProvider: .anthropic,
+            aiSummaryModel: "claude-haiku-5-5",
             isBiometricUnlockEnabled: false
         )
         let store = TestStore(initialState: initial) {

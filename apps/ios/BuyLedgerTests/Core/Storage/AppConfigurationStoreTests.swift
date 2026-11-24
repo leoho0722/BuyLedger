@@ -61,7 +61,7 @@ extension AppConfigurationStoreTests {
         var infoDictionary: [String: Any] {
             switch self {
             case .trimsAPIKey:
-                ["OLLAMA_API_KEY": "  abc123  "]
+                ["ANTHROPIC_API_KEY": "  abc123  "]
 
             case .returnsNilForMissingKey:
                 [:]
@@ -73,10 +73,10 @@ extension AppConfigurationStoreTests {
                 ]
 
             case .returnsNilForUnexpandedPlaceholder:
-                ["OLLAMA_API_KEY": "$(OLLAMA_API_KEY)"]
+                ["ANTHROPIC_API_KEY": "$(ANTHROPIC_API_KEY)"]
 
             case .preservesDifferentPlaceholder:
-                ["EXCHANGE_RATE_API_KEY": "$(OLLAMA_API_KEY)"]
+                ["EXCHANGE_RATE_API_KEY": "$(ANTHROPIC_API_KEY)"]
 
             case .trimsLiteralWithoutPlaceholder:
                 ["ENDPOINT": "  http://localhost:4000/api  "]
@@ -87,7 +87,7 @@ extension AppConfigurationStoreTests {
         var keys: [String] {
             switch self {
             case .trimsAPIKey, .returnsNilForMissingKey, .returnsNilForUnexpandedPlaceholder:
-                ["OLLAMA_API_KEY"]
+                ["ANTHROPIC_API_KEY"]
 
             case .returnsNilForEmptyAndWhitespace:
                 ["EMPTY_API_KEY", "WHITESPACE_API_KEY"]
@@ -113,7 +113,7 @@ extension AppConfigurationStoreTests {
                 [nil, nil]
 
             case .preservesDifferentPlaceholder:
-                ["$(OLLAMA_API_KEY)"]
+                ["$(ANTHROPIC_API_KEY)"]
 
             case .trimsLiteralWithoutPlaceholder:
                 ["http://localhost:4000/api"]

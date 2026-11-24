@@ -166,7 +166,7 @@ extension BLUITestStubs {
     /// - Returns: 固定段落一次吐完即結束的 AI 摘要 Service
     static func makeAISummaryService() -> AISummaryService {
         AISummaryService(
-            streamSummary: { _, _, _ in
+            streamSummary: { _, _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     for chunk in aiSummaryChunks {
                         continuation.yield(chunk)
@@ -174,7 +174,7 @@ extension BLUITestStubs {
                     continuation.finish()
                 }
             },
-            apiKey: { stubAPIKey }
+            apiKey: { _ in stubAPIKey }
         )
     }
 }

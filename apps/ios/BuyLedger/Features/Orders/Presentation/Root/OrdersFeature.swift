@@ -33,9 +33,10 @@ struct OrdersFeature {
         /// 新訂單的預設幣別投影，只由 Root 在初始化與偏好變更時寫入
         var defaultCurrency: CurrencyCode = .twd
 
-        /// Root 同步的 AI 摘要開關與模型，容器只讀取
+        /// Root 同步的 AI 摘要開關、供應商與模型，容器只讀取
         var aiSummarySettings: OrderAISummarySettings = OrderAISummarySettings(
             isEnabled: SettingsSnapshot.default.isAISummaryEnabled,
+            provider: SettingsSnapshot.default.aiSummaryProvider,
             model: SettingsSnapshot.default.aiSummaryModel
         )
 

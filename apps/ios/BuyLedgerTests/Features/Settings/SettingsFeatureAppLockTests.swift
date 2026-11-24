@@ -213,7 +213,8 @@ private extension SettingsFeatureAppLockTests {
             defaultCurrency: .usd,
             monthlyProfitGoalTWD: 120_000,
             isAISummaryEnabled: true,
-            aiSummaryModel: "deepseek-v3.1:671b",
+            aiSummaryProvider: .anthropic,
+            aiSummaryModel: "claude-sonnet-5-5",
             isBiometricUnlockEnabled: isEnabled
         )
     }

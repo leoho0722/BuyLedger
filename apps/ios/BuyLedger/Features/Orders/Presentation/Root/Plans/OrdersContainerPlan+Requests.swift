@@ -77,6 +77,7 @@ extension OrdersContainerPlan {
                             orders: state.list.filteredOrders,
                             selectedCategories: state.list.selectedCategories
                         ),
+                        provider: state.aiSummarySettings.provider,
                         model: state.aiSummarySettings.model
                     )
                 )

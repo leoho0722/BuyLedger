@@ -232,7 +232,13 @@ private extension OrdersFeatureFailureTimingTests {
             }
 
         case .aiSummary:
-            return .aiSummary(AISummaryFeature.State(prompt: "測試摘要", model: "gpt-oss:120b"))
+            return .aiSummary(
+                AISummaryFeature.State(
+                    prompt: "測試摘要",
+                    provider: .anthropic,
+                    model: "claude-haiku-5-5"
+                )
+            )
         }
     }
 }

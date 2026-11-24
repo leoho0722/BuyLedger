@@ -28,9 +28,11 @@ The orders list SHALL present an "AI summary" toolbar action on iOS and iPadOS, 
 ---
 ### Requirement: Streaming Markdown summary sheet
 
-When AI summary is enabled, the system SHALL call the Ollama Cloud chat streaming endpoint and render the summary as Markdown that updates incrementally as content streams in. The summary content SHALL be produced in Traditional Chinese. Rendered Markdown SHALL display block structure including headings and lists, not only inline styles. While streaming, the sheet SHALL indicate progress; on completion it SHALL show the full rendered summary.
+When AI summary is enabled, the system SHALL stream the summary from the configured AI provider's chat streaming API through the LKAIKit chat client and render the summary as Markdown that updates incrementally as content streams in. The summary content SHALL be produced in Traditional Chinese. Rendered Markdown SHALL display block structure including headings and lists, not only inline styles. While streaming, the sheet SHALL indicate progress; on completion it SHALL show the full rendered summary.
 
 The stream SHALL be bounded by an overall duration limit of 30 seconds in production, in addition to any idle timeout the request layer provides. A response that keeps producing content slowly SHALL NOT be able to hold the sheet indefinitely. On reaching the limit the system SHALL stop the stream and present what was received together with a statement that the summary was cut short, rather than discarding the partial content or continuing to wait.
+
+When the stream completes, or reaches the overall duration limit, without having received any content other than whitespace, the sheet SHALL stop the progress indication and present the failure state with a retry action instead of an empty summary or a statement that the summary was cut short.
 
 #### Scenario: Streaming renders incrementally
 
@@ -52,393 +54,57 @@ The stream SHALL be bounded by an overall duration limit of 30 seconds in produc
 - **WHEN** a stream keeps producing content past the 30-second overall duration limit
 - **THEN** the system stops the stream, keeps the content received so far, stops the progress indication, and states that the summary was cut short
 
+#### Scenario: A stream that ends without content shows a failure
+
+- **WHEN** the stream completes, or reaches the 30-second overall duration limit, without having received any content other than whitespace
+- **THEN** the sheet stops the progress indication and shows the failure state with a retry action instead of an empty summary
+
 
 <!-- @trace
-source: networking-tests-and-resilience
-updated: 2026-08-15
+source: ai-summary-lkaikit-provider
+updated: 2026-11-25
 code:
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
-  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
-  - apps/ios/BuyLedgerTests/CampaignSummaryTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLTypographyModifier.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
-  - apps/ios/BuyLedger/Core/Sync/SyncMeta.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderSourcePersistence.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
-  - shared/data-model/fixtures/expected/swift/SampleGrade.generated.swift
-  - shared/data-model/schema/PaymentReceiptStatus.yaml
-  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
-  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedger.xcscheme
-  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
-  - shared/data-model/fixtures/expected/typescript/SampleSequence.ts
-  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - shared/data-model/fixtures/schema/sample-trait-matrix.yaml
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLPalette.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Image+Extensions.swift
-  - apps/ios/BuyLedgerUITests/Screens/FxScreen.swift
-  - apps/ios/BuyLedger/Features/App/RootFeature.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditDirtyTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusPersistence.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsDateRange.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - shared/data-model/README.md
-  - apps/ios/BuyLedgerTests/BLPhotoViewerTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressBar.swift
-  - apps/ios/BuyLedgerUITests/Screens/RootNavigationScreen.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLFormatters.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/AISummaryTests.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleGrade.kt
-  - apps/ios/BuyLedgerTests/OrderMergeTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
-  - apps/ios/BuyLedger.xctestplan
-  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedgerTests/PersistenceErrorContractTests.swift
-  - apps/ios/BuyLedgerUITests/Support/Scrolling.swift
-  - README.md
-  - apps/ios/BuyLedgerUITests/Screens/AISummaryScreen.swift
-  - apps/ios/BuyLedgerUITests.xctestplan
-  - shared/data-model/fixtures/expected/typescript/SampleQuote.ts
-  - apps/ios/BuyLedger/Features/Orders/OrdersMergeFlowOperations.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
-  - apps/ios/BuyLedgerUITests/Screens/CustomersScreen.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListTests.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsSnapshot.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLHeroCardBackground.swift
-  - apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen.swift
-  - shared/data-model/fixtures/expected/swift/SampleProfile.generated.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsFeature.swift
-  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
-  - apps/ios/BuyLedger/Features/FX/ExchangeRateDTO.swift
-  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
-  - apps/ios/BuyLedger/Features/App/RootTabLayout.swift
-  - apps/ios/BuyLedgerUITests/Screens/Screen.swift
-  - shared/data-model/schema/CurrencyCode.yaml
-  - apps/ios/BuyLedgerUITests/Screens/CampaignEditScreen.swift
-  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Badges/BLBadge.swift
-  - apps/ios/BuyLedger/Features/App/RootView.swift
-  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrderEditScreen.swift
-  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
-  - apps/ios/BuyLedgerTests/AccessibilityConventionScanTests.swift
-  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
-  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
-  - shared/data-model/schema/LedgerOrder.yaml
-  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
-  - shared/data-model/schema/Money.yaml
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLCardShadow.swift
-  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersBatchOperations.swift
-  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupCatalog.swift
-  - apps/ios/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderMergeTests.swift
-  - shared/data-model/fixtures/expected/typescript/SampleReceipt.ts
-  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrderDetailScreen.swift
-  - AGENTS.md
-  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
-  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
-  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
-  - apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleReceipt.kt
-  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLHeatmapDepth.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTone.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLStatusHue.swift
-  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
-  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/FX/ExchangeRateClient.swift
-  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
-  - .github/workflows/ci.yml
-  - apps/ios/BuyLedger/Core/Networking/APIError.swift
-  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTransportTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
   - apps/ios/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - shared/data-model/fixtures/expected/kotlin/SampleStatus.kt
-  - apps/ios/BuyLedgerUITests/Support/Diagnostics.swift
-  - shared/data-model/schema/CampaignStatus.yaml
-  - apps/ios/BuyLedgerUITests/Screens/AppLockScreen.swift
-  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderDatePeriod.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
-  - apps/ios/BuyLedgerTests/LookupCatalogTests.swift
-  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
-  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/ios/BuyLedgerUITests/Support/TextInput.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
-  - apps/ios/BuyLedgerUITests/PhotoViewerPagingTests.swift
-  - shared/data-model/schema/LedgerCustomer.yaml
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChartValue.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - shared/data-model/fixtures/expected/kotlin/SamplePreference.kt
-  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLDelayedProgressView.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Networking/HTTPMethod.swift
-  - apps/ios/BuyLedgerTests/OrderStatusTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift
-  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
-  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockTests.swift
-  - apps/ios/BuyLedgerTests/BLFormattersTests.swift
-  - apps/ios/BuyLedger/Core/Domain/CurrencyCode.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTypography.swift
-  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
-  - apps/ios/BuyLedgerTests/AppScenePhaseCoordinatorTests.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupNameEditorSheet.swift
-  - apps/ios/BuyLedger/Features/FX/FxView.swift
-  - shared/data-model/fixtures/expected/swift/SampleSequence.generated.swift
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardFeature.swift
-  - apps/ios/BuyLedger/Features/AISummary/OllamaDTO.swift
-  - apps/ios/BuyLedger/App/Testing/BLUITestConfiguration.swift
-  - apps/ios/BuyLedgerTests/SnapshotTests.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/CustomerTier.generated.swift
-  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
-  - apps/ios/BuyLedgerUITests/Tests/Smoke/HarnessSelfCheckTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderDetailTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/DelayedProgressView.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
-  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderDraft.swift
-  - apps/ios/BuyLedger/Features/More/MoreView.swift
-  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - apps/ios/BuyLedger/Core/Testing/BLUITestDependencyOverrides.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
-  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
-  - apps/ios/BuyLedger/Core/Networking/ExchangeRateDTO.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignRecord.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestSeedData.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
-  - apps/ios/BuyLedger/Resources/InfoPlist.xcstrings
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedgerUITests/Support/Assertions.swift
-  - shared/data-model/fixtures/expected/swift/SampleReceipt.generated.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentMethodInfo.generated.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/FxRateSnapshot.generated.swift
-  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecord.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsStorage.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedgerUITests/Screens/SettingsScreen.swift
-  - apps/ios/BuyLedger/Features/App/AppLockView.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestHarness.swift
-  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
-  - shared/data-model/schema/Campaign.yaml
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift
-  - apps/ios/BuyLedger/App/AppDelegate.swift
-  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
-  - apps/ios/BuyLedgerTests/NumericInputGroupingScanTests.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestConfiguration.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleProfile.kt
-  - apps/ios/BuyLedger/Core/Persistence/CategoryPersistence.swift
-  - apps/ios/BuyLedger/Core/Sync/SyncQueueItem.swift
-  - apps/ios/BuyLedgerTests/BLUITestConfigurationTests.swift
-  - apps/ios/BuyLedger/Features/AISummary/OllamaClient.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift
-  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
-  - apps/ios/BuyLedgerUITests/Tests/Performance/LaunchPerformanceTests.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen.swift
-  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
-  - apps/ios/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
-  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
-  - shared/data-model/fixtures/expected/typescript/SampleStatus.ts
-  - apps/ios/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - apps/ios/BuyLedger/Core/Diagnostics/CrashDiagnosticsClient.swift
-  - apps/ios/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - apps/ios/BuyLedger/Shared/Localization/AppLanguage.swift
-  - apps/ios/BuyLedger/Features/Settings/AppLanguage.swift
-  - apps/ios/BuyLedgerUITests/Support/SheetInteraction.swift
-  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
-  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataRecord.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift
-  - shared/data-model/fixtures/expected/swift/SamplePreference.generated.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementDestination.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
-  - shared/data-model/schema/CustomerTier.yaml
-  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
-  - apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist
-  - apps/ios/BuyLedgerUITests/KeyboardDismissTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
-  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
-  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
-  - apps/ios/BuyLedgerUITests/Support/MenuInteraction.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/App/RootTab.swift
-  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - apps/ios/BuyLedger/Features/App/PersistenceFailureView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
-  - shared/data-model/fixtures/expected/typescript/SampleGrade.ts
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - shared/data-model/generator/src/datamodel-gen.ts
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/ios/BuyLedgerTests/InsightsFeatureTests.swift
-  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/Money.generated.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantine.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
-  - shared/data-model/fixtures/schema/sample-enums.yaml
-  - apps/ios/BuyLedgerUITests/Screens/MergeFlowScreen.swift
-  - apps/ios/BuyLedger/Core/Persistence/OrderSourceRecord.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Decimal+Extensions.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignSummary.swift
-  - apps/ios/BuyLedger/Resources/PrivacyInfo.xcprivacy
-  - apps/ios/BuyLedgerTests/OrderDraftTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
-  - apps/ios/BuyLedgerUITests/Support/Waiting.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
-  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - apps/ios/BuyLedgerTests/DashboardFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
-  - apps/ios/BuyLedger/Core/Domain/FxRates.swift
-  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
-  - apps/ios/BuyLedger/Features/FX/FxRates.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedgerUITests/Screens/DashboardScreen.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_開啟AI摘要與生物辨識_顯示對應列.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Domain/AISummaryProvider.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Core/Storage/AppConfigurationStoreTests.swift
   - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
-  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
-  - shared/data-model/schema/OrderStatus.yaml
-  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
-  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
-  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
-  - apps/ios/BuyLedgerUITests/Screens/OptionPickerScreen.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleQuote.kt
-  - shared/data-model/schema/LedgerOrderItem.yaml
-  - shared/data-model/fixtures/expected/kotlin/SampleSequence.kt
-  - apps/ios/BuyLedgerTests/LayerBoundaryTests.swift
-  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
-  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
-  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - apps/ios/BuyLedgerTests/BLAccessibilityIDTests.swift
-  - shared/data-model/fixtures/expected/typescript/SamplePreference.ts
-  - apps/ios/BuyLedger/Features/App/AppScenePhaseCoordinator.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Status/BLStatusPill.swift
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardStats.swift
+  - apps/ios/BuyLedger/Features/Settings/Domain/SettingsSnapshot.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTestSupport.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_預設偏好_顯示版本與偏好列.1.png
   - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Networking/URLRequestBuilder.swift
-  - apps/ios/BuyLedgerUITests/Support/AlertInteraction.swift
-  - apps/ios/BuyLedgerTests/PrivacyManifestTests.swift
   - apps/ios/README.md
-  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderSelectableRow.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderStatusFilter.swift
-  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - apps/ios/BuyLedgerUITests/Screens/QuoteScreen.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
-  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
-  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet.swift
-  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsTests.swift
-  - shared/data-model/schema/PaymentMethodInfo.yaml
-  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerCustomer.generated.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrdersToolbarContent.swift
-  - apps/ios/BuyLedgerUITests/Screens/PhotoViewerScreen.swift
-  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
-  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
-  - apps/ios/BuyLedgerUITests/Screens/InsightsScreen.swift
-  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Avatar/BLAvatar.swift
-  - apps/ios/BuyLedger/Shared/Extensions/Color+Extensions.swift
-  - shared/data-model/fixtures/expected/typescript/SampleProfile.ts
-  - shared/data-model/fixtures/expected/swift/SampleQuote.generated.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
-  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
-  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
-  - apps/ios/BuyLedgerUITests/Screens/CampaignsScreen.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - shared/data-model/fixtures/schema/sample-orders.yaml
-  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLLoadFailureView.swift
-  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
-  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
-  - apps/ios/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersFeature+StateQuery.swift
-  - apps/ios/BuyLedgerTests/ColorContrastTests.swift
-  - apps/ios/BuyLedger/Features/Lookups/LookupKind.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/ios/BuyLedger/Features/Orders/LedgerOrder+OrderMutation.swift
-  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - shared/data-model/schema/FxRateSnapshot.yaml
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
-  - apps/ios/BuyLedgerTests/ColorContrast.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderMerge.swift
-  - apps/ios/BuyLedgerTests/OrdersBatchOperationsTests.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderDetailPath.swift
-  - apps/ios/BuyLedgerUITests-Performance.xctestplan
-  - apps/ios/BuyLedgerTests/TestDependencies.swift
-  - CLAUDE.md
-  - apps/ios/BuyLedger/Features/Settings/AISummaryModelCatalog.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCreateTests.swift
-  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - apps/ios/BuyLedger/Core/Domain/OrderSummary.swift
-  - apps/ios/BuyLedger/Core/Persistence/CategoryRecord.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
-  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - apps/ios/BuyLedgerTests/LocalizationCatalogTests.swift
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
-  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignCrudTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutSegment.swift
-tests:
-  - shared/data-model/generator/test/datamodel-gen.test.ts
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDeepLinksTests.swift
+  - apps/ios/BuyLedger/App/Testing/TestDoubles/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/Mocks/MockChatURLProtocol.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureAppLockTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Domain/OrderAISummarySettings.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestPresentationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotSharedTests.swift
 -->
 
 ---
@@ -629,9 +295,11 @@ When AI summary is disabled, the prompt alert SHALL present two actions: a left 
 ---
 ### Requirement: AI summary setting and model configuration
 
-The settings page SHALL provide a toggle that persists whether AI summary is enabled. The system SHALL persist an AI summary model name with a default model value used for summaries. In Debug builds the settings page SHALL provide a control to change the model at runtime from a candidate list with a custom-value option; in Release builds no model-switching control SHALL be presented and the default model SHALL be used.
+The settings page SHALL provide a toggle that persists whether AI summary is enabled. The system SHALL persist the AI summary provider together with a model name for that provider, defaulting to the default provider and that provider's default model. In Debug builds the settings page SHALL provide a control to change the model at runtime from the selected provider's candidate list with a custom-value option; in Release builds no model-switching control SHALL be presented and the persisted model SHALL be used. No build SHALL present a control to change the provider in this version.
 
-Renaming the code identifiers that hold these two settings SHALL NOT change the keys under which they are stored, so that a value persisted by an earlier version is still read after an update.
+A model equal to the provider's default model SHALL be stored as following the default rather than as a fixed name, so that a later change of the provider's default model applies to installations where the user never chose another model. A stored model name SHALL be used only together with the provider it was saved with. When no provider is stored, as for values written before providers were introduced, or the stored provider is not a supported provider, the system SHALL use the default provider and its default model and SHALL NOT send the stored model name to any provider.
+
+Renaming the code identifiers that hold these settings SHALL NOT change the keys under which they are stored, so that a value persisted by an earlier version is still read after an update.
 
 #### Scenario: Toggle persists across launches
 
@@ -641,87 +309,91 @@ Renaming the code identifiers that hold these two settings SHALL NOT change the 
 #### Scenario: Model switching available only in Debug
 
 - **WHEN** the build is a Debug build
-- **THEN** the settings page presents a model-switching control whose selection persists and takes effect on the next summary
+- **THEN** the settings page presents a model-switching control listing the selected provider's candidate models and a custom option, whose selection persists and takes effect on the next summary
 
 #### Scenario: Model fixed in Release
 
 - **WHEN** the build is a Release build
-- **THEN** the settings page presents no model-switching control and the persisted default model is used
+- **THEN** the settings page presents no model-switching control and the persisted model is used
 
 #### Scenario: A toggle saved before an identifier rename is still read
 
 - **WHEN** the AI summary toggle was turned on by a version that used a different code identifier for it, and the app is updated
 - **THEN** the toggle is still on after the update, because the stored key did not change
 
+#### Scenario: A model saved before providers existed is not sent to the new provider
+
+- **WHEN** the stored settings contain a model name but no provider, and the settings are read
+- **THEN** the provider is the default provider and the model is that provider's default model
+
+##### Example: provider and model reads
+
+| Stored provider | Stored model | Read provider | Read model | Notes |
+| --------------- | ------------ | ------------- | ---------- | ----- |
+| never written | never written | `anthropic` | `claude-haiku-5-5` | fresh install |
+| never written | `gemma4:31b-cloud` | `anthropic` | `claude-haiku-5-5` | written before providers existed |
+| `anthropic` | `claude-sonnet-5-5` | `anthropic` | `claude-sonnet-5-5` | user choice in Debug |
+| `anthropic` | empty | `anthropic` | `claude-haiku-5-5` | empty model falls back to the provider default |
+| `retired-provider` | `some-model` | `anthropic` | `claude-haiku-5-5` | unsupported provider |
+
+#### Scenario: Saving settings writes the provider with the model
+
+- **WHEN** the settings are saved with a provider and a model
+- **THEN** the provider is persisted, and the model is persisted as following the default when it equals the provider's default model, otherwise as the chosen name
+
+##### Example: stored values after saving
+
+| Saved provider | Saved model | Stored provider | Stored model |
+| -------------- | ----------- | --------------- | ------------ |
+| `anthropic` | `claude-haiku-5-5` | `anthropic` | empty (follows the provider default) |
+| `anthropic` | `claude-sonnet-5-5` | `anthropic` | `claude-sonnet-5-5` |
+
 
 <!-- @trace
-source: small-features-style-compliance
-updated: 2026-09-24
+source: ai-summary-lkaikit-provider
+updated: 2026-11-25
 code:
-  - apps/ios/BuyLedgerTests/BLFormattersTests.swift
-  - apps/ios/BuyLedger/Features/Quote/Components/QuoteInputsCard.swift
-  - apps/ios/BuyLedger/Features/FX/Components/FxStatusBanner.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderDateSection.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
-  - apps/ios/BuyLedger/Features/FX/Components/FxRatesList.swift
-  - apps/ios/BuyLedger/Features/AISummary/OllamaDTO.swift
-  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scanner.swift
-  - apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLFormatters.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsSnapshot.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
-  - apps/ios/BuyLedgerTests/SnapshotTests.swift
-  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
-  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
-  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
-  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
-  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
-  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
-  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift
-  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
-  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
-  - apps/ios/BuyLedger/Features/Customers/Components/CustomerTopCard.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
-  - apps/ios/BuyLedgerTests/LedgerOrder+Fixture.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomerRow.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTransportTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_開啟AI摘要與生物辨識_顯示對應列.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Domain/AISummaryProvider.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Core/Storage/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedger/Resources/Info.plist
+  - apps/ios/BuyLedger/Features/Settings/Domain/SettingsSnapshot.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTestSupport.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_預設偏好_顯示版本與偏好列.1.png
   - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Features/Settings/AISummaryModelCatalog.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/ios/BuyLedger/Features/FX/FxView.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
-  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
-  - apps/ios/BuyLedger/Features/FX/FxFormatters.swift
-  - apps/ios/BuyLedger/Features/Quote/Components/QuoteBreakdownCard.swift
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
-  - apps/ios/BuyLedgerTests/FxRateSnapshotTests.swift
-  - apps/ios/BuyLedger/Features/App/RootFeature.swift
-  - apps/ios/BuyLedger/Features/More/MoreView.swift
-  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
-  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
-  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
-  - apps/ios/BuyLedgerTests/AppLanguageTests.swift
-  - apps/ios/BuyLedger/Features/Quote/Components/QuoteStatusBanner.swift
   - apps/ios/README.md
-  - apps/ios/BuyLedgerTests/CustomerRowTests.swift
-  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
-  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersFeature+StateQuery.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
-  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsStorage.swift
-  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
-  - apps/ios/BuyLedger/Features/Customers/Components/CustomerListRow.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
-  - apps/ios/BuyLedger/Features/AISummary/OllamaClient.swift
-  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDeepLinksTests.swift
+  - apps/ios/BuyLedger/App/Testing/TestDoubles/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/Mocks/MockChatURLProtocol.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureAppLockTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Domain/OrderAISummarySettings.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestPresentationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotSharedTests.swift
 -->
 
 ---
@@ -729,12 +401,141 @@ code:
 
 When the AI service cannot produce a summary — missing API key, authentication failure, transport error, or non-success HTTP status — the sheet SHALL present a failure state with a retry action and SHALL NOT display fabricated summary content.
 
+Failures reported by the chat client SHALL map to the sheet's existing failure categories: an invalid key or a permission failure SHALL be shown as an authentication failure; an exhausted quota as quota exhaustion; rate limiting as a server error with status 429; an unavailable service as a server error with its status code; a network failure as a connection problem; an unreadable response as a response that could not be parsed; and a rejected request, a refusal, or an unrecognized failure as a service error with a short code. A cancelled stream SHALL end without surfacing an error.
+
 #### Scenario: Missing API key
 
-- **WHEN** the Ollama API key is not configured
-- **THEN** the sheet shows a failure state indicating the key is not set and offers retry
+- **WHEN** the API key for the configured provider is not configured
+- **THEN** the sheet shows a failure state indicating the summary is not set up, offers retry, and sends no request
 
 #### Scenario: Service or transport error
 
 - **WHEN** the service returns an authentication failure, a non-success status, or a transport error occurs
 - **THEN** the sheet shows a failure state with a friendly message and a retry action, and no partial fabricated content is presented as success
+
+##### Example: chat client failure mapping
+
+| Chat client failure | Failure shown by the sheet |
+| ------------------- | -------------------------- |
+| invalid API key | AI service authentication failed |
+| permission denied | AI service authentication failed |
+| quota exceeded | API quota exhausted |
+| rate limited | server error (429) |
+| service unavailable with status 529 | server error (529) |
+| network failure | connection problem |
+| unreadable response | response could not be parsed |
+| invalid request | service error (invalid_request) |
+| refused | service error (refused) |
+| cancelled | no failure; the stream ends |
+
+
+<!-- @trace
+source: ai-summary-lkaikit-provider
+updated: 2026-11-25
+code:
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTransportTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_開啟AI摘要與生物辨識_顯示對應列.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Domain/AISummaryProvider.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Core/Storage/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedger/Resources/Info.plist
+  - apps/ios/BuyLedger/Features/Settings/Domain/SettingsSnapshot.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTestSupport.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_預設偏好_顯示版本與偏好列.1.png
+  - apps/ios/CLAUDE.md
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDeepLinksTests.swift
+  - apps/ios/BuyLedger/App/Testing/TestDoubles/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/Mocks/MockChatURLProtocol.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureAppLockTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Domain/OrderAISummarySettings.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestPresentationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotSharedTests.swift
+-->
+
+---
+### Requirement: AI summary provider is a configured value with a single extension point
+
+The AI summary SHALL be produced by an AI provider selected from a closed list of supported providers, together with a model name for that provider. Each supported provider SHALL define the name of its API key configuration, its default model, and its Debug candidate models, and the summary request SHALL be sent through a provider-neutral chat client built for the selected provider. Supporting an additional provider SHALL require adding it to the provider list and to the client construction for providers, and SHALL NOT require changing the summary sheet's reducer or view. In this version the only supported provider SHALL be Anthropic, with default model `claude-haiku-5-5`, Debug candidates `claude-haiku-5-5`, `claude-sonnet-5-5` and `claude-opus-5-5`, and API key configuration `ANTHROPIC_API_KEY`.
+
+The request for the selected provider SHALL carry the summary prompt as a single user message, SHALL carry the selected model, and SHALL carry its API key only in a request header, never in the request URL.
+
+#### Scenario: The default configuration summarizes with Claude Haiku 5.5
+
+- **WHEN** the user has never chosen a provider or model and opens the AI summary sheet with an Anthropic key configured
+- **THEN** the summary request is sent to Anthropic with model `claude-haiku-5-5`, the prompt as the only user message, and the key in a request header
+
+#### Scenario: The summary sheet passes the configured provider and model
+
+- **WHEN** the orders container presents the AI summary sheet while the settings hold provider `anthropic` and model `claude-sonnet-5-5`
+- **THEN** the sheet requests the summary from provider `anthropic` with model `claude-sonnet-5-5` and reads the API key configured for `anthropic`
+
+<!-- @trace
+source: ai-summary-lkaikit-provider
+updated: 2026-11-25
+code:
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanCategoriesTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTransportTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_開啟AI摘要與生物辨識_顯示對應列.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Domain/AISummaryProvider.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/Core/Storage/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedger/Resources/Info.plist
+  - apps/ios/BuyLedger/Features/Settings/Domain/SettingsSnapshot.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureAISummaryProjectionTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryServiceTestSupport.swift
+  - apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/Features/More/MoreFeatureRelaysTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotMoreTests/settingsView_預設偏好_顯示版本與偏好列.1.png
+  - apps/ios/CLAUDE.md
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsView.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureLoadAndSummaryTests.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/Features/App/RootFeatureDeepLinksTests.swift
+  - apps/ios/BuyLedger/App/Testing/TestDoubles/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/Mocks/MockChatURLProtocol.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcproj
+  - apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsFeatureAppLockTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Domain/OrderAISummarySettings.swift
+  - apps/ios/BuyLedgerTests/Features/AISummary/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersFeatureFailureTimingTests.swift
+  - apps/ios/BuyLedgerTests/Features/Settings/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/Features/Orders/OrdersContainerPlanRequestPresentationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests/SnapshotSharedTests.swift
+-->

@@ -123,7 +123,11 @@ struct OrdersFeatureLoadAndSummaryTests {
             calendar: TestDependencies.fixedCalendar
         )
 
-        state.aiSummarySettings = OrderAISummarySettings(isEnabled: true, model: "gpt-oss:120b")
+        state.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: true,
+            provider: .anthropic,
+            model: "claude-haiku-5-5"
+        )
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
@@ -157,13 +161,14 @@ struct OrdersFeatureLoadAndSummaryTests {
 
                         請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
                         """,
-                    model: "gpt-oss:120b"
+                    provider: .anthropic,
+                    model: "claude-haiku-5-5"
                 )
             )
         }
 
         // Then
-        #expect(store.state.presentation.destination?.aiSummary?.model == "gpt-oss:120b")
+        #expect(store.state.presentation.destination?.aiSummary?.model == "claude-haiku-5-5")
         #expect(
             store.state.presentation.destination?.aiSummary?.prompt
                 .contains("(涵蓋目前列表所有類別)") == true
@@ -175,7 +180,11 @@ struct OrdersFeatureLoadAndSummaryTests {
     func list_摘要功能已停用_呈現提醒() async {
         // Given
         var initial = OrdersFeature.State()
-        initial.aiSummarySettings = OrderAISummarySettings(isEnabled: false, model: "unused-model")
+        initial.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: false,
+            provider: .anthropic,
+            model: "unused-model"
+        )
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {

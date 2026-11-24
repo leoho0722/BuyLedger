@@ -37,7 +37,11 @@ struct OrdersContainerPlanCategoriesTests {
             LedgerOrder.fixture(id: "B", items: [item], categories: ["書籍"]),
             LedgerOrder.fixture(id: "C", items: [excludedItem], categories: ["食品"]),
         ])
-        state.aiSummarySettings = OrderAISummarySettings(isEnabled: true, model: "test-model")
+        state.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: true,
+            provider: .anthropic,
+            model: "test-model"
+        )
         state.list.dateContext = OrderDateContext(
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar

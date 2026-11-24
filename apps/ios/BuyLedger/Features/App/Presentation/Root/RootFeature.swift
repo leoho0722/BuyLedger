@@ -75,6 +75,7 @@ struct RootFeature {
             self.orders.defaultCurrency = preferences.defaultCurrency
             self.orders.aiSummarySettings = OrderAISummarySettings(
                 isEnabled: preferences.isAISummaryEnabled,
+                provider: preferences.aiSummaryProvider,
                 model: preferences.aiSummaryModel
             )
         }
@@ -228,6 +229,7 @@ struct RootFeature {
             state.orders.defaultCurrency = state.preferences.defaultCurrency
             state.orders.aiSummarySettings = OrderAISummarySettings(
                 isEnabled: state.preferences.isAISummaryEnabled,
+                provider: state.preferences.aiSummaryProvider,
                 model: state.preferences.aiSummaryModel
             )
             return .none
