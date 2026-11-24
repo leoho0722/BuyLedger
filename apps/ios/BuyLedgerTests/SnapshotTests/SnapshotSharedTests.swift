@@ -159,7 +159,11 @@ struct SnapshotSharedTests {
     func aiSummaryView_總結完成_顯示摘要內容() {
         TestDependencies.withFixedNow {
             // Given
-            var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+            var state = AISummaryFeature.State(
+                prompt: "範例 prompt",
+                provider: .anthropic,
+                model: "claude-haiku-5-5"
+            )
             state.phase = .finished
             state.summaryText = "# 商品摘要\n\n已取得的部分內容"
 
@@ -186,7 +190,11 @@ struct SnapshotSharedTests {
     func aiSummaryView_總結失敗_顯示重試鈕() {
         TestDependencies.withFixedNow {
             // Given
-            var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+            var state = AISummaryFeature.State(
+                prompt: "範例 prompt",
+                provider: .anthropic,
+                model: "claude-haiku-5-5"
+            )
             state.phase = .failed
             state.errorMessage = "ai.summary.message.summaryFailedTry"
 

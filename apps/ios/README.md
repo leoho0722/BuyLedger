@@ -9,7 +9,7 @@ BuyLedger 的 Apple 平台實作。產品介紹與 monorepo 結構見 repo 根�
 - **SwiftData + CloudKit**：本機持久化為核心，CloudKit 同步介面 (`PersistenceContainer.CloudKitOption`) 已預留，待 Apple Developer 帳號 provision 後接上
 - **Swift Charts**：Insights 頁的趨勢、類別與成本結構視覺化
 - **EventKit**：開團訂購提醒寫入／移除系統行事曆 (`CalendarReminderService`)；因需移除既有事件而請求 full access
-- **Ollama Cloud**：訂單 AI 商品明細總結 (chat streaming，`AISummaryService`)
+- **[LKAIKit](https://github.com/leoho0722/LKAIKit)**：訂單 AI 商品明細總結 (chat streaming，`AISummaryService` 經 LKAIKit 呼叫 Anthropic)
 - **Firebase (Analytics／Crashlytics／Performance)**：崩潰與使用分析遙測 (`TelemetryService`)
 - **[swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)**：UI 視覺迴歸測試
 
@@ -47,10 +47,11 @@ apps/ios/
 │   │   ├── Formatters/           # 跨 Feature 共用的自訂 FormatStyle (如最多一位小數的百分比)
 │   │   └── Extensions/           # 系統型別的通用 extension (一型一檔)
 │   ├── Features/                 # 依功能切分的 TCA feature，依 ios-dev-kit 分 Presentation／Domain／Data
-│   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
+│   │   ├── AISummary/            # 訂單 AI 商品明細總結 (LKAIKit／Anthropic 串流)
 │   │   │   ├── Presentation/
 │   │   │   │   └── Root/         # AISummaryFeature + AISummaryView
-│   │   │   └── Data/             # AISummaryService 與 Ollama 請求／回應型別
+│   │   │   ├── Domain/           # AISummaryProvider (供應商清單)
+│   │   │   └── Data/             # AISummaryService (依供應商建立 LKAIKit client)
 │   │   ├── App/                  # App 殼層
 │   │   │   ├── Presentation/
 │   │   │   │   ├── Root/         # RootFeature、RootView、RootNavigationLayout (原生根導覽)、RootNavigationOperations、SidebarBadgeCounts
@@ -145,7 +146,7 @@ apps/ios/
 │   │   └── Settings/             # 設定
 │   │       ├── Presentation/
 │   │       │   └── Root/         # SettingsFeature + SettingsView (含 App 鎖定的啟用驗證)
-│   │       ├── Domain/           # SettingsSnapshot、AISummaryModelCatalog
+│   │       ├── Domain/           # SettingsSnapshot
 │   │       └── Data/             # SettingsService
 │   ├── Shared/
 │   │   ├── Localization/         # AppLanguage、CurrencyDisplayName
@@ -160,7 +161,7 @@ apps/ios/
 │   ├── AccessibilityIDs/         # BLAccessibilityID 測試
 │   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門分 AccessibilityIdentifier、ActionGrouping、DependencyConvention、DesignSystemSourceScan、LayerBoundary、LocalizationCatalog、ProjectionWriteBoundary、ServiceOwnership、UITestConvention，共用掃描器在 Scanning/
 │   ├── SnapshotTests/            # snapshot 測試；baseline 在 __Snapshots__/<測試檔名>/
-│   ├── Mocks/                    # Database、HTTPClient、Store 的 Mock 與 MockURLProtocol
+│   ├── Mocks/                    # Database、HTTPClient、Store 的 Mock、MockURLProtocol 與 MockChatURLProtocol (AI 摘要的 x-api-key 請求替身)
 │   ├── Fixtures/                 # 測試用固定資料
 │   └── Support/                  # TestDependencies、TestPaths 與共用的 <Base>TestSupport
 ├── BuyLedgerUITests/             # XCUITest
@@ -184,7 +185,7 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 | 變數 | 用途 | 申請位置 |
 | --- | --- | --- |
 | `EXCHANGE_RATE_API_KEY` | 匯率與幣別清單 (ExchangeRate-API v6) | [exchangerate-api.com](https://www.exchangerate-api.com) |
-| `OLLAMA_API_KEY` | 訂單 AI 商品明細總結 (Ollama Cloud chat streaming) | [ollama.com](https://ollama.com) → Account → API keys |
+| `ANTHROPIC_API_KEY` | 訂單 AI 商品明細總結 (經 LKAIKit 串流 Anthropic Messages API) | [Anthropic Console](https://platform.claude.com/) → API Keys |
 
 1. 複製範本 (`Config.xcconfig` 已列入 `.gitignore`，**請勿提交**)：
 
@@ -196,10 +197,12 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 
    ```text
    EXCHANGE_RATE_API_KEY = your-key-here
-   OLLAMA_API_KEY = your-key-here
+   ANTHROPIC_API_KEY = your-key-here
    ```
 
-金鑰在 build 時注入產物：`Config.xcconfig` 掛在 app target 的 Debug 與 Release config，`Info.plist` 以 `$(EXCHANGE_RATE_API_KEY)`／`$(OLLAMA_API_KEY)` 引用，執行期由 `AppConfigurationStore` 從 `Bundle.main` 讀回 (空字串或未展開的 `$(KEY)` 視為未設定)。兩個服務的請求都以 Authorization header (`Bearer <key>`) 攜帶金鑰，網址不含金鑰。
+既有開發者：本機 `Config.xcconfig` 新增 `ANTHROPIC_API_KEY` 並移除舊的 AI 摘要金鑰變數，重新建置後生效。
+
+金鑰在 build 時注入產物：`Config.xcconfig` 掛在 app target 的 Debug 與 Release config，`Info.plist` 以 `$(EXCHANGE_RATE_API_KEY)`／`$(ANTHROPIC_API_KEY)` 引用，執行期由 `AppConfigurationStore` 從 `Bundle.main` 讀回 (空字串或未展開的 `$(KEY)` 視為未設定)。匯率服務的請求以 Authorization header (`Bearer <key>`) 攜帶金鑰；AI 摘要由 LKAIKit 依供應商放在對應的標頭 (Anthropic 為 `x-api-key`)。兩者的網址都不含金鑰。
 
 未設 key 時 App 仍可啟動：匯率工具與報價頁顯示「尚未設定 ExchangeRate-API 金鑰」的提示，AI 總結面板顯示「AI 總結尚未完成設定，目前無法使用。」並提供重試。
 
@@ -210,7 +213,7 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 金鑰疑似外洩或需要更換時：
 
 1. **ExchangeRate-API**：登入 [exchangerate-api.com](https://www.exchangerate-api.com) 帳號後台，撤銷既有 key 並產生新 key。
-2. **Ollama Cloud**：登入 [ollama.com](https://ollama.com) → Account → API keys，撤銷舊 key 並建立新 key。
+2. **Anthropic**：登入 [Anthropic Console](https://platform.claude.com/) → API Keys，撤銷舊 key 並建立新 key。
 3. 將新值填入本機 `Config.xcconfig` 對應變數。
 4. **重新 build 並重新安裝 App**：金鑰在建置期寫入產物，App 執行期不會重讀 `Config.xcconfig`。
 
@@ -363,7 +366,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 ### 外部 API
 
 - **ExchangeRate-API v6**：`latest/{base}` (匯率) 與 `codes` (幣別清單) 兩個 endpoint，請求組裝、解碼與服務錯誤分類集中在 `ExchangeRateEndpoint`。`ExchangeRateService.fetchLatest(.twd)` 取最新匯率；App 啟動時經 `CurrencyMetadataService.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天。
-- **Ollama Cloud**：`AISummaryService` 串接 chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結 (逐位元組串流走 `HTTPClientProtocol.stream`)；缺金鑰或服務錯誤時進入失敗狀態並提供重試，面板關閉時取消串流。
+- **Anthropic (經 LKAIKit)**：`AISummaryService` 依 `AISummaryProvider` 建立 LKAIKit 的 chat client (Anthropic 為 `LKAnthropicClient`)，串流 `POST https://api.anthropic.com/v1/messages`，從「訂單」分頁清單的工具列開啟，依目前篩選結果串流產生 Markdown 商品明細總結 (預設模型 `claude-haiku-5-5`，Debug 設定頁可改選候選模型或自訂)；缺金鑰或服務錯誤時進入失敗狀態並提供重試，面板關閉時取消串流。
 
 **Fallback 原則**：遵循 root [README.md › 產品政策](../../README.md#產品政策)，匯率與分析 UI 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，避免使用者誤信過期或內建匯率。
 

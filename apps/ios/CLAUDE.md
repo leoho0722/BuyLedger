@@ -153,7 +153,7 @@
 
 - **TCA 相依一律以 `DependencyValues` 的 key path 取用** (如 `\.orderService`、`\.buyLedgerDatabase`)：Feature 與 App 組合根取用 Service，Service 的 `liveValue` 以相同方式取得 Database、Client、Store 等技術相依。
 - **Feature 的業務操作由 `Sendable` Service struct 提供，每個操作一個 closure**：`liveValue` 必須是 computed property 並以 key path 注入相依，不用 `static let` 固定第一次解析到的依賴。
-  - Client 與 Store 只提供技術操作：`HTTPClient` 負責 HTTP 傳輸，`UserDefaultsStore` 只讀寫偏好值，`AppConfigurationStore` 只讀取並正規化 Info.plist 設定；設定 key 與快照組裝留在 `SettingsService`，API key 名稱留在使用端 (`ExchangeRateEndpoint`、`AISummaryService`)。
+  - Client 與 Store 只提供技術操作：`HTTPClient` 負責 HTTP 傳輸，`UserDefaultsStore` 只讀寫偏好值，`AppConfigurationStore` 只讀取並正規化 Info.plist 設定；設定 key 與快照組裝留在 `SettingsService`，API key 名稱留在使用端 (匯率是 `ExchangeRateEndpoint`；AI 摘要依供應商由 `AISummaryProvider.apiKeyConfigurationKey` 提供)。
   - 只有會失敗的操作才用 typed throws，不為符合型別樣板加 `throws` (如 `UserDefaultsStore`、`AppConfigurationStore`、`SettingsService.load`／`save`)。
   - effect 內把 Service 錯誤傳進 `Result<_, PersistenceError>` 時寫 `do throws(PersistenceError) { … } catch { … }`：一般 `do`／`catch` 的 `error` 是 `any Error`，編不過。
 - **Feature 專屬 Service 只被所屬 Feature 引用**：Feature 之間的資料經父層投影或 delegate 交給，不直接取用他人的 Service。
@@ -199,7 +199,7 @@
   - 無畫面的子 Feature 也各自一個資料夾，資料夾名等於型別前綴 (如 `Presentation/CampaignLoad/`)。
   - 只給單一畫面用的子 View 放該畫面資料夾；跨畫面共用的放 `Presentation/Components/`；`<Feature>Formatters` 與狀態樣式放 `Presentation/Formatting/`。
   - 檔案多的畫面資料夾再依用途分 `Views/`、`Operations/`、`Queries/`、`Models/`、`Requests/`、`Plans/` 等子資料夾，Feature 本體留在畫面資料夾最上層 (如 `Orders/Presentation/OrderEdit/`)。
-  - `Data/` 只平放 Service 主檔，有多個 Service 也不分子資料夾；Service 的錯誤型別與交給 Presentation 的值型別放 `Domain/` (如 `OrderError`、`CampaignReminderLink`)，只給 Service 內部用的傳輸型別留在 `Data/` (如 `OllamaChatRequest`)。
+  - `Data/` 只平放 Service 主檔，有多個 Service 也不分子資料夾；Service 的錯誤型別與交給 Presentation 的值型別放 `Domain/` (如 `OrderError`、`CampaignReminderLink`)，只給 Service 內部用的傳輸型別 (請求與回應的編解碼型別) 留在 `Data/`。
 
 ### 測試
 

@@ -50,6 +50,9 @@ extension SettingsService {
         /// AI 摘要開關的 key
         static let isAISummaryEnabled = "settings.useAiSummary"
 
+        /// AI 摘要供應商的 key
+        static let aiSummaryProvider = "settings.aiSummaryProvider"
+
         /// AI 摘要模型名稱的 key
         static let aiSummaryModel = "settings.aiSummaryModel"
 
@@ -83,10 +86,17 @@ extension SettingsService: DependencyKey {
                     monthlyProfitGoalTWD = SettingsSnapshot.default.monthlyProfitGoalTWD
                 }
                 let isAISummaryEnabled = userDefaultsStore.bool(forKey: Keys.isAISummaryEnabled)
-                let storedModel = userDefaultsStore.string(forKey: Keys.aiSummaryModel) ?? ""
-                let aiSummaryModel = storedModel.isEmpty
-                    ? SettingsSnapshot.default.aiSummaryModel
-                    : storedModel
+                let aiSummaryProvider: AISummaryProvider
+                let aiSummaryModel: String
+                if let storedProvider = userDefaultsStore.string(forKey: Keys.aiSummaryProvider),
+                   let provider = AISummaryProvider(rawValue: storedProvider) {
+                    aiSummaryProvider = provider
+                    let storedModel = userDefaultsStore.string(forKey: Keys.aiSummaryModel) ?? ""
+                    aiSummaryModel = storedModel.isEmpty ? provider.defaultModel : storedModel
+                } else {
+                    aiSummaryProvider = .default
+                    aiSummaryModel = AISummaryProvider.default.defaultModel
+                }
                 let isBiometricUnlockEnabled = userDefaultsStore.bool(
                     forKey: Keys.isBiometricUnlockEnabled
                 )
@@ -96,6 +106,7 @@ extension SettingsService: DependencyKey {
                     defaultCurrency: defaultCurrency,
                     monthlyProfitGoalTWD: monthlyProfitGoalTWD,
                     isAISummaryEnabled: isAISummaryEnabled,
+                    aiSummaryProvider: aiSummaryProvider,
                     aiSummaryModel: aiSummaryModel,
                     isBiometricUnlockEnabled: isBiometricUnlockEnabled
                 )
@@ -111,7 +122,16 @@ extension SettingsService: DependencyKey {
                     forKey: Keys.monthlyProfitGoalTWD
                 )
                 userDefaultsStore.set(snapshot.isAISummaryEnabled, forKey: Keys.isAISummaryEnabled)
-                userDefaultsStore.set(snapshot.aiSummaryModel, forKey: Keys.aiSummaryModel)
+                userDefaultsStore.set(
+                    snapshot.aiSummaryProvider.rawValue,
+                    forKey: Keys.aiSummaryProvider
+                )
+                // 等於供應商預設模型時存空字串，讀取時跟隨供應商目前的預設模型
+                let defaultModel = snapshot.aiSummaryProvider.defaultModel
+                let modelToStore = snapshot.aiSummaryModel == defaultModel
+                    ? ""
+                    : snapshot.aiSummaryModel
+                userDefaultsStore.set(modelToStore, forKey: Keys.aiSummaryModel)
                 userDefaultsStore.set(
                     snapshot.isBiometricUnlockEnabled,
                     forKey: Keys.isBiometricUnlockEnabled

@@ -178,7 +178,11 @@ struct OrdersContainerPlanRequestPresentationTests {
     func fulfill_AI摘要未啟用_呈現未啟用的提示() throws {
         // Given
         var state = OrdersContainerPlanTestSupport.makeState(orders: [])
-        state.aiSummarySettings = OrderAISummarySettings(isEnabled: false, model: "test-model")
+        state.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: false,
+            provider: .anthropic,
+            model: "test-model"
+        )
 
         // When
         let outcome = OrdersContainerPlan.fulfill(
@@ -208,7 +212,11 @@ struct OrdersContainerPlanRequestPresentationTests {
         var state = OrdersContainerPlanTestSupport.makeState(orders: [
             LedgerOrder.fixture(id: "A", items: [item], categories: ["測試類別"]),
         ])
-        state.aiSummarySettings = OrderAISummarySettings(isEnabled: true, model: "test-model")
+        state.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: true,
+            provider: .anthropic,
+            model: "test-model"
+        )
         state.list.dateContext = OrderDateContext(
             now: OrdersContainerPlanTestSupport.now,
             calendar: OrdersContainerPlanTestSupport.calendar

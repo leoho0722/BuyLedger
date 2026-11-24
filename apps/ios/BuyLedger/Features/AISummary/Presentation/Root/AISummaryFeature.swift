@@ -22,7 +22,10 @@ struct AISummaryFeature {
         /// 已組好、要送給 AI 的完整指令 (prompt)
         let prompt: String
 
-        /// 使用的 Ollama 模型名稱
+        /// 產生摘要的 AI 供應商
+        let provider: AISummaryProvider
+
+        /// 使用的模型名稱，屬於 `provider`
         let model: String
 
         /// 累加的串流總結文字 (Markdown)
@@ -34,12 +37,17 @@ struct AISummaryFeature {
         /// 失敗時顯示的友善訊息
         var errorMessage: LocalizedStringResource?
 
-        /// 串流逾時時顯示的截斷說明；逾時不是失敗，不使用 `errorMessage`
+        /// 串流逾時且已有內容時顯示的截斷說明；有內容的逾時不是失敗，不使用 `errorMessage`
         var truncationMessage: LocalizedStringResource?
 
         /// 失敗畫面顯示的訊息，沒有具體原因時退回通用提示
         var failureMessage: LocalizedStringResource {
             errorMessage ?? "orders.edit.message.pleaseTryAgain"
+        }
+
+        /// 是否已收到可顯示的摘要內容 (去除空白與換行後不為空)
+        var hasSummaryContent: Bool {
+            !summaryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
 
@@ -182,10 +190,22 @@ private extension AISummaryFeature {
             return .none
 
         case .streamFinished:
+            guard state.hasSummaryContent else {
+                AppLogger.inference.warning("AI 摘要串流結束但沒有任何內容")
+                state.phase = .failed
+                state.errorMessage = "ai.summary.message.summaryFailedTry"
+                return .none
+            }
             state.phase = .finished
             return .none
 
         case .streamTimedOut:
+            guard state.hasSummaryContent else {
+                AppLogger.inference.warning("AI 摘要串流逾時且沒有任何內容")
+                state.phase = .failed
+                state.errorMessage = "ai.summary.message.summaryFailedTry"
+                return .none
+            }
             state.phase = .finished
             state.truncationMessage = "ai.summary.message.aiSummaryReached"
             return .none
@@ -232,15 +252,24 @@ private extension AISummaryFeature {
         state.truncationMessage = nil
 
         let prompt = state.prompt
+        let provider = state.provider
         let model = state.model
         let service = aiSummaryService
         let streamClock = continuousClock
+        // 串流整體時長上限；逾時時有內容就保留並標示截斷，沒有內容就顯示失敗
+        let streamDuration: Duration = .seconds(30)
         return .run { send in
-            if let apiKey = service.apiKey() {
+            if let apiKey = service.apiKey(provider) {
                 let result = await withTaskGroup(of: StreamResult.self) { group in
                     group.addTask {
                         do {
-                            for try await chunk in service.streamSummary(prompt, model, apiKey) {
+                            let stream = service.streamSummary(
+                                prompt,
+                                provider,
+                                model,
+                                apiKey
+                            )
+                            for try await chunk in stream {
                                 await send(.chunkReceived(chunk))
                             }
                             return .finished
@@ -257,7 +286,7 @@ private extension AISummaryFeature {
 
                     group.addTask {
                         do {
-                            try await streamClock.sleep(for: AISummaryService.overallStreamDuration)
+                            try await streamClock.sleep(for: streamDuration)
                             return .timedOut
                         } catch {
                             return .cancelled
@@ -288,7 +317,10 @@ private extension AISummaryFeature {
                     break
                 }
             } else {
-                AppLogger.inference.error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
+                let keyName = provider.apiKeyConfigurationKey
+                AppLogger.inference.error(
+                    "AI 總結無法啟動：\(keyName, privacy: .public) 未注入 (xcconfig 未設定)"
+                )
                 await send(.streamFailed("ai.summary.message.aiSummariesSet"))
             }
         }

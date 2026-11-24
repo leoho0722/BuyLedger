@@ -28,7 +28,8 @@ struct SettingsFeatureTests {
         #expect(state.isAISummaryEnabled == false)
         #expect(state.appVersion == "—")
         #expect(state.monthlyProfitGoalTWD == 80_000)
-        #expect(state.aiSummaryModel == "gemma4:31b-cloud")
+        #expect(state.aiSummaryProvider == .anthropic)
+        #expect(state.aiSummaryModel == "claude-haiku-5-5")
         #expect(state.isBiometricUnlockEnabled == false)
     }
 
@@ -71,7 +72,8 @@ struct SettingsFeatureTests {
             defaultCurrency: .twd,
             monthlyProfitGoalTWD: 80_000,
             isAISummaryEnabled: false,
-            aiSummaryModel: "gemma4:31b-cloud",
+            aiSummaryProvider: .anthropic,
+            aiSummaryModel: "claude-haiku-5-5",
             isBiometricUnlockEnabled: false
         )
         var firstSnapshot = initialSnapshot
@@ -174,14 +176,15 @@ struct SettingsFeatureTests {
         }
 
         // When
-        await store.send(.view(.aiSummaryModelSelected("deepseek-v3.1:671b"))) {
-            $0.aiSummaryModel = "deepseek-v3.1:671b"
+        await store.send(.view(.aiSummaryModelSelected("claude-sonnet-5-5"))) {
+            $0.aiSummaryModel = "claude-sonnet-5-5"
         }
 
         // Then
         await store.receive(\.delegate.preferencesChanged)
         let snapshot = try #require(saved.value)
-        #expect(snapshot.aiSummaryModel == "deepseek-v3.1:671b")
+        #expect(snapshot.aiSummaryProvider == .anthropic)
+        #expect(snapshot.aiSummaryModel == "claude-sonnet-5-5")
     }
 
     /// 驗證幣別服務成功回傳時，可選幣別換成排序後的新清單，清單並納入目前的預設幣別，預設幣別不變
@@ -303,7 +306,8 @@ extension SettingsFeatureTests {
                     defaultCurrency: .twd,
                     monthlyProfitGoalTWD: 80_000,
                     isAISummaryEnabled: false,
-                    aiSummaryModel: "gemma4:31b-cloud",
+                    aiSummaryProvider: .anthropic,
+                    aiSummaryModel: "claude-haiku-5-5",
                     isBiometricUnlockEnabled: false
                 )
 
@@ -313,7 +317,8 @@ extension SettingsFeatureTests {
                     defaultCurrency: .twd,
                     monthlyProfitGoalTWD: 80_000,
                     isAISummaryEnabled: true,
-                    aiSummaryModel: "gemma4:31b-cloud",
+                    aiSummaryProvider: .anthropic,
+                    aiSummaryModel: "claude-haiku-5-5",
                     isBiometricUnlockEnabled: false
                 )
 
@@ -323,7 +328,8 @@ extension SettingsFeatureTests {
                     defaultCurrency: .twd,
                     monthlyProfitGoalTWD: 120_000,
                     isAISummaryEnabled: false,
-                    aiSummaryModel: "gemma4:31b-cloud",
+                    aiSummaryProvider: .anthropic,
+                    aiSummaryModel: "claude-haiku-5-5",
                     isBiometricUnlockEnabled: false
                 )
             }

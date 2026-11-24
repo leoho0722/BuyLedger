@@ -7569,13 +7569,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enter a model name available on Ollama Cloud."
+            "value" : "Enter a model name available from the current AI service."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "輸入 Ollama Cloud 上可用的模型名稱。"
+            "value" : "輸入目前 AI 服務可用的模型名稱。"
           }
         }
       }
@@ -7586,13 +7586,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Model name (for example, gpt-oss:120b)"
+            "value" : "Model name (for example, claude-sonnet-5-5)"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "模型名稱 (例如 gpt-oss:120b)"
+            "value" : "模型名稱 (例如 claude-sonnet-5-5)"
           }
         }
       }

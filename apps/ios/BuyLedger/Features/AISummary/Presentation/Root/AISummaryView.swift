@@ -166,7 +166,11 @@ private extension AISummaryView {
 // MARK: - Preview
 
 #Preview("AI 總結串流中") {
-    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    var state = AISummaryFeature.State(
+        prompt: "範例 prompt",
+        provider: .anthropic,
+        model: "claude-haiku-5-5"
+    )
     state.phase = .streaming
     state.summaryText = "# 商品摘要\n\nAI 正在產生內容"
 
@@ -178,7 +182,11 @@ private extension AISummaryView {
 }
 
 #Preview("AI 總結失敗") {
-    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    var state = AISummaryFeature.State(
+        prompt: "範例 prompt",
+        provider: .anthropic,
+        model: "claude-haiku-5-5"
+    )
     state.phase = .failed
     state.errorMessage = "ai.summary.message.summaryFailedTry"
 
@@ -190,7 +198,11 @@ private extension AISummaryView {
 }
 
 #Preview("AI 總結逾時截斷") {
-    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    var state = AISummaryFeature.State(
+        prompt: "範例 prompt",
+        provider: .anthropic,
+        model: "claude-haiku-5-5"
+    )
     state.phase = .finished
     state.summaryText = "# 商品摘要\n\n已取得的部分內容"
     state.truncationMessage = "ai.summary.message.aiSummaryReached"

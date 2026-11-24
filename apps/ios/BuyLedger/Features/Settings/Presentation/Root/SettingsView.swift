@@ -105,7 +105,7 @@ private extension SettingsView {
     var modelPicker: some View {
         OptionPickerSheet(
             title: "settings.preference.label.selectAiModel",
-            options: AISummaryModelCatalog.candidates,
+            options: store.aiSummaryProvider.candidateModels,
             selection: .single(
                 selected: store.aiSummaryModel,
                 onSelect: {

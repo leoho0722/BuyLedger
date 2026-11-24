@@ -189,7 +189,8 @@ struct MoreFeatureTests {
             defaultCurrency: .usd,
             monthlyProfitGoalTWD: 120_000,
             isAISummaryEnabled: true,
-            aiSummaryModel: "deepseek-v3.1:671b",
+            aiSummaryProvider: .anthropic,
+            aiSummaryModel: "claude-sonnet-5-5",
             isBiometricUnlockEnabled: true
         )
         var initial = MoreFeature.State(appVersion: "1.7.0 (312)")

@@ -42,8 +42,11 @@ struct SettingsFeature {
         /// 月度目標金額欄位是否取得鍵盤焦點
         var isGoalFieldFocused: Bool = false
 
-        /// AI 總結使用的 Ollama 模型名稱
-        var aiSummaryModel: String = AISummaryModelCatalog.defaultModel
+        /// AI 總結使用的供應商
+        var aiSummaryProvider: AISummaryProvider = .default
+
+        /// AI 總結使用的模型名稱，屬於 `aiSummaryProvider`
+        var aiSummaryModel: String = AISummaryProvider.default.defaultModel
 
         /// App 版本與建置號顯示文字
         let appVersion: String
@@ -58,6 +61,7 @@ struct SettingsFeature {
                 defaultCurrency: defaultCurrency,
                 monthlyProfitGoalTWD: monthlyProfitGoalTWD,
                 isAISummaryEnabled: isAISummaryEnabled,
+                aiSummaryProvider: aiSummaryProvider,
                 aiSummaryModel: aiSummaryModel,
                 isBiometricUnlockEnabled: isBiometricUnlockEnabled
             )
@@ -78,6 +82,7 @@ struct SettingsFeature {
             defaultCurrency = snapshot.defaultCurrency
             monthlyProfitGoalTWD = snapshot.monthlyProfitGoalTWD
             isAISummaryEnabled = snapshot.isAISummaryEnabled
+            aiSummaryProvider = snapshot.aiSummaryProvider
             aiSummaryModel = snapshot.aiSummaryModel
             self.appVersion = appVersion
             isBiometricUnlockEnabled = snapshot.isBiometricUnlockEnabled

@@ -21,6 +21,7 @@ struct OrdersFeatureAISummaryProjectionTests {
         var initial = OrdersFeature.State()
         initial.aiSummarySettings = OrderAISummarySettings(
             isEnabled: true,
+            provider: .anthropic,
             model: "projection-model"
         )
         let store = TestStore(initialState: initial) {
@@ -42,6 +43,7 @@ struct OrdersFeatureAISummaryProjectionTests {
 
                         請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
                         """,
+                    provider: .anthropic,
                     model: "projection-model"
                 )
             )
@@ -56,7 +58,11 @@ struct OrdersFeatureAISummaryProjectionTests {
     func list_摘要投影停用且設定服務未覆寫_呈現啟用提示() async {
         // Given
         var initial = OrdersFeature.State()
-        initial.aiSummarySettings = OrderAISummarySettings(isEnabled: false, model: "unused-model")
+        initial.aiSummarySettings = OrderAISummarySettings(
+            isEnabled: false,
+            provider: .anthropic,
+            model: "unused-model"
+        )
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         }

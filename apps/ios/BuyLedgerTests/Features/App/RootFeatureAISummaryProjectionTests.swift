@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試，以 TestStore 驗證 AI 摘要在偏好改動前後使用的模型
+/// `RootFeature` 的單元測試，以 TestStore 驗證 AI 摘要在偏好改動前後使用的供應商與模型
 @MainActor
 struct RootFeatureAISummaryProjectionTests {
 
@@ -20,6 +20,7 @@ struct RootFeatureAISummaryProjectionTests {
         // Given
         var preferences = SettingsSnapshot.default
         preferences.isAISummaryEnabled = true
+        preferences.aiSummaryProvider = .anthropic
         preferences.aiSummaryModel = "initial-model"
         let initial = RootFeatureTestSupport.makeIsolatedRootState {
             RootFeature.State(preferences: preferences)
@@ -43,6 +44,7 @@ struct RootFeatureAISummaryProjectionTests {
 
                         請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
                         """,
+                    provider: .anthropic,
                     model: "initial-model"
                 )
             )
@@ -50,6 +52,7 @@ struct RootFeatureAISummaryProjectionTests {
 
         // Then
         #expect(store.state.orders.aiSummarySettings.isEnabled)
+        #expect(store.state.orders.aiSummarySettings.provider == .anthropic)
         #expect(store.state.orders.aiSummarySettings.model == "initial-model")
         #expect(store.state.orders.presentation.destination?.aiSummary?.model == "initial-model")
     }
@@ -60,12 +63,13 @@ struct RootFeatureAISummaryProjectionTests {
         // Given
         var preferences = SettingsSnapshot.default
         preferences.isAISummaryEnabled = true
+        preferences.aiSummaryProvider = .anthropic
         preferences.aiSummaryModel = "old-model"
         var initial = RootFeatureTestSupport.makeIsolatedRootState {
             RootFeature.State(preferences: preferences)
         }
         initial.orders.presentation.destination = .aiSummary(
-            AISummaryFeature.State(prompt: "已開啟的摘要", model: "old-model")
+            AISummaryFeature.State(prompt: "已開啟的摘要", provider: .anthropic, model: "old-model")
         )
         var disabled = preferences
         disabled.isAISummaryEnabled = false
@@ -80,11 +84,13 @@ struct RootFeatureAISummaryProjectionTests {
             $0.more.preferences = disabled
             $0.orders.aiSummarySettings = OrderAISummarySettings(
                 isEnabled: false,
+                provider: .anthropic,
                 model: "new-model"
             )
         }
 
         // Then
+        #expect(store.state.orders.aiSummarySettings.provider == .anthropic)
         #expect(store.state.orders.presentation.destination?.aiSummary?.model == "old-model")
     }
 
@@ -94,6 +100,7 @@ struct RootFeatureAISummaryProjectionTests {
         // Given
         var preferences = SettingsSnapshot.default
         preferences.isAISummaryEnabled = true
+        preferences.aiSummaryProvider = .anthropic
         preferences.aiSummaryModel = "old-model"
         var initial = RootFeatureTestSupport.makeIsolatedRootState {
             RootFeature.State(preferences: preferences)
@@ -104,6 +111,7 @@ struct RootFeatureAISummaryProjectionTests {
         initial.more.preferences = enabled
         initial.orders.aiSummarySettings = OrderAISummarySettings(
             isEnabled: true,
+            provider: .anthropic,
             model: "new-model"
         )
         let store = TestStore(initialState: initial) {
@@ -125,6 +133,7 @@ struct RootFeatureAISummaryProjectionTests {
 
                         請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
                         """,
+                    provider: .anthropic,
                     model: "new-model"
                 )
             )
