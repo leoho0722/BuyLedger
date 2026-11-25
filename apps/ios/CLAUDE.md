@@ -66,6 +66,8 @@
 - **需要實機時 (硬體相依或使用者指定) 改跑 iPhone 12 (iOS 26.x) 與 iPad Air 5 (iPadOS 27.x)**：以 UDID 固定同一台，走 `mobilebuildmcp device test`。Automatic signing 的 device build 要帶 `-allowProvisioningUpdates -allowProvisioningDeviceRegistration`。
   - 實機前置：開啟 UI 自動化、未接硬體鍵盤、解鎖。
   - 讀 repo 原始碼的守門測試 (實機讀不到 Mac 上的檔案，一定失敗) 與 snapshot 測試仍跑 iPhone 17 iOS 26.5 模擬器。
+- **完整 UI 主回歸只在 change 的最終驗收跑一次**：中途的 task 與合併各自已驗證過的分支，只跑實際改到區域的受影響類別，加上跨區跳轉進該區的測試與冒煙 `RootNavigationLaunchUITests`、`RootNavigationOrientationUITests`；各自驗證過的內容不必重跑。
+  - 要跑完整回歸先說明理由並取得使用者同意；`.claude/hooks/full-ui-regression-guard.sh` 在 `test_sim` 或 `mobilebuildmcp … test` 帶未指定類別的 `-only-testing:BuyLedgerUITests`，或 CLI 以 `BuyLedgerUITests` scheme 執行卻沒有指定類別時要求確認。
 - **`BuyLedgerUITests` 走獨立 scheme**：`-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
   - 全功能回歸用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`，不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
   - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
