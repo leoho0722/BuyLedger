@@ -1,3 +1,17 @@
 {
-  "includeGitInstructions": false
+  "includeGitInstructions": false,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__XcodeBuildMCP__test_sim|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/full-ui-regression-guard.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
 }
